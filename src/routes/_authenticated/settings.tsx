@@ -61,7 +61,7 @@ function SettingsPage() {
           <p className="text-sm text-muted-foreground">
             Choose how profit is recognised for AED→IRR→AED style trades.
           </p>
-          <RadioGroup value={method} onValueChange={(v) => save.mutate({ key: "profit_recognition_method", value: v })} className="space-y-3">
+          <RadioGroup value={method} onValueChange={(v) => save.mutate({ profit_recognition_method: v })} className="space-y-3">
             <label className="flex items-start gap-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/40">
               <RadioGroupItem value="cycle" id="m-cycle" className="mt-1" />
               <div>
@@ -93,7 +93,7 @@ function SettingsPage() {
           <p className="text-sm text-muted-foreground">
             Reference rates shown in the dashboard and forms. Transaction rates always remain manually editable.
           </p>
-          <RadioGroup value={mrSource} onValueChange={(v) => save.mutate({ key: "market_rate_source", value: v })} className="space-y-3">
+          <RadioGroup value={mrSource} onValueChange={(v) => save.mutate({ market_rate_source: v })} className="space-y-3">
             <label className="flex items-start gap-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/40">
               <RadioGroupItem value="bonbast" id="mr-bonbast" className="mt-1" />
               <div>
@@ -120,7 +120,7 @@ function SettingsPage() {
               min={1}
               className="w-24 h-9"
               value={mrRefresh}
-              onChange={(e) => save.mutate({ key: "market_rate_refresh_minutes", value: e.target.value })}
+              onChange={(e) => save.mutate({ market_rate_refresh_minutes: Number(e.target.value) || 5 })}
             />
           </div>
 
@@ -131,7 +131,7 @@ function SettingsPage() {
             </div>
             <Switch
               checked={mrFallback}
-              onCheckedChange={(v) => save.mutate({ key: "market_rate_manual_fallback", value: String(v) })}
+              onCheckedChange={(v) => save.mutate({ market_rate_manual_fallback: v })}
             />
           </div>
 
