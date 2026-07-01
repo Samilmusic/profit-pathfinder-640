@@ -72,30 +72,55 @@ function QuickSellPage() {
     if (!sellRate && lastRateQ.data) setSellRate(String(lastRateQ.data));
   }, [lastRateQ.data]); // eslint-disable-line
 
-  // Cost rate for profit preview
-  const costRateQ = useQuery({
-    queryKey: ["inv_cost", soldCurrency, receivedCurrency],
-    enabled: !!soldCurrency && !!receivedCurrency,
+  // FIFO inventory preview — cost basis of the sold currency in its own terms
+  const lotsQ = useQuery({
+    queryKey: ["inv_lots_qs", soldCurrency, sourceId],
+    enabled: !!soldCurrency,
     queryFn: async () => {
-      const { data } = await supabase.from("buy_transactions")
-        .select("bought_amount,paid_amount")
-        .eq("bought_currency", soldCurrency).eq("paid_currency", receivedCurrency)
-        .is("deleted_at", null).order("entry_date", { ascending: false }).limit(50);
-      const rows = data ?? [];
-      const totQty = rows.reduce((s, r: any) => s + Number(r.bought_amount || 0), 0);
-      const totCost = rows.reduce((s, r: any) => s + Number(r.paid_amount || 0), 0);
-      return totQty > 0 ? totCost / totQty : 0;
+      let q = supabase.from("inventory_lots")
+        .select("id,remaining_amount,original_amount,cost_basis_rate,cost_basis_currency,entry_date,account_id")
+        .eq("currency", soldCurrency).gt("remaining_amount", 0).neq("status", "depleted")
+        .order("entry_date", { ascending: true });
+      if (sourceId) q = q.eq("account_id", sourceId);
+      return (await q).data ?? [];
     },
   });
 
   const soldN = Number(soldAmount) || 0;
   const rateN = Number(sellRate) || 0;
   const receivedAmount = roundAmount(soldN * rateN, receivedCurrency);
-  const costRate = costRateQ.data ?? 0;
-  const costBasis = roundAmount(costRate * soldN, receivedCurrency);
-  const grossProfit = roundAmount(receivedAmount - costBasis, receivedCurrency);
-  const miladShare = roundAmount(grossProfit * 0.5, receivedCurrency);
-  const aliShare = roundAmount(grossProfit - miladShare, receivedCurrency);
+
+  // Walk FIFO to compute how much of the sold-currency inventory this deal uses.
+  const preview = useMemo(() => {
+    const lots = lotsQ.data ?? [];
+    let need = soldN;
+    let costCcy: string | null = null;
+    let totalCost = 0;
+    let covered = 0;
+    for (const l of lots) {
+      if (need <= 0) break;
+      const take = Math.min(need, Number(l.remaining_amount));
+      if (!costCcy) costCcy = l.cost_basis_currency;
+      totalCost += take * Number(l.cost_basis_rate);
+      covered += take;
+      need -= take;
+    }
+    const available = lots.reduce((s: number, l: any) => s + Number(l.remaining_amount), 0);
+    const sameCcy = costCcy && costCcy === receivedCurrency;
+    const realized = sameCcy ? receivedAmount - totalCost : 0;
+    return {
+      covered, available,
+      shortfall: Math.max(0, need),
+      costCcy: costCcy ?? soldCurrency,
+      totalCost,
+      sameCcy,
+      realized,
+      miladShare: realized * 0.5,
+      aliShare: realized * 0.5,
+    };
+  }, [lotsQ.data, soldN, receivedAmount, receivedCurrency, soldCurrency]);
+
+  const isCycleSell = !preview.sameCcy; // cross-currency → asset conversion, not profit
 
   // Recent customers (last 6 from sells)
   const recentQ = useQuery({
@@ -110,6 +135,7 @@ function QuickSellPage() {
 
   // Warnings
   const sourceOverdraft = sourceBalance !== null && soldN > sourceBalance;
+  const inventoryShort = preview.shortfall > 0.00001 && soldN > 0;
   const validationErrors: string[] = [];
   if (!customerId) validationErrors.push("Pick a customer");
   if (!soldN) validationErrors.push("Enter sold amount");
