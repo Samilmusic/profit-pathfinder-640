@@ -99,6 +99,11 @@ export type Database = {
       }
       app_settings: {
         Row: {
+          alert_drop_pct_15min: number
+          alert_near_cost_pct: number
+          alert_rise_pct_15min: number
+          alert_stale_minutes: number
+          alert_volatility_pct_1h: number
           id: boolean
           market_rate_manual_fallback: boolean
           market_rate_refresh_minutes: number
@@ -107,6 +112,11 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          alert_drop_pct_15min?: number
+          alert_near_cost_pct?: number
+          alert_rise_pct_15min?: number
+          alert_stale_minutes?: number
+          alert_volatility_pct_1h?: number
           id?: boolean
           market_rate_manual_fallback?: boolean
           market_rate_refresh_minutes?: number
@@ -115,6 +125,11 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          alert_drop_pct_15min?: number
+          alert_near_cost_pct?: number
+          alert_rise_pct_15min?: number
+          alert_stale_minutes?: number
+          alert_volatility_pct_1h?: number
           id?: boolean
           market_rate_manual_fallback?: boolean
           market_rate_refresh_minutes?: number
@@ -215,13 +230,22 @@ export type Database = {
           final_deposit_account_id: string | null
           id: string
           notes: string | null
+          rate_difference: number | null
+          rate_difference_percent: number | null
           reason: Database["public"]["Enums"]["brought_in_reason"]
+          reference_buy_rate: number | null
+          reference_currency: string | null
+          reference_mid_rate: number | null
+          reference_rate_source: string | null
+          reference_rate_time: string | null
+          reference_sell_rate: number | null
           sender_account_name: string | null
           sender_account_number: string | null
           sender_bank_name: string | null
           source_location_label: string | null
           source_name: string | null
           status: string
+          transaction_rate: number | null
           updated_at: string
         }
         Insert: {
@@ -245,13 +269,22 @@ export type Database = {
           final_deposit_account_id?: string | null
           id?: string
           notes?: string | null
+          rate_difference?: number | null
+          rate_difference_percent?: number | null
           reason?: Database["public"]["Enums"]["brought_in_reason"]
+          reference_buy_rate?: number | null
+          reference_currency?: string | null
+          reference_mid_rate?: number | null
+          reference_rate_source?: string | null
+          reference_rate_time?: string | null
+          reference_sell_rate?: number | null
           sender_account_name?: string | null
           sender_account_number?: string | null
           sender_bank_name?: string | null
           source_location_label?: string | null
           source_name?: string | null
           status?: string
+          transaction_rate?: number | null
           updated_at?: string
         }
         Update: {
@@ -275,13 +308,22 @@ export type Database = {
           final_deposit_account_id?: string | null
           id?: string
           notes?: string | null
+          rate_difference?: number | null
+          rate_difference_percent?: number | null
           reason?: Database["public"]["Enums"]["brought_in_reason"]
+          reference_buy_rate?: number | null
+          reference_currency?: string | null
+          reference_mid_rate?: number | null
+          reference_rate_source?: string | null
+          reference_rate_time?: string | null
+          reference_sell_rate?: number | null
           sender_account_name?: string | null
           sender_account_number?: string | null
           sender_bank_name?: string | null
           source_location_label?: string | null
           source_name?: string | null
           status?: string
+          transaction_rate?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -368,9 +410,18 @@ export type Database = {
           paid_amount: number
           paid_currency: string
           paid_from_account_id: string
+          rate_difference: number | null
+          rate_difference_percent: number | null
           received_into_account_id: string
+          reference_buy_rate: number | null
+          reference_currency: string | null
+          reference_mid_rate: number | null
+          reference_rate_source: string | null
+          reference_rate_time: string | null
+          reference_sell_rate: number | null
           settlement_status: Database["public"]["Enums"]["settlement_status"]
           trade_cycle_id: string | null
+          transaction_rate: number | null
           txn_owner: Database["public"]["Enums"]["txn_owner"]
           updated_at: string
         }
@@ -398,9 +449,18 @@ export type Database = {
           paid_amount: number
           paid_currency: string
           paid_from_account_id: string
+          rate_difference?: number | null
+          rate_difference_percent?: number | null
           received_into_account_id: string
+          reference_buy_rate?: number | null
+          reference_currency?: string | null
+          reference_mid_rate?: number | null
+          reference_rate_source?: string | null
+          reference_rate_time?: string | null
+          reference_sell_rate?: number | null
           settlement_status?: Database["public"]["Enums"]["settlement_status"]
           trade_cycle_id?: string | null
+          transaction_rate?: number | null
           txn_owner?: Database["public"]["Enums"]["txn_owner"]
           updated_at?: string
         }
@@ -428,9 +488,18 @@ export type Database = {
           paid_amount?: number
           paid_currency?: string
           paid_from_account_id?: string
+          rate_difference?: number | null
+          rate_difference_percent?: number | null
           received_into_account_id?: string
+          reference_buy_rate?: number | null
+          reference_currency?: string | null
+          reference_mid_rate?: number | null
+          reference_rate_source?: string | null
+          reference_rate_time?: string | null
+          reference_sell_rate?: number | null
           settlement_status?: Database["public"]["Enums"]["settlement_status"]
           trade_cycle_id?: string | null
+          transaction_rate?: number | null
           txn_owner?: Database["public"]["Enums"]["txn_owner"]
           updated_at?: string
         }
@@ -1245,6 +1314,48 @@ export type Database = {
           },
         ]
       }
+      market_notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          currency: string | null
+          id: string
+          kind: string
+          metadata: Json | null
+          read_at: string | null
+          ref_id: string | null
+          ref_type: string | null
+          severity: string
+          title: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          currency?: string | null
+          id?: string
+          kind: string
+          metadata?: Json | null
+          read_at?: string | null
+          ref_id?: string | null
+          ref_type?: string | null
+          severity?: string
+          title: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          currency?: string | null
+          id?: string
+          kind?: string
+          metadata?: Json | null
+          read_at?: string | null
+          ref_id?: string | null
+          ref_type?: string | null
+          severity?: string
+          title?: string
+        }
+        Relationships: []
+      }
       market_rate_fetches: {
         Row: {
           currencies: Json | null
@@ -1639,15 +1750,24 @@ export type Database = {
           money_location: Database["public"]["Enums"]["money_location"] | null
           notes: string | null
           payment_difference_reason: string | null
+          rate_difference: number | null
+          rate_difference_percent: number | null
           received_amount: number
           received_currency: string
           received_into_account_id: string | null
+          reference_buy_rate: number | null
+          reference_currency: string | null
+          reference_mid_rate: number | null
+          reference_rate_source: string | null
+          reference_rate_time: string | null
+          reference_sell_rate: number | null
           sell_rate: number
           settlement_status: Database["public"]["Enums"]["settlement_status"]
           sold_amount: number
           sold_currency: string
           sold_from_account_id: string
           trade_cycle_id: string | null
+          transaction_rate: number | null
           updated_at: string
         }
         Insert: {
@@ -1690,15 +1810,24 @@ export type Database = {
           money_location?: Database["public"]["Enums"]["money_location"] | null
           notes?: string | null
           payment_difference_reason?: string | null
+          rate_difference?: number | null
+          rate_difference_percent?: number | null
           received_amount: number
           received_currency: string
           received_into_account_id?: string | null
+          reference_buy_rate?: number | null
+          reference_currency?: string | null
+          reference_mid_rate?: number | null
+          reference_rate_source?: string | null
+          reference_rate_time?: string | null
+          reference_sell_rate?: number | null
           sell_rate: number
           settlement_status?: Database["public"]["Enums"]["settlement_status"]
           sold_amount: number
           sold_currency: string
           sold_from_account_id: string
           trade_cycle_id?: string | null
+          transaction_rate?: number | null
           updated_at?: string
         }
         Update: {
@@ -1741,15 +1870,24 @@ export type Database = {
           money_location?: Database["public"]["Enums"]["money_location"] | null
           notes?: string | null
           payment_difference_reason?: string | null
+          rate_difference?: number | null
+          rate_difference_percent?: number | null
           received_amount?: number
           received_currency?: string
           received_into_account_id?: string | null
+          reference_buy_rate?: number | null
+          reference_currency?: string | null
+          reference_mid_rate?: number | null
+          reference_rate_source?: string | null
+          reference_rate_time?: string | null
+          reference_sell_rate?: number | null
           sell_rate?: number
           settlement_status?: Database["public"]["Enums"]["settlement_status"]
           sold_amount?: number
           sold_currency?: string
           sold_from_account_id?: string
           trade_cycle_id?: string | null
+          transaction_rate?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -1923,6 +2061,12 @@ export type Database = {
           realized_profit: number
           realized_profit_currency: string | null
           received_profit: number | null
+          reference_buy_rate: number | null
+          reference_currency: string | null
+          reference_mid_rate: number | null
+          reference_rate_source: string | null
+          reference_rate_time: string | null
+          reference_sell_rate: number | null
           related_expenses: number | null
           sell_rate: number | null
           status: Database["public"]["Enums"]["trade_status"]
@@ -1972,6 +2116,12 @@ export type Database = {
           realized_profit?: number
           realized_profit_currency?: string | null
           received_profit?: number | null
+          reference_buy_rate?: number | null
+          reference_currency?: string | null
+          reference_mid_rate?: number | null
+          reference_rate_source?: string | null
+          reference_rate_time?: string | null
+          reference_sell_rate?: number | null
           related_expenses?: number | null
           sell_rate?: number | null
           status?: Database["public"]["Enums"]["trade_status"]
@@ -2021,6 +2171,12 @@ export type Database = {
           realized_profit?: number
           realized_profit_currency?: string | null
           received_profit?: number | null
+          reference_buy_rate?: number | null
+          reference_currency?: string | null
+          reference_mid_rate?: number | null
+          reference_rate_source?: string | null
+          reference_rate_time?: string | null
+          reference_sell_rate?: number | null
           related_expenses?: number | null
           sell_rate?: number | null
           status?: Database["public"]["Enums"]["trade_status"]
@@ -2593,6 +2749,21 @@ export type Database = {
           },
         ]
       }
+      inventory_exposure: {
+        Row: {
+          available: number | null
+          avg_cost: number | null
+          cost_ccy: string | null
+          currency: string | null
+          market_buy: number | null
+          market_fetched_at: string | null
+          market_mid: number | null
+          market_sell: number | null
+          unrealized_pl: number | null
+          unrealized_pl_pct: number | null
+        }
+        Relationships: []
+      }
       inventory_lots_view: {
         Row: {
           account_id: string | null
@@ -2645,6 +2816,24 @@ export type Database = {
             referencedColumns: ["account_id"]
           },
         ]
+      }
+      market_rate_deltas: {
+        Row: {
+          currency: string | null
+          current_buy: number | null
+          current_mid: number | null
+          current_sell: number | null
+          fetched_at: string | null
+          mid_15m: number | null
+          mid_1h: number | null
+          mid_24h: number | null
+          mid_5m: number | null
+          pct_15m: number | null
+          pct_1h: number | null
+          pct_24h: number | null
+          pct_5m: number | null
+        }
+        Relationships: []
       }
       market_rates_latest: {
         Row: {
