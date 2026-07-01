@@ -46,7 +46,6 @@ import { Route as AuthenticatedDepositsNewRouteImport } from './routes/_authenti
 import { Route as AuthenticatedCustomersIdRouteImport } from './routes/_authenticated/customers.$id'
 import { Route as AuthenticatedBroughtInNewRouteImport } from './routes/_authenticated/brought-in.new'
 import { Route as AuthenticatedAccountsNewRouteImport } from './routes/_authenticated/accounts.new'
-import { Route as ApiPublicHooksFetchMarketRatesRouteImport } from './routes/api/public/hooks/fetch-market-rates'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -247,12 +246,6 @@ const AuthenticatedAccountsNewRoute =
     path: '/new',
     getParentRoute: () => AuthenticatedAccountsRoute,
   } as any)
-const ApiPublicHooksFetchMarketRatesRoute =
-  ApiPublicHooksFetchMarketRatesRouteImport.update({
-    id: '/api/public/hooks/fetch-market-rates',
-    path: '/api/public/hooks/fetch-market-rates',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -291,7 +284,6 @@ export interface FileRoutesByFullPath {
   '/customers/': typeof AuthenticatedCustomersIndexRoute
   '/deposits/': typeof AuthenticatedDepositsIndexRoute
   '/trades/': typeof AuthenticatedTradesIndexRoute
-  '/api/public/hooks/fetch-market-rates': typeof ApiPublicHooksFetchMarketRatesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -326,7 +318,6 @@ export interface FileRoutesByTo {
   '/customers': typeof AuthenticatedCustomersIndexRoute
   '/deposits': typeof AuthenticatedDepositsIndexRoute
   '/trades': typeof AuthenticatedTradesIndexRoute
-  '/api/public/hooks/fetch-market-rates': typeof ApiPublicHooksFetchMarketRatesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -367,7 +358,6 @@ export interface FileRoutesById {
   '/_authenticated/customers/': typeof AuthenticatedCustomersIndexRoute
   '/_authenticated/deposits/': typeof AuthenticatedDepositsIndexRoute
   '/_authenticated/trades/': typeof AuthenticatedTradesIndexRoute
-  '/api/public/hooks/fetch-market-rates': typeof ApiPublicHooksFetchMarketRatesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -408,7 +398,6 @@ export interface FileRouteTypes {
     | '/customers/'
     | '/deposits/'
     | '/trades/'
-    | '/api/public/hooks/fetch-market-rates'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -443,7 +432,6 @@ export interface FileRouteTypes {
     | '/customers'
     | '/deposits'
     | '/trades'
-    | '/api/public/hooks/fetch-market-rates'
   id:
     | '__root__'
     | '/'
@@ -483,14 +471,12 @@ export interface FileRouteTypes {
     | '/_authenticated/customers/'
     | '/_authenticated/deposits/'
     | '/_authenticated/trades/'
-    | '/api/public/hooks/fetch-market-rates'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
-  ApiPublicHooksFetchMarketRatesRoute: typeof ApiPublicHooksFetchMarketRatesRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -754,13 +740,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAccountsNewRouteImport
       parentRoute: typeof AuthenticatedAccountsRoute
     }
-    '/api/public/hooks/fetch-market-rates': {
-      id: '/api/public/hooks/fetch-market-rates'
-      path: '/api/public/hooks/fetch-market-rates'
-      fullPath: '/api/public/hooks/fetch-market-rates'
-      preLoaderRoute: typeof ApiPublicHooksFetchMarketRatesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -888,7 +867,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
-  ApiPublicHooksFetchMarketRatesRoute: ApiPublicHooksFetchMarketRatesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
