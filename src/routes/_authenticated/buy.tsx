@@ -18,6 +18,7 @@ import { Plus, FileText } from "lucide-react";
 import { SettlementStatusBadge } from "@/components/settlement-status-badge";
 import { TxnDetailDialog } from "@/components/txn-detail-dialog";
 import { Badge } from "@/components/ui/badge";
+import { RecordActions } from "@/components/record-actions";
 
 export const Route = createFileRoute("/_authenticated/buy")({ component: Page });
 
@@ -167,9 +168,26 @@ function Page() {
                 <TableCell className="capitalize">{r.owner}</TableCell>
                 <TableCell><SettlementStatusBadge value={r.settlement_status} /></TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="sm" onClick={() => setDetailRow(r)}>
-                    <FileText className="h-4 w-4 mr-1" /> Manage
-                  </Button>
+                  <div className="flex items-center justify-end gap-1">
+                    <Button variant="ghost" size="sm" onClick={() => setDetailRow(r)}>
+                      <FileText className="h-4 w-4 mr-1" /> Manage
+                    </Button>
+                    <RecordActions
+                      table="buy_transactions"
+                      row={r}
+                      onView={() => setDetailRow(r)}
+                      invalidateKeys={["buys"]}
+                      fields={[
+                        { key: "entry_date", label: "Date", type: "date" },
+                        { key: "bought_amount", label: "Bought amount", type: "number", step: "0.0001" },
+                        { key: "buy_rate", label: "Buy rate", type: "number", step: "0.00000001" },
+                        { key: "bought_currency", label: "Bought currency", type: "select", options: CURRENCIES.map((c: string) => ({ value: c, label: c })) },
+                        { key: "paid_currency", label: "Paid currency", type: "select", options: CURRENCIES.map((c: string) => ({ value: c, label: c })) },
+                        { key: "paid_amount", label: "Paid amount", type: "number", step: "0.0001" },
+                        { key: "notes", label: "Notes", type: "textarea" },
+                      ]}
+                    />
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
