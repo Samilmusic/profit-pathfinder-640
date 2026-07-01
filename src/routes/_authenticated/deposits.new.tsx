@@ -272,6 +272,21 @@ function NewDepositPage() {
               {(customers.data ?? []).map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
             </SelectContent>
           </Select>
+          <CustomerBankAccountPicker
+            customerId={customerId || null}
+            currency={currency}
+            value={customerBankAccountId || null}
+            label="Sender bank account (customer's saved banks)"
+            onChange={(id, row) => {
+              setCustomerBankAccountId(id ?? "");
+              if (row) {
+                setSenderBank(row.bank_name || "");
+                setSenderName(row.holder_name || "");
+                setSenderAccount(row.account_number || "");
+                setIban(row.iban || row.card_number || "");
+              }
+            }}
+          />
         </section>
 
         {/* Currency + Amount */}
