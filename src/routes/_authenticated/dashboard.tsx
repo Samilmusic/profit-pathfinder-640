@@ -30,20 +30,6 @@ const CURRENCY_DOT: Record<string, string> = {
   GBP: "bg-violet-500", EUR: "bg-blue-500", USDT: "bg-teal-500",
 };
 
-const quickActions = [
-  { to: "/brought-in", label: "Add Brought-In", icon: ArrowDownToLine },
-  { to: "/buy", label: "New Buy", icon: ShoppingCart },
-  { to: "/sell", label: "New Sell", icon: TrendingUp },
-  { to: "/expenses", label: "Add Expense", icon: Receipt },
-  { to: "/transfers", label: "Transfer", icon: ArrowLeftRight },
-  { to: "/customers", label: "Add Customer", icon: Users },
-  { to: "/accounts", label: "Add Account", icon: WalletIcon },
-  { to: "/deposits", label: "Customer Deposit", icon: ArrowUpFromLine },
-  { to: "/payment-orders", label: "Payment Order", icon: Send },
-  { to: "/wallets", label: "Customer Wallets", icon: Landmark },
-  { to: "/trust", label: "Trust vs Company", icon: ShieldCheck },
-] as const;
-
 function DashboardPage() {
   const today = new Date().toISOString().slice(0, 10);
   const [openCurrency, setOpenCurrency] = useState<string | null>(null);
