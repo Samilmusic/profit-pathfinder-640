@@ -149,6 +149,18 @@ function Page() {
                     <SelectContent>{(customers.data ?? []).map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                   </Select>
                 </F>
+                <div className="md:col-span-2">
+                  <CustomerBankAccountPicker
+                    customerId={f.customer_id || null}
+                    currency={f.received_currency}
+                    value={f.customer_bank_account_id || null}
+                    onChange={(id, row) => setF((prev) => ({
+                      ...prev,
+                      customer_bank_account_id: id ?? "",
+                      customer_account_ref: row ? `${row.bank_name} ${row.currency} ${maskAccount(row.card_number || row.account_number || row.iban) || ""}`.trim() : prev.customer_account_ref,
+                    }))}
+                  />
+                </div>
                 <F label="Sold currency">
                   <Select value={f.sold_currency} onValueChange={(v) => setF({ ...f, sold_currency: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
