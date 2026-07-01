@@ -226,6 +226,7 @@ export type Database = {
           currency: string
           deleted_at: string | null
           deposit_account_id: string
+          doc_no: string | null
           entry_date: string
           final_deposit_account_id: string | null
           id: string
@@ -265,6 +266,7 @@ export type Database = {
           currency: string
           deleted_at?: string | null
           deposit_account_id: string
+          doc_no?: string | null
           entry_date?: string
           final_deposit_account_id?: string | null
           id?: string
@@ -304,6 +306,7 @@ export type Database = {
           currency?: string
           deleted_at?: string | null
           deposit_account_id?: string
+          doc_no?: string | null
           entry_date?: string
           final_deposit_account_id?: string | null
           id?: string
@@ -401,6 +404,7 @@ export type Database = {
             | null
           customer_id: string | null
           deleted_at: string | null
+          doc_no: string | null
           due_date: string | null
           entry_date: string
           id: string
@@ -440,6 +444,7 @@ export type Database = {
             | null
           customer_id?: string | null
           deleted_at?: string | null
+          doc_no?: string | null
           due_date?: string | null
           entry_date?: string
           id?: string
@@ -479,6 +484,7 @@ export type Database = {
             | null
           customer_id?: string | null
           deleted_at?: string | null
+          doc_no?: string | null
           due_date?: string | null
           entry_date?: string
           id?: string
@@ -897,6 +903,24 @@ export type Database = {
         }
         Relationships: []
       }
+      doc_counters: {
+        Row: {
+          next_val: number
+          prefix: string
+          year: number
+        }
+        Insert: {
+          next_val?: number
+          prefix: string
+          year: number
+        }
+        Update: {
+          next_val?: number
+          prefix?: string
+          year?: number
+        }
+        Relationships: []
+      }
       documents: {
         Row: {
           created_at: string
@@ -950,6 +974,7 @@ export type Database = {
           created_by: string | null
           currency: string
           deleted_at: string | null
+          doc_no: string | null
           entry_date: string
           expense_kind: Database["public"]["Enums"]["expense_kind"] | null
           id: string
@@ -980,6 +1005,7 @@ export type Database = {
           created_by?: string | null
           currency: string
           deleted_at?: string | null
+          doc_no?: string | null
           entry_date?: string
           expense_kind?: Database["public"]["Enums"]["expense_kind"] | null
           id?: string
@@ -1010,6 +1036,7 @@ export type Database = {
           created_by?: string | null
           currency?: string
           deleted_at?: string | null
+          doc_no?: string | null
           entry_date?: string
           expense_kind?: Database["public"]["Enums"]["expense_kind"] | null
           id?: string
@@ -1739,6 +1766,7 @@ export type Database = {
           delivered_to: string | null
           delivery_method: string | null
           delivery_notes: string | null
+          doc_no: string | null
           due_date: string | null
           entry_date: string
           expected_payment_date: string | null
@@ -1799,6 +1827,7 @@ export type Database = {
           delivered_to?: string | null
           delivery_method?: string | null
           delivery_notes?: string | null
+          doc_no?: string | null
           due_date?: string | null
           entry_date?: string
           expected_payment_date?: string | null
@@ -1859,6 +1888,7 @@ export type Database = {
           delivered_to?: string | null
           delivery_method?: string | null
           delivery_notes?: string | null
+          doc_no?: string | null
           due_date?: string | null
           entry_date?: string
           expected_payment_date?: string | null
@@ -3280,6 +3310,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      next_doc_no: { Args: { _prefix: string; _year: number }; Returns: string }
       recompute_cycle_profit: {
         Args: { _cycle_id: string }
         Returns: undefined
