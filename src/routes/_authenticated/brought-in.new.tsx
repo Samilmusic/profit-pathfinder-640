@@ -14,6 +14,7 @@ import { NumberInput } from "@/components/number-input";
 import { CURRENCIES, fmt } from "@/lib/exchange";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, Camera, CheckCircle2, ChevronDown, Image as ImageIcon, Paperclip, Upload, X } from "lucide-react";
+import { CopyButton } from "@/components/copy-button";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 
@@ -209,7 +210,10 @@ function NewBroughtInPage() {
             </div>
           </div>
           <h1 className="text-2xl font-bold">Brought-in saved</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Transaction #{success.id.slice(0, 8).toUpperCase()}</p>
+          <p className="mt-1 text-sm text-muted-foreground inline-flex items-center gap-1">
+            Transaction #{success.id.slice(0, 8).toUpperCase()}
+            <CopyButton value={success.id} label="Transaction ID copied" title="Copy transaction ID" />
+          </p>
           {success.balance !== null && (
             <Card className="mt-6 w-full">
               <CardContent className="p-4">
