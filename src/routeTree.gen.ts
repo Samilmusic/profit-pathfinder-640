@@ -31,10 +31,10 @@ import { Route as AuthenticatedDailyClosingRouteImport } from './routes/_authent
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedCommandCenterRouteImport } from './routes/_authenticated/command-center'
 import { Route as AuthenticatedBuyRouteImport } from './routes/_authenticated/buy'
-import { Route as AuthenticatedBroughtInRouteImport } from './routes/_authenticated/brought-in'
 import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
 import { Route as AuthenticatedAliInvestorRouteImport } from './routes/_authenticated/ali-investor'
 import { Route as AuthenticatedAccountsRouteImport } from './routes/_authenticated/accounts'
+import { Route as AuthenticatedBroughtInIndexRouteImport } from './routes/_authenticated/brought-in.index'
 import { Route as AuthenticatedTradesIdRouteImport } from './routes/_authenticated/trades.$id'
 import { Route as AuthenticatedDepositsNewRouteImport } from './routes/_authenticated/deposits.new'
 import { Route as AuthenticatedBroughtInNewRouteImport } from './routes/_authenticated/brought-in.new'
@@ -153,11 +153,6 @@ const AuthenticatedBuyRoute = AuthenticatedBuyRouteImport.update({
   path: '/buy',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedBroughtInRoute = AuthenticatedBroughtInRouteImport.update({
-  id: '/brought-in',
-  path: '/brought-in',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedAuditRoute = AuthenticatedAuditRouteImport.update({
   id: '/audit',
   path: '/audit',
@@ -174,6 +169,12 @@ const AuthenticatedAccountsRoute = AuthenticatedAccountsRouteImport.update({
   path: '/accounts',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedBroughtInIndexRoute =
+  AuthenticatedBroughtInIndexRouteImport.update({
+    id: '/brought-in/',
+    path: '/brought-in/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedTradesIdRoute = AuthenticatedTradesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -187,9 +188,9 @@ const AuthenticatedDepositsNewRoute =
   } as any)
 const AuthenticatedBroughtInNewRoute =
   AuthenticatedBroughtInNewRouteImport.update({
-    id: '/new',
-    path: '/new',
-    getParentRoute: () => AuthenticatedBroughtInRoute,
+    id: '/brought-in/new',
+    path: '/brought-in/new',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -198,7 +199,6 @@ export interface FileRoutesByFullPath {
   '/accounts': typeof AuthenticatedAccountsRoute
   '/ali-investor': typeof AuthenticatedAliInvestorRoute
   '/audit': typeof AuthenticatedAuditRoute
-  '/brought-in': typeof AuthenticatedBroughtInRouteWithChildren
   '/buy': typeof AuthenticatedBuyRoute
   '/command-center': typeof AuthenticatedCommandCenterRoute
   '/customers': typeof AuthenticatedCustomersRoute
@@ -221,6 +221,7 @@ export interface FileRoutesByFullPath {
   '/brought-in/new': typeof AuthenticatedBroughtInNewRoute
   '/deposits/new': typeof AuthenticatedDepositsNewRoute
   '/trades/$id': typeof AuthenticatedTradesIdRoute
+  '/brought-in/': typeof AuthenticatedBroughtInIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -228,7 +229,6 @@ export interface FileRoutesByTo {
   '/accounts': typeof AuthenticatedAccountsRoute
   '/ali-investor': typeof AuthenticatedAliInvestorRoute
   '/audit': typeof AuthenticatedAuditRoute
-  '/brought-in': typeof AuthenticatedBroughtInRouteWithChildren
   '/buy': typeof AuthenticatedBuyRoute
   '/command-center': typeof AuthenticatedCommandCenterRoute
   '/customers': typeof AuthenticatedCustomersRoute
@@ -251,6 +251,7 @@ export interface FileRoutesByTo {
   '/brought-in/new': typeof AuthenticatedBroughtInNewRoute
   '/deposits/new': typeof AuthenticatedDepositsNewRoute
   '/trades/$id': typeof AuthenticatedTradesIdRoute
+  '/brought-in': typeof AuthenticatedBroughtInIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -260,7 +261,6 @@ export interface FileRoutesById {
   '/_authenticated/accounts': typeof AuthenticatedAccountsRoute
   '/_authenticated/ali-investor': typeof AuthenticatedAliInvestorRoute
   '/_authenticated/audit': typeof AuthenticatedAuditRoute
-  '/_authenticated/brought-in': typeof AuthenticatedBroughtInRouteWithChildren
   '/_authenticated/buy': typeof AuthenticatedBuyRoute
   '/_authenticated/command-center': typeof AuthenticatedCommandCenterRoute
   '/_authenticated/customers': typeof AuthenticatedCustomersRoute
@@ -283,6 +283,7 @@ export interface FileRoutesById {
   '/_authenticated/brought-in/new': typeof AuthenticatedBroughtInNewRoute
   '/_authenticated/deposits/new': typeof AuthenticatedDepositsNewRoute
   '/_authenticated/trades/$id': typeof AuthenticatedTradesIdRoute
+  '/_authenticated/brought-in/': typeof AuthenticatedBroughtInIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -292,7 +293,6 @@ export interface FileRouteTypes {
     | '/accounts'
     | '/ali-investor'
     | '/audit'
-    | '/brought-in'
     | '/buy'
     | '/command-center'
     | '/customers'
@@ -315,6 +315,7 @@ export interface FileRouteTypes {
     | '/brought-in/new'
     | '/deposits/new'
     | '/trades/$id'
+    | '/brought-in/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -322,7 +323,6 @@ export interface FileRouteTypes {
     | '/accounts'
     | '/ali-investor'
     | '/audit'
-    | '/brought-in'
     | '/buy'
     | '/command-center'
     | '/customers'
@@ -345,6 +345,7 @@ export interface FileRouteTypes {
     | '/brought-in/new'
     | '/deposits/new'
     | '/trades/$id'
+    | '/brought-in'
   id:
     | '__root__'
     | '/'
@@ -353,7 +354,6 @@ export interface FileRouteTypes {
     | '/_authenticated/accounts'
     | '/_authenticated/ali-investor'
     | '/_authenticated/audit'
-    | '/_authenticated/brought-in'
     | '/_authenticated/buy'
     | '/_authenticated/command-center'
     | '/_authenticated/customers'
@@ -376,6 +376,7 @@ export interface FileRouteTypes {
     | '/_authenticated/brought-in/new'
     | '/_authenticated/deposits/new'
     | '/_authenticated/trades/$id'
+    | '/_authenticated/brought-in/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -540,13 +541,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBuyRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/brought-in': {
-      id: '/_authenticated/brought-in'
-      path: '/brought-in'
-      fullPath: '/brought-in'
-      preLoaderRoute: typeof AuthenticatedBroughtInRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/audit': {
       id: '/_authenticated/audit'
       path: '/audit'
@@ -568,6 +562,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAccountsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/brought-in/': {
+      id: '/_authenticated/brought-in/'
+      path: '/brought-in'
+      fullPath: '/brought-in/'
+      preLoaderRoute: typeof AuthenticatedBroughtInIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/trades/$id': {
       id: '/_authenticated/trades/$id'
       path: '/$id'
@@ -584,27 +585,13 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/brought-in/new': {
       id: '/_authenticated/brought-in/new'
-      path: '/new'
+      path: '/brought-in/new'
       fullPath: '/brought-in/new'
       preLoaderRoute: typeof AuthenticatedBroughtInNewRouteImport
-      parentRoute: typeof AuthenticatedBroughtInRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
-
-interface AuthenticatedBroughtInRouteChildren {
-  AuthenticatedBroughtInNewRoute: typeof AuthenticatedBroughtInNewRoute
-}
-
-const AuthenticatedBroughtInRouteChildren: AuthenticatedBroughtInRouteChildren =
-  {
-    AuthenticatedBroughtInNewRoute: AuthenticatedBroughtInNewRoute,
-  }
-
-const AuthenticatedBroughtInRouteWithChildren =
-  AuthenticatedBroughtInRoute._addFileChildren(
-    AuthenticatedBroughtInRouteChildren,
-  )
 
 interface AuthenticatedDepositsRouteChildren {
   AuthenticatedDepositsNewRoute: typeof AuthenticatedDepositsNewRoute
@@ -634,7 +621,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccountsRoute: typeof AuthenticatedAccountsRoute
   AuthenticatedAliInvestorRoute: typeof AuthenticatedAliInvestorRoute
   AuthenticatedAuditRoute: typeof AuthenticatedAuditRoute
-  AuthenticatedBroughtInRoute: typeof AuthenticatedBroughtInRouteWithChildren
   AuthenticatedBuyRoute: typeof AuthenticatedBuyRoute
   AuthenticatedCommandCenterRoute: typeof AuthenticatedCommandCenterRoute
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRoute
@@ -654,13 +640,14 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedTransfersRoute: typeof AuthenticatedTransfersRoute
   AuthenticatedTrustRoute: typeof AuthenticatedTrustRoute
   AuthenticatedWalletsRoute: typeof AuthenticatedWalletsRoute
+  AuthenticatedBroughtInNewRoute: typeof AuthenticatedBroughtInNewRoute
+  AuthenticatedBroughtInIndexRoute: typeof AuthenticatedBroughtInIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAccountsRoute: AuthenticatedAccountsRoute,
   AuthenticatedAliInvestorRoute: AuthenticatedAliInvestorRoute,
   AuthenticatedAuditRoute: AuthenticatedAuditRoute,
-  AuthenticatedBroughtInRoute: AuthenticatedBroughtInRouteWithChildren,
   AuthenticatedBuyRoute: AuthenticatedBuyRoute,
   AuthenticatedCommandCenterRoute: AuthenticatedCommandCenterRoute,
   AuthenticatedCustomersRoute: AuthenticatedCustomersRoute,
@@ -680,6 +667,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedTransfersRoute: AuthenticatedTransfersRoute,
   AuthenticatedTrustRoute: AuthenticatedTrustRoute,
   AuthenticatedWalletsRoute: AuthenticatedWalletsRoute,
+  AuthenticatedBroughtInNewRoute: AuthenticatedBroughtInNewRoute,
+  AuthenticatedBroughtInIndexRoute: AuthenticatedBroughtInIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -693,13 +682,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { fmt } from "@/lib/exchange";
 import { Plus } from "lucide-react";
 
-export const Route = createFileRoute("/_authenticated/brought-in")({ component: Page });
+export const Route = createFileRoute("/_authenticated/brought-in/")({ component: Page });
 
 function Page() {
   const q = useQuery({
