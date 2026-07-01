@@ -35,6 +35,7 @@ import { Route as AuthenticatedCommandCenterRouteImport } from './routes/_authen
 import { Route as AuthenticatedBuyRouteImport } from './routes/_authenticated/buy'
 import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
 import { Route as AuthenticatedAliInvestorRouteImport } from './routes/_authenticated/ali-investor'
+import { Route as AuthenticatedAiBrainRouteImport } from './routes/_authenticated/ai-brain'
 import { Route as AuthenticatedAccountsRouteImport } from './routes/_authenticated/accounts'
 import { Route as AuthenticatedTradesIndexRouteImport } from './routes/_authenticated/trades.index'
 import { Route as AuthenticatedDepositsIndexRouteImport } from './routes/_authenticated/deposits.index'
@@ -185,6 +186,11 @@ const AuthenticatedAliInvestorRoute =
     path: '/ali-investor',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAiBrainRoute = AuthenticatedAiBrainRouteImport.update({
+  id: '/ai-brain',
+  path: '/ai-brain',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAccountsRoute = AuthenticatedAccountsRouteImport.update({
   id: '/accounts',
   path: '/accounts',
@@ -265,6 +271,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/accounts': typeof AuthenticatedAccountsRouteWithChildren
+  '/ai-brain': typeof AuthenticatedAiBrainRoute
   '/ali-investor': typeof AuthenticatedAliInvestorRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/buy': typeof AuthenticatedBuyRoute
@@ -304,6 +311,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/ai-brain': typeof AuthenticatedAiBrainRoute
   '/ali-investor': typeof AuthenticatedAliInvestorRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/buy': typeof AuthenticatedBuyRoute
@@ -343,6 +351,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/accounts': typeof AuthenticatedAccountsRouteWithChildren
+  '/_authenticated/ai-brain': typeof AuthenticatedAiBrainRoute
   '/_authenticated/ali-investor': typeof AuthenticatedAliInvestorRoute
   '/_authenticated/audit': typeof AuthenticatedAuditRoute
   '/_authenticated/buy': typeof AuthenticatedBuyRoute
@@ -385,6 +394,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/accounts'
+    | '/ai-brain'
     | '/ali-investor'
     | '/audit'
     | '/buy'
@@ -424,6 +434,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/ai-brain'
     | '/ali-investor'
     | '/audit'
     | '/buy'
@@ -462,6 +473,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/accounts'
+    | '/_authenticated/ai-brain'
     | '/_authenticated/ali-investor'
     | '/_authenticated/audit'
     | '/_authenticated/buy'
@@ -690,6 +702,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAliInvestorRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/ai-brain': {
+      id: '/_authenticated/ai-brain'
+      path: '/ai-brain'
+      fullPath: '/ai-brain'
+      preLoaderRoute: typeof AuthenticatedAiBrainRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/accounts': {
       id: '/_authenticated/accounts'
       path: '/accounts'
@@ -845,6 +864,7 @@ const AuthenticatedTradesRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccountsRoute: typeof AuthenticatedAccountsRouteWithChildren
+  AuthenticatedAiBrainRoute: typeof AuthenticatedAiBrainRoute
   AuthenticatedAliInvestorRoute: typeof AuthenticatedAliInvestorRoute
   AuthenticatedAuditRoute: typeof AuthenticatedAuditRoute
   AuthenticatedBuyRoute: typeof AuthenticatedBuyRoute
@@ -875,6 +895,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAccountsRoute: AuthenticatedAccountsRouteWithChildren,
+  AuthenticatedAiBrainRoute: AuthenticatedAiBrainRoute,
   AuthenticatedAliInvestorRoute: AuthenticatedAliInvestorRoute,
   AuthenticatedAuditRoute: AuthenticatedAuditRoute,
   AuthenticatedBuyRoute: AuthenticatedBuyRoute,
