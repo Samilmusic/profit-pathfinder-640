@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { ACCOUNT_TYPES, CURRENCIES, OWNERS, fmt } from "@/lib/exchange";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
+import { RecordActions } from "@/components/record-actions";
 
 export const Route = createFileRoute("/_authenticated/accounts")({ component: AccountsPage });
 
