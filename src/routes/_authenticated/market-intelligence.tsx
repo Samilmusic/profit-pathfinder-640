@@ -210,7 +210,7 @@ function MarketIntelligencePage() {
       <PageHeader
         title="Market Intelligence"
         description="Live rates, movement alerts, inventory exposure & open-deal risk"
-        action={
+        actions={
           <Button size="sm" variant="outline" onClick={() => refresh.mutate()} disabled={refresh.isPending}>
             <RefreshCw className={cn("h-4 w-4 mr-2", refresh.isPending && "animate-spin")} />
             Refresh
