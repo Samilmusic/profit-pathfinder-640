@@ -35,6 +35,7 @@ import { Route as AuthenticatedBroughtInRouteImport } from './routes/_authentica
 import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
 import { Route as AuthenticatedAliInvestorRouteImport } from './routes/_authenticated/ali-investor'
 import { Route as AuthenticatedAccountsRouteImport } from './routes/_authenticated/accounts'
+import { Route as AuthenticatedTradesIdRouteImport } from './routes/_authenticated/trades.$id'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -171,6 +172,11 @@ const AuthenticatedAccountsRoute = AuthenticatedAccountsRouteImport.update({
   path: '/accounts',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedTradesIdRoute = AuthenticatedTradesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AuthenticatedTradesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -194,10 +200,11 @@ export interface FileRoutesByFullPath {
   '/roles': typeof AuthenticatedRolesRoute
   '/sell': typeof AuthenticatedSellRoute
   '/statements': typeof AuthenticatedStatementsRoute
-  '/trades': typeof AuthenticatedTradesRoute
+  '/trades': typeof AuthenticatedTradesRouteWithChildren
   '/transfers': typeof AuthenticatedTransfersRoute
   '/trust': typeof AuthenticatedTrustRoute
   '/wallets': typeof AuthenticatedWalletsRoute
+  '/trades/$id': typeof AuthenticatedTradesIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -221,10 +228,11 @@ export interface FileRoutesByTo {
   '/roles': typeof AuthenticatedRolesRoute
   '/sell': typeof AuthenticatedSellRoute
   '/statements': typeof AuthenticatedStatementsRoute
-  '/trades': typeof AuthenticatedTradesRoute
+  '/trades': typeof AuthenticatedTradesRouteWithChildren
   '/transfers': typeof AuthenticatedTransfersRoute
   '/trust': typeof AuthenticatedTrustRoute
   '/wallets': typeof AuthenticatedWalletsRoute
+  '/trades/$id': typeof AuthenticatedTradesIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -250,10 +258,11 @@ export interface FileRoutesById {
   '/_authenticated/roles': typeof AuthenticatedRolesRoute
   '/_authenticated/sell': typeof AuthenticatedSellRoute
   '/_authenticated/statements': typeof AuthenticatedStatementsRoute
-  '/_authenticated/trades': typeof AuthenticatedTradesRoute
+  '/_authenticated/trades': typeof AuthenticatedTradesRouteWithChildren
   '/_authenticated/transfers': typeof AuthenticatedTransfersRoute
   '/_authenticated/trust': typeof AuthenticatedTrustRoute
   '/_authenticated/wallets': typeof AuthenticatedWalletsRoute
+  '/_authenticated/trades/$id': typeof AuthenticatedTradesIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -283,6 +292,7 @@ export interface FileRouteTypes {
     | '/transfers'
     | '/trust'
     | '/wallets'
+    | '/trades/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -310,6 +320,7 @@ export interface FileRouteTypes {
     | '/transfers'
     | '/trust'
     | '/wallets'
+    | '/trades/$id'
   id:
     | '__root__'
     | '/'
@@ -338,6 +349,7 @@ export interface FileRouteTypes {
     | '/_authenticated/transfers'
     | '/_authenticated/trust'
     | '/_authenticated/wallets'
+    | '/_authenticated/trades/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -530,8 +542,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAccountsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/trades/$id': {
+      id: '/_authenticated/trades/$id'
+      path: '/$id'
+      fullPath: '/trades/$id'
+      preLoaderRoute: typeof AuthenticatedTradesIdRouteImport
+      parentRoute: typeof AuthenticatedTradesRoute
+    }
   }
 }
+
+interface AuthenticatedTradesRouteChildren {
+  AuthenticatedTradesIdRoute: typeof AuthenticatedTradesIdRoute
+}
+
+const AuthenticatedTradesRouteChildren: AuthenticatedTradesRouteChildren = {
+  AuthenticatedTradesIdRoute: AuthenticatedTradesIdRoute,
+}
+
+const AuthenticatedTradesRouteWithChildren =
+  AuthenticatedTradesRoute._addFileChildren(AuthenticatedTradesRouteChildren)
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccountsRoute: typeof AuthenticatedAccountsRoute
@@ -553,7 +583,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRolesRoute: typeof AuthenticatedRolesRoute
   AuthenticatedSellRoute: typeof AuthenticatedSellRoute
   AuthenticatedStatementsRoute: typeof AuthenticatedStatementsRoute
-  AuthenticatedTradesRoute: typeof AuthenticatedTradesRoute
+  AuthenticatedTradesRoute: typeof AuthenticatedTradesRouteWithChildren
   AuthenticatedTransfersRoute: typeof AuthenticatedTransfersRoute
   AuthenticatedTrustRoute: typeof AuthenticatedTrustRoute
   AuthenticatedWalletsRoute: typeof AuthenticatedWalletsRoute
@@ -579,7 +609,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRolesRoute: AuthenticatedRolesRoute,
   AuthenticatedSellRoute: AuthenticatedSellRoute,
   AuthenticatedStatementsRoute: AuthenticatedStatementsRoute,
-  AuthenticatedTradesRoute: AuthenticatedTradesRoute,
+  AuthenticatedTradesRoute: AuthenticatedTradesRouteWithChildren,
   AuthenticatedTransfersRoute: AuthenticatedTransfersRoute,
   AuthenticatedTrustRoute: AuthenticatedTrustRoute,
   AuthenticatedWalletsRoute: AuthenticatedWalletsRoute,
