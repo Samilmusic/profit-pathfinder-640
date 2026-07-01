@@ -29,6 +29,22 @@ const BROUGHT_BY = [
   { value: "customer", label: "Customer" },
   { value: "other", label: "Other" },
 ];
+
+/** Destination-type chips → filter for the accounts list */
+type DestFilter = (a: any, currency: string) => boolean;
+const DEST_TYPES: { key: string; label: string; match: DestFilter }[] = [
+  { key: "cash",           label: "Cash Box",         match: (a) => a.account_type === "cash" },
+  { key: "aed_bank",       label: "AED Bank",         match: (a) => a.account_type === "aed_bank" },
+  { key: "toman_bank",     label: "IRR / Toman Bank", match: (a) => a.account_type === "toman_bank" },
+  { key: "foreign_bank",   label: "Foreign Bank",     match: (a) => a.account_type === "foreign_currency" },
+  { key: "held_milad",     label: "Held by Milad",    match: (a) => a.account_type === "person_holding" && a.owner === "milad" },
+  { key: "held_ali",       label: "Held by Ali",      match: (a) => a.account_type === "person_holding" && a.owner === "ali" },
+  { key: "held_customer",  label: "Held by Customer", match: (a) => a.account_type === "person_holding" && !["milad","ali"].includes(String(a.owner)) },
+  { key: "pending",        label: "Pending Delivery", match: (a) => a.account_type === "pending_delivery" },
+  { key: "other",          label: "Other",            match: (a) => a.account_type === "other" || a.account_type === "wallet" },
+  { key: "all",            label: "All accounts",     match: () => true },
+];
+
 const REASONS = [
   { value: "capital", label: "Capital" },
   { value: "for_exchange", label: "For exchange" },
@@ -54,6 +70,7 @@ function NewBroughtInPage() {
   const [currency, setCurrency] = useState<string>(prefs.currency || "AED");
   const [amount, setAmount] = useState("");
   const [depositAccountId, setDepositAccountId] = useState<string>(prefs.deposit_account_id || "");
+  const [destType, setDestType] = useState<string>("all");
   const [notes, setNotes] = useState("");
   const [entryDate, setEntryDate] = useState(today);
 
@@ -79,10 +96,11 @@ function NewBroughtInPage() {
 
   const [success, setSuccess] = useState<null | { id: string; balance: number | null }>(null);
 
-  const filteredAccounts = useMemo(
-    () => (accounts.data ?? []).filter((a: any) => a.currency === currency && a.account_type !== "customer_wallet"),
-    [accounts.data, currency],
-  );
+  const filteredAccounts = useMemo(() => {
+    const base = (accounts.data ?? []).filter((a: any) => a.currency === currency && a.account_type !== "customer_wallet");
+    const dt = DEST_TYPES.find((d) => d.key === destType);
+    return dt ? base.filter((a: any) => dt.match(a, currency)) : base;
+  }, [accounts.data, currency, destType]);
   const finalAccounts = useMemo(
     () => (accounts.data ?? []).filter((a: any) => a.currency === convertedCurrency && a.account_type !== "customer_wallet"),
     [accounts.data, convertedCurrency],
