@@ -178,7 +178,7 @@ function NewBroughtInPage() {
   return (
     <div
       className="min-h-[100dvh] w-full bg-background"
-      style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 120px)" }}
+      style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 180px)" }}
     >
       <div className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-2xl items-center gap-2 px-4 py-3">
@@ -329,19 +329,27 @@ function NewBroughtInPage() {
 
       {/* Sticky action bar */}
       <div
-        className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 backdrop-blur"
-        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+        className="fixed inset-x-0 bottom-16 md:bottom-0 z-40 border-t bg-background/95 shadow-[0_-6px_20px_-10px_rgba(0,0,0,0.15)] backdrop-blur"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 4px)" }}
       >
-        <div className="mx-auto flex max-w-2xl items-center gap-2 px-4 py-3">
+        <div className="mx-auto flex max-w-2xl items-center gap-2 px-3 py-2">
           <Link to="/brought-in" className="shrink-0">
-            <Button variant="ghost" className="h-12">Cancel</Button>
+            <Button variant="ghost" className="h-11 px-3">Cancel</Button>
           </Link>
           <Button
-            className="h-12 flex-1"
+            variant="outline"
+            className="h-11 px-3"
+            disabled={save.isPending}
+            onClick={() => { toast.message("Draft saved locally"); savePrefs({ broughtBy, currency, deposit_account_id: depositAccountId, reason }); }}
+          >
+            Save Draft
+          </Button>
+          <Button
+            className="h-11 flex-1"
             disabled={save.isPending}
             onClick={() => save.mutate()}
           >
-            {save.isPending ? "Saving…" : "Save brought-in"}
+            {save.isPending ? "Saving…" : "Save Brought-In"}
           </Button>
         </div>
       </div>
