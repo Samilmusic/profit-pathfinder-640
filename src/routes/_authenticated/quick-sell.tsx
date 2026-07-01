@@ -56,6 +56,9 @@ function QuickSellPage() {
   }, [balancesQ.data]);
   const sourceBalance = sourceId ? (balMap.get(sourceId) ?? 0) : null;
   const destBalance = destId ? (balMap.get(destId) ?? 0) : null;
+  const accCcy = (id: string) => (accounts.data ?? []).find((a: any) => a.id === id)?.currency as string | undefined;
+  const sourceAccountCcy = sourceId ? accCcy(sourceId) : undefined;
+  const destAccountCcy = destId ? accCcy(destId) : undefined;
 
   // Auto-fill last rate for this pair
   const lastRateQ = useQuery({
@@ -141,8 +144,12 @@ function QuickSellPage() {
   if (!soldN) validationErrors.push("Enter sold amount");
   if (!rateN) validationErrors.push("Enter sell rate");
   if (!sourceId) validationErrors.push("Pick source account");
+  if (!destId) validationErrors.push(`Pick a ${receivedCurrency} receiving account`);
+  if (sourceId && sourceAccountCcy && sourceAccountCcy !== soldCurrency)
+    validationErrors.push(`Source account must be ${soldCurrency}`);
+  if (destId && destAccountCcy && destAccountCcy !== receivedCurrency)
+    validationErrors.push(`Receiving account must be ${receivedCurrency} because customer is paying ${receivedCurrency}`);
   const closeErrors: string[] = [];
-  if (!destId) closeErrors.push("Pick receiving account to close");
   if (!note) closeErrors.push("Add a confirmation note to close");
 
   const save = useMutation({
@@ -225,7 +232,7 @@ function QuickSellPage() {
           </StepCard>
 
           {/* Step 4 — rate + received currency */}
-          <StepCard n={3} title="Sell rate" done={!!rateN}>
+          <StepCard n={3} title="Sell rate & money-in currency" done={!!rateN && !!receivedCurrency}>
             <div className="grid grid-cols-[130px_1fr] gap-2">
               <Select value={receivedCurrency} onValueChange={setReceivedCurrency}>
                 <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
@@ -233,16 +240,19 @@ function QuickSellPage() {
               </Select>
               <NumberInput currency="" value={sellRate} onChange={(e) => setSellRate(e.target.value)} placeholder={`${receivedCurrency} per 1 ${soldCurrency}`} />
             </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Money-in currency = <span className="font-semibold">{receivedCurrency}</span>. Customer pays you in {receivedCurrency}. Receiving account below is filtered to {receivedCurrency} only.
+            </p>
             {lastRateQ.data && !sellRate && (
               <p className="text-xs text-muted-foreground mt-2">Last rate: <button className="underline" onClick={() => setSellRate(String(lastRateQ.data))}>{fmt(lastRateQ.data)}</button></p>
             )}
           </StepCard>
 
           {/* Step 5/6 — accounts */}
-          <StepCard n={4} title="Source & receiving accounts" done={!!sourceId && !!destId}>
+          <StepCard n={4} title="Currency out / Money in" done={!!sourceId && !!destId}>
             <div className="space-y-2">
               <div>
-                <Label className="text-xs">Source (currency out)</Label>
+                <Label className="text-xs">Currency Out Account · {soldCurrency} only</Label>
                 <AccountSelect currency={soldCurrency} value={sourceId} onChange={setSourceId} />
                 {sourceId && sourceBalance !== null && (
                   <p className={`text-xs mt-1 ${sourceOverdraft ? "text-destructive font-semibold" : "text-muted-foreground"}`}>
@@ -252,10 +262,20 @@ function QuickSellPage() {
                 )}
               </div>
               <div>
-                <Label className="text-xs">Receiving (money in)</Label>
-                <AccountSelect currency={receivedCurrency} value={destId} onChange={setDestId} />
+                <Label className="text-xs">Money In Account · {receivedCurrency} only</Label>
+                <AccountSelect currency={receivedCurrency} value={destId} onChange={setDestId} placeholder={`Select ${receivedCurrency} account`} />
                 {destId && destBalance !== null && (
                   <p className="text-xs mt-1 text-muted-foreground">Current: {fmt(destBalance, receivedCurrency)} → after: {fmt(destBalance + receivedAmount, receivedCurrency)}</p>
+                )}
+                {destId && destAccountCcy && destAccountCcy !== receivedCurrency && (
+                  <p className="text-xs mt-1 text-destructive font-semibold">
+                    Receiving account must be a {receivedCurrency} account because customer is paying {receivedCurrency}.
+                  </p>
+                )}
+                {sourceId && sourceAccountCcy && sourceAccountCcy !== soldCurrency && (
+                  <p className="text-xs mt-1 text-destructive font-semibold">
+                    Source account must be a {soldCurrency} account.
+                  </p>
                 )}
               </div>
             </div>
