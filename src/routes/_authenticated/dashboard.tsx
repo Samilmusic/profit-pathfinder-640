@@ -143,6 +143,15 @@ function DashboardPage() {
         description="Live view of balances, today's activity, and profit sharing."
       />
 
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+        <Button asChild size="lg" className="h-16 text-base font-semibold col-span-2 md:col-span-1 shadow-md">
+          <Link to="/quick-sell"><TrendingUp className="h-5 w-5 mr-2" /> New Sell</Link>
+        </Button>
+        <Button asChild size="lg" variant="outline" className="h-16"><Link to="/buy"><ShoppingCart className="h-5 w-5 mr-2" /> Buy</Link></Button>
+        <Button asChild size="lg" variant="outline" className="h-16"><Link to="/brought-in"><ArrowDownToLine className="h-5 w-5 mr-2" /> Brought In</Link></Button>
+        <Button asChild size="lg" variant="outline" className="h-16"><Link to="/expenses"><Receipt className="h-5 w-5 mr-2" /> Expense</Link></Button>
+      </div>
+
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
         <StatCard label="AED balance" value={fmt(totalByCurrency("AED"), "AED")} />
         <StatCard label="Toman balance" value={fmt(totalByCurrency("IRR"), "IRR")} />
