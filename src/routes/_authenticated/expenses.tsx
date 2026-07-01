@@ -14,14 +14,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Switch } from "@/components/ui/switch";
 import { AccountSelect } from "@/components/account-select";
 import { CURRENCIES, fmt } from "@/lib/exchange";
+import { EXPENSE_KINDS, MONEY_LOCATIONS } from "@/lib/settlement";
 import { toast } from "sonner";
 import { Plus, FileText } from "lucide-react";
 import { SettlementStatusBadge } from "@/components/settlement-status-badge";
 import { TxnDetailDialog } from "@/components/txn-detail-dialog";
 
 export const Route = createFileRoute("/_authenticated/expenses")({ component: Page });
-
-const CATEGORIES = ["petrol", "delivery", "bank_charge", "transfer_fee", "parking", "personal", "business", "other"];
 
 function Page() {
   const qc = useQueryClient();
@@ -30,7 +29,8 @@ function Page() {
   const today = new Date().toISOString().slice(0, 10);
   const [f, setF] = useState({
     entry_date: today, paid_by: "milad", paid_from_account_id: "", amount: "", currency: "AED",
-    category: "business", is_business: true, reduces_profit: true, notes: "",
+    category: "business", expense_kind: "business", money_location: "cash_box",
+    is_business: true, reduces_profit: true, notes: "",
   });
 
   const q = useQuery({
@@ -47,6 +47,7 @@ function Page() {
       const { data: u } = await supabase.auth.getUser();
       const payload: any = {
         ...f, amount: Number(f.amount), paid_by: f.paid_by as any, category: f.category as any,
+        expense_kind: f.expense_kind as any, money_location: f.money_location as any,
         paid_from_account_id: f.paid_from_account_id || null, created_by: u.user?.id,
       };
       const { error } = await supabase.from("expenses").insert(payload);
@@ -82,10 +83,16 @@ function Page() {
                 </F>
                 <F label="Amount"><Input type="number" step="0.01" value={f.amount} onChange={(e) => setF({ ...f, amount: e.target.value })} required /></F>
                 <F label="Paid from account"><AccountSelect currency={f.currency} value={f.paid_from_account_id} onChange={(v) => setF({ ...f, paid_from_account_id: v })} /></F>
-                <F label="Category">
-                  <Select value={f.category} onValueChange={(v) => setF({ ...f, category: v })}>
+                <F label="Kind">
+                  <Select value={f.expense_kind} onValueChange={(v) => setF({ ...f, expense_kind: v, category: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>{CATEGORIES.map((c) => <SelectItem key={c} value={c} className="capitalize">{c.replace("_", " ")}</SelectItem>)}</SelectContent>
+                    <SelectContent>{EXPENSE_KINDS.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
+                  </Select>
+                </F>
+                <F label="Money location">
+                  <Select value={f.money_location} onValueChange={(v) => setF({ ...f, money_location: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{MONEY_LOCATIONS.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
                   </Select>
                 </F>
                 <div className="flex items-center justify-between rounded-md border p-3">
