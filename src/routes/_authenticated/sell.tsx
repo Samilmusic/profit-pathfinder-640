@@ -18,6 +18,7 @@ import { Plus, FileText } from "lucide-react";
 import { SettlementStatusBadge } from "@/components/settlement-status-badge";
 import { TxnDetailDialog } from "@/components/txn-detail-dialog";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 
 export const Route = createFileRoute("/_authenticated/sell")({ component: Page });
 
@@ -33,6 +34,7 @@ function Page() {
     received_currency: "IRR", sold_from_account_id: "", received_into_account_id: "",
     customer_id: "", customer_phone: "", customer_account_ref: "",
     milad_pct: "50", ali_pct: "50", notes: "",
+    creates_cycle: true,
   });
 
   const received_amount = useMemo(() => {
@@ -116,6 +118,7 @@ function Page() {
         milad_pct: milad, ali_pct: ali,
         notes: f.notes || null,
         created_by: u.user?.id,
+        creates_cycle: f.creates_cycle,
       };
       const { error } = await supabase.from("sell_transactions").insert(payload);
       if (error) throw error;
@@ -228,6 +231,15 @@ function Page() {
                 <F label="Milad %"><Input type="number" value={f.milad_pct} onChange={(e) => setF({ ...f, milad_pct: e.target.value, ali_pct: String(100 - Number(e.target.value)) })} /></F>
                 <F label="Ali %"><Input type="number" value={f.ali_pct} onChange={(e) => setF({ ...f, ali_pct: e.target.value, milad_pct: String(100 - Number(e.target.value)) })} /></F>
                 <div className="md:col-span-2"><F label="Notes"><Textarea value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} /></F></div>
+                <div className="md:col-span-2 flex items-center justify-between rounded-md border border-dashed p-3 bg-muted/30">
+                  <div>
+                    <div className="text-sm font-medium">Create Trade Cycle (Cycle Profit)</div>
+                    <div className="text-xs text-muted-foreground">
+                      Track profit only when {f.received_currency} is later converted back to {f.sold_currency}. Off = instant profit.
+                    </div>
+                  </div>
+                  <Switch checked={f.creates_cycle} onCheckedChange={(v) => setF({ ...f, creates_cycle: v })} />
+                </div>
                 <div className="md:col-span-2 flex justify-end gap-2">
                   <Button variant="ghost" type="button" onClick={() => setOpen(false)}>Cancel</Button>
                   <Button

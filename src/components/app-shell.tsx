@@ -57,6 +57,7 @@ const nav = [
   { to: "/daily-closing", label: "Daily Closing", icon: CalendarCheck },
   { to: "/audit", label: "Audit Log", icon: History },
   { to: "/roles", label: "Roles", icon: Shield },
+  { to: "/settings", label: "Settings", icon: Shield },
 ] as const;
 
 const mobileNav = [

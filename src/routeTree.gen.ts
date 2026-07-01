@@ -17,6 +17,7 @@ import { Route as AuthenticatedTrustRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedTransfersRouteImport } from './routes/_authenticated/transfers'
 import { Route as AuthenticatedTradesRouteImport } from './routes/_authenticated/trades'
 import { Route as AuthenticatedStatementsRouteImport } from './routes/_authenticated/statements'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedSellRouteImport } from './routes/_authenticated/sell'
 import { Route as AuthenticatedRolesRouteImport } from './routes/_authenticated/roles'
 import { Route as AuthenticatedQuickSellRouteImport } from './routes/_authenticated/quick-sell'
@@ -76,6 +77,11 @@ const AuthenticatedTradesRoute = AuthenticatedTradesRouteImport.update({
 const AuthenticatedStatementsRoute = AuthenticatedStatementsRouteImport.update({
   id: '/statements',
   path: '/statements',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedSellRoute = AuthenticatedSellRouteImport.update({
@@ -213,6 +219,7 @@ export interface FileRoutesByFullPath {
   '/quick-sell': typeof AuthenticatedQuickSellRoute
   '/roles': typeof AuthenticatedRolesRoute
   '/sell': typeof AuthenticatedSellRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/statements': typeof AuthenticatedStatementsRoute
   '/trades': typeof AuthenticatedTradesRouteWithChildren
   '/transfers': typeof AuthenticatedTransfersRoute
@@ -243,6 +250,7 @@ export interface FileRoutesByTo {
   '/quick-sell': typeof AuthenticatedQuickSellRoute
   '/roles': typeof AuthenticatedRolesRoute
   '/sell': typeof AuthenticatedSellRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/statements': typeof AuthenticatedStatementsRoute
   '/trades': typeof AuthenticatedTradesRouteWithChildren
   '/transfers': typeof AuthenticatedTransfersRoute
@@ -275,6 +283,7 @@ export interface FileRoutesById {
   '/_authenticated/quick-sell': typeof AuthenticatedQuickSellRoute
   '/_authenticated/roles': typeof AuthenticatedRolesRoute
   '/_authenticated/sell': typeof AuthenticatedSellRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/statements': typeof AuthenticatedStatementsRoute
   '/_authenticated/trades': typeof AuthenticatedTradesRouteWithChildren
   '/_authenticated/transfers': typeof AuthenticatedTransfersRoute
@@ -307,6 +316,7 @@ export interface FileRouteTypes {
     | '/quick-sell'
     | '/roles'
     | '/sell'
+    | '/settings'
     | '/statements'
     | '/trades'
     | '/transfers'
@@ -337,6 +347,7 @@ export interface FileRouteTypes {
     | '/quick-sell'
     | '/roles'
     | '/sell'
+    | '/settings'
     | '/statements'
     | '/trades'
     | '/transfers'
@@ -368,6 +379,7 @@ export interface FileRouteTypes {
     | '/_authenticated/quick-sell'
     | '/_authenticated/roles'
     | '/_authenticated/sell'
+    | '/_authenticated/settings'
     | '/_authenticated/statements'
     | '/_authenticated/trades'
     | '/_authenticated/transfers'
@@ -441,6 +453,13 @@ declare module '@tanstack/react-router' {
       path: '/statements'
       fullPath: '/statements'
       preLoaderRoute: typeof AuthenticatedStatementsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/sell': {
@@ -635,6 +654,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedQuickSellRoute: typeof AuthenticatedQuickSellRoute
   AuthenticatedRolesRoute: typeof AuthenticatedRolesRoute
   AuthenticatedSellRoute: typeof AuthenticatedSellRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedStatementsRoute: typeof AuthenticatedStatementsRoute
   AuthenticatedTradesRoute: typeof AuthenticatedTradesRouteWithChildren
   AuthenticatedTransfersRoute: typeof AuthenticatedTransfersRoute
@@ -662,6 +682,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedQuickSellRoute: AuthenticatedQuickSellRoute,
   AuthenticatedRolesRoute: AuthenticatedRolesRoute,
   AuthenticatedSellRoute: AuthenticatedSellRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedStatementsRoute: AuthenticatedStatementsRoute,
   AuthenticatedTradesRoute: AuthenticatedTradesRouteWithChildren,
   AuthenticatedTransfersRoute: AuthenticatedTransfersRoute,

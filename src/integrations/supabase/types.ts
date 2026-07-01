@@ -94,6 +94,24 @@ export type Database = {
           },
         ]
       }
+      app_settings: {
+        Row: {
+          id: boolean
+          profit_recognition_method: string
+          updated_at: string
+        }
+        Insert: {
+          id?: boolean
+          profit_recognition_method?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: boolean
+          profit_recognition_method?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       audit_events: {
         Row: {
           action: string
@@ -333,6 +351,7 @@ export type Database = {
           paid_from_account_id: string
           received_into_account_id: string
           settlement_status: Database["public"]["Enums"]["settlement_status"]
+          trade_cycle_id: string | null
           txn_owner: Database["public"]["Enums"]["txn_owner"]
           updated_at: string
         }
@@ -361,6 +380,7 @@ export type Database = {
           paid_from_account_id: string
           received_into_account_id: string
           settlement_status?: Database["public"]["Enums"]["settlement_status"]
+          trade_cycle_id?: string | null
           txn_owner?: Database["public"]["Enums"]["txn_owner"]
           updated_at?: string
         }
@@ -389,6 +409,7 @@ export type Database = {
           paid_from_account_id?: string
           received_into_account_id?: string
           settlement_status?: Database["public"]["Enums"]["settlement_status"]
+          trade_cycle_id?: string | null
           txn_owner?: Database["public"]["Enums"]["txn_owner"]
           updated_at?: string
         }
@@ -455,6 +476,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profit_by_account"
             referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "buy_transactions_trade_cycle_id_fkey"
+            columns: ["trade_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "trade_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buy_transactions_trade_cycle_id_fkey"
+            columns: ["trade_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "v_open_cycles"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -741,6 +776,7 @@ export type Database = {
           paid_by: Database["public"]["Enums"]["paid_by"]
           paid_from_account_id: string
           receipt_required: boolean
+          reduce_cycle_profit: boolean
           reduces_profit: boolean
           related_buy_id: string | null
           related_person: string | null
@@ -748,6 +784,7 @@ export type Database = {
           related_ref_type: string | null
           related_sell_id: string | null
           settlement_status: Database["public"]["Enums"]["settlement_status"]
+          trade_cycle_id: string | null
           updated_at: string
         }
         Insert: {
@@ -768,6 +805,7 @@ export type Database = {
           paid_by: Database["public"]["Enums"]["paid_by"]
           paid_from_account_id: string
           receipt_required?: boolean
+          reduce_cycle_profit?: boolean
           reduces_profit?: boolean
           related_buy_id?: string | null
           related_person?: string | null
@@ -775,6 +813,7 @@ export type Database = {
           related_ref_type?: string | null
           related_sell_id?: string | null
           settlement_status?: Database["public"]["Enums"]["settlement_status"]
+          trade_cycle_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -795,6 +834,7 @@ export type Database = {
           paid_by?: Database["public"]["Enums"]["paid_by"]
           paid_from_account_id?: string
           receipt_required?: boolean
+          reduce_cycle_profit?: boolean
           reduces_profit?: boolean
           related_buy_id?: string | null
           related_person?: string | null
@@ -802,6 +842,7 @@ export type Database = {
           related_ref_type?: string | null
           related_sell_id?: string | null
           settlement_status?: Database["public"]["Enums"]["settlement_status"]
+          trade_cycle_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -852,6 +893,20 @@ export type Database = {
             columns: ["related_sell_id"]
             isOneToOne: false
             referencedRelation: "sell_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_trade_cycle_id_fkey"
+            columns: ["trade_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "trade_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_trade_cycle_id_fkey"
+            columns: ["trade_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "v_open_cycles"
             referencedColumns: ["id"]
           },
         ]
@@ -1265,6 +1320,7 @@ export type Database = {
           cost_basis_rate: number | null
           created_at: string
           created_by: string | null
+          creates_cycle: boolean
           currency_holder_type:
             | Database["public"]["Enums"]["holder_type"]
             | null
@@ -1290,6 +1346,7 @@ export type Database = {
           sold_amount: number
           sold_currency: string
           sold_from_account_id: string
+          trade_cycle_id: string | null
           updated_at: string
         }
         Insert: {
@@ -1301,6 +1358,7 @@ export type Database = {
           cost_basis_rate?: number | null
           created_at?: string
           created_by?: string | null
+          creates_cycle?: boolean
           currency_holder_type?:
             | Database["public"]["Enums"]["holder_type"]
             | null
@@ -1326,6 +1384,7 @@ export type Database = {
           sold_amount: number
           sold_currency: string
           sold_from_account_id: string
+          trade_cycle_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -1337,6 +1396,7 @@ export type Database = {
           cost_basis_rate?: number | null
           created_at?: string
           created_by?: string | null
+          creates_cycle?: boolean
           currency_holder_type?:
             | Database["public"]["Enums"]["holder_type"]
             | null
@@ -1362,6 +1422,7 @@ export type Database = {
           sold_amount?: number
           sold_currency?: string
           sold_from_account_id?: string
+          trade_cycle_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1428,6 +1489,20 @@ export type Database = {
             referencedRelation: "profit_by_account"
             referencedColumns: ["account_id"]
           },
+          {
+            foreignKeyName: "sell_transactions_trade_cycle_id_fkey"
+            columns: ["trade_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "trade_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sell_transactions_trade_cycle_id_fkey"
+            columns: ["trade_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "v_open_cycles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       service_charges: {
@@ -1481,6 +1556,7 @@ export type Database = {
         Row: {
           ali_profit: number | null
           ali_share_pct: number | null
+          avg_buyback_rate: number | null
           base_currency: string
           capital_amount: number | null
           capital_currency: string | null
@@ -1491,20 +1567,36 @@ export type Database = {
           created_at: string
           created_by: string | null
           customer_id: string | null
+          cycle_kind: string
           deleted_at: string | null
           entry_date: string
+          estimated_profit: number
           expected_profit: number | null
           expected_profit_currency: string | null
+          expenses_in_final_ccy: number
+          final_account_id: string | null
+          final_currency: string | null
           final_profit_confirmed: boolean
+          final_returned_amount: number
           id: string
+          initial_account_id: string | null
+          initial_amount: number | null
+          initial_currency: string | null
+          intermediate_account_id: string | null
+          intermediate_currency: string | null
+          intermediate_received: number
+          intermediate_used: number
           milad_profit: number | null
           milad_share_pct: number | null
           net_profit: number | null
           notes: string | null
           pending_profit: number | null
           quote_currency: string | null
+          realized_profit: number
+          realized_profit_currency: string | null
           received_profit: number | null
           related_expenses: number | null
+          sell_rate: number | null
           status: Database["public"]["Enums"]["trade_status"]
           title: string | null
           updated_at: string
@@ -1512,6 +1604,7 @@ export type Database = {
         Insert: {
           ali_profit?: number | null
           ali_share_pct?: number | null
+          avg_buyback_rate?: number | null
           base_currency?: string
           capital_amount?: number | null
           capital_currency?: string | null
@@ -1522,20 +1615,36 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           customer_id?: string | null
+          cycle_kind?: string
           deleted_at?: string | null
           entry_date?: string
+          estimated_profit?: number
           expected_profit?: number | null
           expected_profit_currency?: string | null
+          expenses_in_final_ccy?: number
+          final_account_id?: string | null
+          final_currency?: string | null
           final_profit_confirmed?: boolean
+          final_returned_amount?: number
           id?: string
+          initial_account_id?: string | null
+          initial_amount?: number | null
+          initial_currency?: string | null
+          intermediate_account_id?: string | null
+          intermediate_currency?: string | null
+          intermediate_received?: number
+          intermediate_used?: number
           milad_profit?: number | null
           milad_share_pct?: number | null
           net_profit?: number | null
           notes?: string | null
           pending_profit?: number | null
           quote_currency?: string | null
+          realized_profit?: number
+          realized_profit_currency?: string | null
           received_profit?: number | null
           related_expenses?: number | null
+          sell_rate?: number | null
           status?: Database["public"]["Enums"]["trade_status"]
           title?: string | null
           updated_at?: string
@@ -1543,6 +1652,7 @@ export type Database = {
         Update: {
           ali_profit?: number | null
           ali_share_pct?: number | null
+          avg_buyback_rate?: number | null
           base_currency?: string
           capital_amount?: number | null
           capital_currency?: string | null
@@ -1553,20 +1663,36 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           customer_id?: string | null
+          cycle_kind?: string
           deleted_at?: string | null
           entry_date?: string
+          estimated_profit?: number
           expected_profit?: number | null
           expected_profit_currency?: string | null
+          expenses_in_final_ccy?: number
+          final_account_id?: string | null
+          final_currency?: string | null
           final_profit_confirmed?: boolean
+          final_returned_amount?: number
           id?: string
+          initial_account_id?: string | null
+          initial_amount?: number | null
+          initial_currency?: string | null
+          intermediate_account_id?: string | null
+          intermediate_currency?: string | null
+          intermediate_received?: number
+          intermediate_used?: number
           milad_profit?: number | null
           milad_share_pct?: number | null
           net_profit?: number | null
           notes?: string | null
           pending_profit?: number | null
           quote_currency?: string | null
+          realized_profit?: number
+          realized_profit_currency?: string | null
           received_profit?: number | null
           related_expenses?: number | null
+          sell_rate?: number | null
           status?: Database["public"]["Enums"]["trade_status"]
           title?: string | null
           updated_at?: string
@@ -1585,6 +1711,90 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_cycles_final_account_id_fkey"
+            columns: ["final_account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "trade_cycles_final_account_id_fkey"
+            columns: ["final_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_cycles_final_account_id_fkey"
+            columns: ["final_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "trade_cycles_final_account_id_fkey"
+            columns: ["final_account_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "trade_cycles_initial_account_id_fkey"
+            columns: ["initial_account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "trade_cycles_initial_account_id_fkey"
+            columns: ["initial_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_cycles_initial_account_id_fkey"
+            columns: ["initial_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "trade_cycles_initial_account_id_fkey"
+            columns: ["initial_account_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "trade_cycles_intermediate_account_id_fkey"
+            columns: ["intermediate_account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "trade_cycles_intermediate_account_id_fkey"
+            columns: ["intermediate_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_cycles_intermediate_account_id_fkey"
+            columns: ["intermediate_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "trade_cycles_intermediate_account_id_fkey"
+            columns: ["intermediate_account_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
           },
         ]
       }
@@ -1768,6 +1978,13 @@ export type Database = {
             referencedRelation: "trade_cycles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "trade_movements_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "v_open_cycles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       trade_profit_collections: {
@@ -1847,6 +2064,13 @@ export type Database = {
             columns: ["trade_id"]
             isOneToOne: false
             referencedRelation: "trade_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_profit_collections_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "v_open_cycles"
             referencedColumns: ["id"]
           },
         ]
@@ -2290,6 +2514,154 @@ export type Database = {
         }
         Relationships: []
       }
+      v_open_cycles: {
+        Row: {
+          ali_profit: number | null
+          avg_buyback_rate: number | null
+          code: string | null
+          customer_id: string | null
+          entry_date: string | null
+          estimated_profit: number | null
+          expenses_in_final_ccy: number | null
+          final_currency: string | null
+          final_returned_amount: number | null
+          id: string | null
+          initial_account_id: string | null
+          initial_amount: number | null
+          initial_currency: string | null
+          intermediate_account_id: string | null
+          intermediate_currency: string | null
+          intermediate_received: number | null
+          intermediate_remaining: number | null
+          intermediate_used: number | null
+          milad_profit: number | null
+          net_profit: number | null
+          realized_profit: number | null
+          realized_profit_currency: string | null
+          sell_rate: number | null
+          status: Database["public"]["Enums"]["trade_status"] | null
+          title: string | null
+        }
+        Insert: {
+          ali_profit?: number | null
+          avg_buyback_rate?: number | null
+          code?: string | null
+          customer_id?: string | null
+          entry_date?: string | null
+          estimated_profit?: number | null
+          expenses_in_final_ccy?: number | null
+          final_currency?: string | null
+          final_returned_amount?: number | null
+          id?: string | null
+          initial_account_id?: string | null
+          initial_amount?: number | null
+          initial_currency?: string | null
+          intermediate_account_id?: string | null
+          intermediate_currency?: string | null
+          intermediate_received?: number | null
+          intermediate_remaining?: never
+          intermediate_used?: number | null
+          milad_profit?: number | null
+          net_profit?: number | null
+          realized_profit?: number | null
+          realized_profit_currency?: string | null
+          sell_rate?: number | null
+          status?: Database["public"]["Enums"]["trade_status"] | null
+          title?: string | null
+        }
+        Update: {
+          ali_profit?: number | null
+          avg_buyback_rate?: number | null
+          code?: string | null
+          customer_id?: string | null
+          entry_date?: string | null
+          estimated_profit?: number | null
+          expenses_in_final_ccy?: number | null
+          final_currency?: string | null
+          final_returned_amount?: number | null
+          id?: string | null
+          initial_account_id?: string | null
+          initial_amount?: number | null
+          initial_currency?: string | null
+          intermediate_account_id?: string | null
+          intermediate_currency?: string | null
+          intermediate_received?: number | null
+          intermediate_remaining?: never
+          intermediate_used?: number | null
+          milad_profit?: number | null
+          net_profit?: number | null
+          realized_profit?: number | null
+          realized_profit_currency?: string | null
+          sell_rate?: number | null
+          status?: Database["public"]["Enums"]["trade_status"] | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_cycles_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_cycles_initial_account_id_fkey"
+            columns: ["initial_account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "trade_cycles_initial_account_id_fkey"
+            columns: ["initial_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_cycles_initial_account_id_fkey"
+            columns: ["initial_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "trade_cycles_initial_account_id_fkey"
+            columns: ["initial_account_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "trade_cycles_intermediate_account_id_fkey"
+            columns: ["intermediate_account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "trade_cycles_intermediate_account_id_fkey"
+            columns: ["intermediate_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_cycles_intermediate_account_id_fkey"
+            columns: ["intermediate_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "trade_cycles_intermediate_account_id_fkey"
+            columns: ["intermediate_account_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
+          },
+        ]
+      }
       v_today_profit: {
         Row: {
           ali_profit: number | null
@@ -2335,6 +2707,10 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      recompute_cycle_profit: {
+        Args: { _cycle_id: string }
+        Returns: undefined
+      }
       recompute_trade_totals: {
         Args: { _trade_id: string }
         Returns: undefined
@@ -2455,6 +2831,11 @@ export type Database = {
         | "awaiting_docs"
         | "completed"
         | "cancelled"
+        | "open"
+        | "partially_closed"
+        | "profit_pending"
+        | "loss"
+        | "missing_receipt"
       txn_owner: "milad" | "ali" | "shared"
     }
     CompositeTypes: {
@@ -2708,6 +3089,11 @@ export const Constants = {
         "awaiting_docs",
         "completed",
         "cancelled",
+        "open",
+        "partially_closed",
+        "profit_pending",
+        "loss",
+        "missing_receipt",
       ],
       txn_owner: ["milad", "ali", "shared"],
     },

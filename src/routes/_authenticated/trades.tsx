@@ -26,6 +26,11 @@ const STATUS_COLORS: Record<string, string> = {
   awaiting_docs: "bg-orange-500/15 text-orange-700 dark:text-orange-300",
   completed: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
   cancelled: "bg-red-500/15 text-red-700 dark:text-red-300",
+  open: "bg-sky-500/15 text-sky-700 dark:text-sky-300",
+  partially_closed: "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300",
+  profit_pending: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+  loss: "bg-rose-500/15 text-rose-700 dark:text-rose-300",
+  missing_receipt: "bg-orange-500/15 text-orange-700 dark:text-orange-300",
 };
 
 function Page() {
@@ -155,9 +160,13 @@ function Page() {
         <Table>
           <TableHeader><TableRow>
             <TableHead>Code</TableHead><TableHead>Date</TableHead><TableHead>Customer</TableHead>
-            <TableHead>Pair</TableHead><TableHead className="text-right">Capital</TableHead>
-            <TableHead className="text-right">Expected</TableHead><TableHead className="text-right">Received</TableHead>
-            <TableHead className="text-right">Net</TableHead><TableHead>Status</TableHead><TableHead></TableHead>
+            <TableHead>Cycle</TableHead>
+            <TableHead className="text-right">Initial</TableHead>
+            <TableHead className="text-right">Intermediate rec / used / left</TableHead>
+            <TableHead className="text-right">Returned</TableHead>
+            <TableHead className="text-right">Est. profit</TableHead>
+            <TableHead className="text-right">Realised</TableHead>
+            <TableHead>Status</TableHead><TableHead></TableHead>
           </TableRow></TableHeader>
           <TableBody>
             {(q.data ?? []).map((t: any) => (
@@ -165,16 +174,29 @@ function Page() {
                 <TableCell className="font-mono text-xs">{t.code}</TableCell>
                 <TableCell>{t.entry_date}</TableCell>
                 <TableCell>{t.customer?.name ?? "—"}{t.counterparty ? <span className="text-muted-foreground"> → {t.counterparty.name}</span> : null}</TableCell>
-                <TableCell className="text-xs">{t.base_currency}{t.quote_currency ? `/${t.quote_currency}` : ""}</TableCell>
-                <TableCell className="text-right">{fmtProfit(t.capital_amount, t.capital_currency)}</TableCell>
-                <TableCell className="text-right">{fmtProfit(t.expected_profit, t.expected_profit_currency)}</TableCell>
-                <TableCell className="text-right">{fmtProfit(t.received_profit, t.expected_profit_currency)}</TableCell>
-                <TableCell className="text-right font-medium">{fmtProfit(t.net_profit, t.expected_profit_currency)}</TableCell>
+                <TableCell className="text-xs">
+                  {(t.initial_currency ?? t.base_currency)}
+                  {" → "}{(t.intermediate_currency ?? t.quote_currency)}
+                  {" → "}{(t.final_currency ?? t.initial_currency ?? t.base_currency)}
+                </TableCell>
+                <TableCell className="text-right font-mono text-xs">{fmtProfit(t.initial_amount ?? t.capital_amount, t.initial_currency ?? t.capital_currency)}</TableCell>
+                <TableCell className="text-right font-mono text-xs">
+                  <div>{fmtProfit(t.intermediate_received, t.intermediate_currency)}</div>
+                  <div className="text-muted-foreground">used {fmtProfit(t.intermediate_used, t.intermediate_currency)}</div>
+                  <div className={"text-[11px] " + ((Number(t.intermediate_received||0) - Number(t.intermediate_used||0)) > 0 ? "text-amber-600" : "text-muted-foreground")}>
+                    left {fmtProfit(Number(t.intermediate_received||0) - Number(t.intermediate_used||0), t.intermediate_currency)}
+                  </div>
+                </TableCell>
+                <TableCell className="text-right font-mono text-xs">{fmtProfit(t.final_returned_amount, t.final_currency ?? t.initial_currency)}</TableCell>
+                <TableCell className="text-right font-mono text-xs">{fmtProfit(t.estimated_profit, t.intermediate_currency)}</TableCell>
+                <TableCell className={"text-right font-mono text-xs font-semibold " + (Number(t.realized_profit||0) < 0 ? "text-destructive" : "text-emerald-600")}>
+                  {fmtProfit(t.realized_profit, t.realized_profit_currency ?? t.initial_currency)}
+                </TableCell>
                 <TableCell><span className={`px-2 py-0.5 rounded-full text-xs ${STATUS_COLORS[t.status] ?? ""}`}>{t.status}</span></TableCell>
                 <TableCell><Link to="/trades/$id" params={{ id: t.id }} className="text-primary text-sm inline-flex items-center gap-1">Open <ArrowRight className="h-3 w-3" /></Link></TableCell>
               </TableRow>
             ))}
-            {q.data && q.data.length === 0 && <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">No trades yet. Click "New Trade" to start.</TableCell></TableRow>}
+            {q.data && q.data.length === 0 && <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">No cycles yet. Sell AED with "Create Trade Cycle" on to auto-open one.</TableCell></TableRow>}
           </TableBody>
         </Table>
       </CardContent></Card>
