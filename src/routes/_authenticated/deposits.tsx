@@ -37,9 +37,9 @@ function Page() {
   return (
     <>
       <PageHeader title="Customer Deposits" description="Money customers place with us with no immediate exchange. Increases their wallet." actions={
-        <Link to="/deposits/new">
-          <Button size="lg" className="h-12"><Plus className="h-4 w-4 mr-1" /> New deposit</Button>
-        </Link>
+        <Button asChild size="lg" className="h-12">
+          <Link to="/deposits/new"><Plus className="h-4 w-4 mr-1" /> New deposit</Link>
+        </Button>
       } />
       <Card><CardContent className="p-0 overflow-x-auto">
         <Table>
