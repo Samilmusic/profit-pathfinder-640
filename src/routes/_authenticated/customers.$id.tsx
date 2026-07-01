@@ -9,7 +9,7 @@ import { ArrowLeft, Plus, Pencil, Star, StarOff, Power } from "lucide-react";
 import { useState } from "react";
 import { CustomerBankAccountForm, maskAccount } from "@/components/customer-bank-account-form";
 import { useCustomerBankAccounts } from "@/components/customer-bank-account-picker";
-import { fmtAmount } from "@/lib/exchange";
+import { fmt } from "@/lib/exchange";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -138,7 +138,7 @@ function CustomerProfile() {
             {(credit.data ?? []).map((r: any, i: number) => (
               <div key={i} className="flex justify-between border-b pb-1 last:border-0">
                 <span>{r.currency}</span>
-                <span className={`font-mono ${Number(r.balance ?? 0) < 0 ? "text-destructive" : ""}`}>{fmtAmount(Number(r.balance ?? 0), r.currency)}</span>
+                <span className={`font-mono ${Number(r.balance ?? 0) < 0 ? "text-destructive" : ""}`}>{fmt(Number(r.balance ?? 0), r.currency)}</span>
               </div>
             ))}
           </CardContent>
@@ -154,7 +154,7 @@ function CustomerProfile() {
                 .map((t: any) => (
                   <div key={t.kind + t.id} className="flex justify-between items-center border-b py-1 last:border-0">
                     <div><Badge variant="outline" className="text-[10px] mr-2">{t.kind}</Badge>{t.txn_date}</div>
-                    <div className="font-mono">{fmtAmount(Number(t.sold_amount ?? t.bought_amount ?? 0), t.sold_currency ?? t.bought_currency)}</div>
+                    <div className="font-mono">{fmt(Number(t.sold_amount ?? t.bought_amount ?? 0), t.sold_currency ?? t.bought_currency)}</div>
                     <Badge variant={t.status === "completed" ? "default" : "secondary"} className="text-[10px]">{t.status}</Badge>
                   </div>
                 ))}
@@ -170,7 +170,7 @@ function CustomerProfile() {
               {(deposits.data ?? []).slice(0, 20).map((d: any) => (
                 <div key={d.id} className="flex justify-between items-center border-b py-1 last:border-0">
                   <div>{d.txn_date}</div>
-                  <div className="font-mono">{fmtAmount(Number(d.amount), d.currency)}</div>
+                  <div className="font-mono">{fmt(Number(d.amount), d.currency)}</div>
                   <div className="text-muted-foreground truncate max-w-[40%]">{d.notes || "—"}</div>
                 </div>
               ))}
