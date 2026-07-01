@@ -20,7 +20,6 @@ import { TxnDetailDialog } from "@/components/txn-detail-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { RecordActions } from "@/components/record-actions";
-import { CURRENCIES as CCY_LIST } from "@/lib/exchange";
 
 export const Route = createFileRoute("/_authenticated/sell")({ component: Page });
 
