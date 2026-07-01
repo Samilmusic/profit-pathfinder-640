@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { toast } from "sonner";
 import { Plus, Search, Building2, Trash2, Star } from "lucide-react";
 import { RecordActions } from "@/components/record-actions";
+import { CopyButton } from "@/components/copy-button";
 import { Link } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -250,7 +251,11 @@ function CustomersPage() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <Link to="/customers/$id" params={{ id: c.id }} className="font-semibold text-base hover:underline block truncate">{c.name}</Link>
-                    <div className="text-xs text-muted-foreground">{c.phone || "No phone"}</div>
+                    <div className="text-xs text-muted-foreground flex items-center gap-1">
+                      <span>{c.phone || "No phone"}</span>
+                      {c.phone && <CopyButton value={c.phone} label="Phone copied" title="Copy phone" className="h-5 w-5" />}
+                      {c.name && <CopyButton value={c.name} label="Name copied" title="Copy name" className="h-5 w-5" />}
+                    </div>
                   </div>
                   <RecordActions
                     table="customers"

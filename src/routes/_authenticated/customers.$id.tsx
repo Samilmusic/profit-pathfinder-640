@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Plus, Pencil, Star, StarOff, Power } from "lucide-react";
 import { useState } from "react";
-import { CustomerBankAccountForm, maskAccount } from "@/components/customer-bank-account-form";
+import { CustomerBankAccountForm } from "@/components/customer-bank-account-form";
+import { CopyButton, CopyRow, CopyFullDetailsButton } from "@/components/copy-button";
 import { useCustomerBankAccounts } from "@/components/customer-bank-account-picker";
 import { fmt } from "@/lib/exchange";
 import { toast } from "sonner";
@@ -85,8 +86,8 @@ function CustomerProfile() {
         <Card className="lg:col-span-1">
           <CardHeader><CardTitle className="text-base">Personal info</CardTitle></CardHeader>
           <CardContent className="text-sm space-y-2">
-            <Row label="Name" value={c.data?.name} />
-            <Row label="Phone" value={c.data?.phone} />
+            <RowCopy label="Name" value={c.data?.name} />
+            <RowCopy label="Phone" value={c.data?.phone} />
             <Row label="Notes" value={c.data?.notes} />
           </CardContent>
         </Card>
@@ -99,7 +100,6 @@ function CustomerProfile() {
           <CardContent>
             <div className="grid gap-2 sm:grid-cols-2">
               {(accountsQ.data ?? []).map((a: any) => {
-                const tail = a.card_number || a.account_number || a.iban;
                 return (
                   <div key={a.id} className={`rounded-lg border p-3 space-y-2 ${a.is_active ? "" : "opacity-60"}`}>
                     <div className="flex items-start justify-between gap-2">
@@ -112,11 +112,17 @@ function CustomerProfile() {
                         {!a.is_active && <Badge variant="secondary" className="text-[10px]">Inactive</Badge>}
                       </div>
                     </div>
-                    {a.holder_name && <div className="text-xs">{a.holder_name}</div>}
-                    {tail && <div className="text-xs font-mono">{maskAccount(tail)}</div>}
-                    {a.iban && a.iban !== tail && <div className="text-[11px] text-muted-foreground font-mono truncate">IBAN {maskAccount(a.iban)}</div>}
-                    {a.swift_bic && <div className="text-[11px] text-muted-foreground">SWIFT {a.swift_bic}</div>}
-                    <div className="flex gap-1 pt-1">
+                    <div className="rounded-md bg-muted/40 px-2">
+                      <CopyRow label="Account holder" value={a.holder_name} mono={false} />
+                      <CopyRow label="IBAN" value={a.iban} />
+                      <CopyRow label="Account number" value={a.account_number} />
+                      <CopyRow label="Card number" value={a.card_number} />
+                      <CopyRow label="SWIFT / BIC" value={a.swift_bic} />
+                      <CopyRow label="Sort code" value={a.sort_code} />
+                      <CopyRow label="Phone" value={a.phone} mono={false} />
+                    </div>
+                    <div className="flex flex-wrap gap-1 pt-1">
+                      <CopyFullDetailsButton account={a} />
                       <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => { setEditing(a); setFormOpen(true); }}><Pencil className="h-3 w-3 mr-1" />Edit</Button>
                       <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setDefault(a)}>
                         {a.is_default ? <><StarOff className="h-3 w-3 mr-1" />Unset default</> : <><Star className="h-3 w-3 mr-1" />Set default</>}
@@ -195,6 +201,18 @@ function Row({ label, value }: { label: string; value?: string | null }) {
     <div className="flex justify-between gap-2">
       <span className="text-muted-foreground text-xs">{label}</span>
       <span className="text-right">{value || "—"}</span>
+    </div>
+  );
+}
+
+function RowCopy({ label, value }: { label: string; value?: string | null }) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-muted-foreground text-xs">{label}</span>
+      <span className="flex items-center gap-1 min-w-0">
+        <span className="text-right truncate">{value || "—"}</span>
+        {value && <CopyButton value={value} label={`${label} copied`} title={`Copy ${label}`} />}
+      </span>
     </div>
   );
 }

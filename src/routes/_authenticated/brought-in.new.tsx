@@ -14,6 +14,7 @@ import { NumberInput } from "@/components/number-input";
 import { CURRENCIES, fmt } from "@/lib/exchange";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, Camera, CheckCircle2, ChevronDown, Image as ImageIcon, Paperclip, Upload, X } from "lucide-react";
+import { CopyButton } from "@/components/copy-button";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +30,22 @@ const BROUGHT_BY = [
   { value: "customer", label: "Customer" },
   { value: "other", label: "Other" },
 ];
+
+/** Destination-type chips → filter for the accounts list */
+type DestFilter = (a: any, currency: string) => boolean;
+const DEST_TYPES: { key: string; label: string; match: DestFilter }[] = [
+  { key: "cash",           label: "Cash Box",         match: (a) => a.account_type === "cash" },
+  { key: "aed_bank",       label: "AED Bank",         match: (a) => a.account_type === "aed_bank" },
+  { key: "toman_bank",     label: "IRR / Toman Bank", match: (a) => a.account_type === "toman_bank" },
+  { key: "foreign_bank",   label: "Foreign Bank",     match: (a) => a.account_type === "foreign_currency" },
+  { key: "held_milad",     label: "Held by Milad",    match: (a) => a.account_type === "person_holding" && a.owner === "milad" },
+  { key: "held_ali",       label: "Held by Ali",      match: (a) => a.account_type === "person_holding" && a.owner === "ali" },
+  { key: "held_customer",  label: "Held by Customer", match: (a) => a.account_type === "person_holding" && !["milad","ali"].includes(String(a.owner)) },
+  { key: "pending",        label: "Pending Delivery", match: (a) => a.account_type === "pending_delivery" },
+  { key: "other",          label: "Other",            match: (a) => a.account_type === "other" || a.account_type === "wallet" },
+  { key: "all",            label: "All accounts",     match: () => true },
+];
+
 const REASONS = [
   { value: "capital", label: "Capital" },
   { value: "for_exchange", label: "For exchange" },
@@ -54,6 +71,7 @@ function NewBroughtInPage() {
   const [currency, setCurrency] = useState<string>(prefs.currency || "AED");
   const [amount, setAmount] = useState("");
   const [depositAccountId, setDepositAccountId] = useState<string>(prefs.deposit_account_id || "");
+  const [destType, setDestType] = useState<string>("all");
   const [notes, setNotes] = useState("");
   const [entryDate, setEntryDate] = useState(today);
 
@@ -79,10 +97,11 @@ function NewBroughtInPage() {
 
   const [success, setSuccess] = useState<null | { id: string; balance: number | null }>(null);
 
-  const filteredAccounts = useMemo(
-    () => (accounts.data ?? []).filter((a: any) => a.currency === currency && a.account_type !== "customer_wallet"),
-    [accounts.data, currency],
-  );
+  const filteredAccounts = useMemo(() => {
+    const base = (accounts.data ?? []).filter((a: any) => a.currency === currency && a.account_type !== "customer_wallet");
+    const dt = DEST_TYPES.find((d) => d.key === destType);
+    return dt ? base.filter((a: any) => dt.match(a, currency)) : base;
+  }, [accounts.data, currency, destType]);
   const finalAccounts = useMemo(
     () => (accounts.data ?? []).filter((a: any) => a.currency === convertedCurrency && a.account_type !== "customer_wallet"),
     [accounts.data, convertedCurrency],
@@ -191,7 +210,10 @@ function NewBroughtInPage() {
             </div>
           </div>
           <h1 className="text-2xl font-bold">Brought-in saved</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Transaction #{success.id.slice(0, 8).toUpperCase()}</p>
+          <p className="mt-1 text-sm text-muted-foreground inline-flex items-center gap-1">
+            Transaction #{success.id.slice(0, 8).toUpperCase()}
+            <CopyButton value={success.id} label="Transaction ID copied" title="Copy transaction ID" />
+          </p>
           {success.balance !== null && (
             <Card className="mt-6 w-full">
               <CardContent className="p-4">
@@ -219,7 +241,7 @@ function NewBroughtInPage() {
   return (
     <div
       className="min-h-[100dvh] w-full bg-background"
-      style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 180px)" }}
+      style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 220px)" }}
     >
       <div className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-2xl items-center gap-2 px-4 py-3">
@@ -282,18 +304,40 @@ function NewBroughtInPage() {
           </div>
         </section>
 
-        {/* Deposit account */}
-        <section className="space-y-2">
-          <Label className="text-xs uppercase tracking-wide text-muted-foreground">Deposit account</Label>
-          <Select value={depositAccountId} onValueChange={setDepositAccountId}>
-            <SelectTrigger className="h-11 text-base"><SelectValue placeholder={`Pick a ${currency} account`} /></SelectTrigger>
-            <SelectContent>
-              {filteredAccounts.map((a: any) => (
-                <SelectItem key={a.id} value={a.id}>{a.name} · {a.currency}</SelectItem>
+        {/* Destination */}
+        <section className="space-y-2 rounded-lg border-2 border-primary/30 bg-primary/[0.03] p-3">
+          <div>
+            <Label className="text-sm font-semibold">Where did this money go? *</Label>
+            <p className="text-[11px] text-muted-foreground">Every brought-in entry must land in a real destination.</p>
+          </div>
+          <div>
+            <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">Destination type</Label>
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              {DEST_TYPES.map((d) => (
+                <button
+                  key={d.key}
+                  type="button"
+                  onClick={() => { setDestType(d.key); setDepositAccountId(""); }}
+                  className={cn(
+                    "h-8 rounded-full border px-3 text-xs font-medium transition",
+                    destType === d.key ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:bg-accent",
+                  )}
+                >{d.label}</button>
               ))}
-              {filteredAccounts.length === 0 && <div className="px-2 py-4 text-xs text-muted-foreground text-center">No matching accounts</div>}
-            </SelectContent>
-          </Select>
+            </div>
+          </div>
+          <div>
+            <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">Destination account / location *</Label>
+            <Select value={depositAccountId} onValueChange={setDepositAccountId}>
+              <SelectTrigger className="h-11 text-base mt-1"><SelectValue placeholder={`Pick a ${currency} destination`} /></SelectTrigger>
+              <SelectContent>
+                {filteredAccounts.map((a: any) => (
+                  <SelectItem key={a.id} value={a.id}>{a.name} · {a.currency}</SelectItem>
+                ))}
+                {filteredAccounts.length === 0 && <div className="px-2 py-4 text-xs text-muted-foreground text-center">No matching {currency} accounts. Try another destination type or add one under Accounts.</div>}
+              </SelectContent>
+            </Select>
+          </div>
           {balQ.data && (
             <Card className="border-primary/20 bg-primary/5">
               <CardContent className="flex items-center justify-between gap-3 p-3">
