@@ -19,6 +19,7 @@ export type Database = {
           account_number: string | null
           account_type: Database["public"]["Enums"]["account_type"]
           bank_name: string | null
+          cancel_reason: string | null
           card_number: string | null
           created_at: string
           created_by: string | null
@@ -42,6 +43,7 @@ export type Database = {
           account_number?: string | null
           account_type: Database["public"]["Enums"]["account_type"]
           bank_name?: string | null
+          cancel_reason?: string | null
           card_number?: string | null
           created_at?: string
           created_by?: string | null
@@ -65,6 +67,7 @@ export type Database = {
           account_number?: string | null
           account_type?: Database["public"]["Enums"]["account_type"]
           bank_name?: string | null
+          cancel_reason?: string | null
           card_number?: string | null
           created_at?: string
           created_by?: string | null
@@ -117,6 +120,7 @@ export type Database = {
           action: string
           actor_id: string | null
           created_at: string
+          device: string | null
           entity_id: string
           entity_type: string
           id: string
@@ -128,6 +132,7 @@ export type Database = {
           action: string
           actor_id?: string | null
           created_at?: string
+          device?: string | null
           entity_id: string
           entity_type: string
           id?: string
@@ -139,6 +144,7 @@ export type Database = {
           action?: string
           actor_id?: string | null
           created_at?: string
+          device?: string | null
           entity_id?: string
           entity_type?: string
           id?: string
@@ -183,6 +189,7 @@ export type Database = {
           amount: number
           attachment_url: string | null
           brought_by: Database["public"]["Enums"]["brought_in_by"]
+          cancel_reason: string | null
           conversion_fee_amount: number | null
           conversion_fee_currency: string | null
           conversion_fee_kind: string | null
@@ -212,6 +219,7 @@ export type Database = {
           amount: number
           attachment_url?: string | null
           brought_by: Database["public"]["Enums"]["brought_in_by"]
+          cancel_reason?: string | null
           conversion_fee_amount?: number | null
           conversion_fee_currency?: string | null
           conversion_fee_kind?: string | null
@@ -241,6 +249,7 @@ export type Database = {
           amount?: number
           attachment_url?: string | null
           brought_by?: Database["public"]["Enums"]["brought_in_by"]
+          cancel_reason?: string | null
           conversion_fee_amount?: number | null
           conversion_fee_currency?: string | null
           conversion_fee_kind?: string | null
@@ -331,6 +340,7 @@ export type Database = {
           bought_amount: number
           bought_currency: string
           buy_rate: number
+          cancel_reason: string | null
           completion_note: string | null
           counterparty: string | null
           created_at: string
@@ -360,6 +370,7 @@ export type Database = {
           bought_amount: number
           bought_currency: string
           buy_rate: number
+          cancel_reason?: string | null
           completion_note?: string | null
           counterparty?: string | null
           created_at?: string
@@ -389,6 +400,7 @@ export type Database = {
           bought_amount?: number
           bought_currency?: string
           buy_rate?: number
+          cancel_reason?: string | null
           completion_note?: string | null
           counterparty?: string | null
           created_at?: string
@@ -531,6 +543,7 @@ export type Database = {
       customer_deposits: {
         Row: {
           amount: number
+          cancel_reason: string | null
           completion_note: string | null
           created_at: string
           created_by: string | null
@@ -548,6 +561,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          cancel_reason?: string | null
           completion_note?: string | null
           created_at?: string
           created_by?: string | null
@@ -565,6 +579,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          cancel_reason?: string | null
           completion_note?: string | null
           created_at?: string
           created_by?: string | null
@@ -649,6 +664,7 @@ export type Database = {
       customers: {
         Row: {
           account_details: string | null
+          cancel_reason: string | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
@@ -660,6 +676,7 @@ export type Database = {
         }
         Insert: {
           account_details?: string | null
+          cancel_reason?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -671,6 +688,7 @@ export type Database = {
         }
         Update: {
           account_details?: string | null
+          cancel_reason?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -761,6 +779,7 @@ export type Database = {
         Row: {
           amount: number
           attachment_url: string | null
+          cancel_reason: string | null
           category: string | null
           completion_note: string | null
           created_at: string
@@ -790,6 +809,7 @@ export type Database = {
         Insert: {
           amount: number
           attachment_url?: string | null
+          cancel_reason?: string | null
           category?: string | null
           completion_note?: string | null
           created_at?: string
@@ -819,6 +839,7 @@ export type Database = {
         Update: {
           amount?: number
           attachment_url?: string | null
+          cancel_reason?: string | null
           category?: string | null
           completion_note?: string | null
           created_at?: string
@@ -1132,6 +1153,7 @@ export type Database = {
       payment_orders: {
         Row: {
           amount: number
+          cancel_reason: string | null
           completion_note: string | null
           country: string | null
           created_at: string
@@ -1162,6 +1184,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          cancel_reason?: string | null
           completion_note?: string | null
           country?: string | null
           created_at?: string
@@ -1192,6 +1215,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          cancel_reason?: string | null
           completion_note?: string | null
           country?: string | null
           created_at?: string
@@ -1315,6 +1339,7 @@ export type Database = {
           ali_profit: number | null
           ali_share_pct: number
           attachment_url: string | null
+          cancel_reason: string | null
           completion_note: string | null
           cost_basis_amount: number | null
           cost_basis_rate: number | null
@@ -1353,6 +1378,7 @@ export type Database = {
           ali_profit?: number | null
           ali_share_pct?: number
           attachment_url?: string | null
+          cancel_reason?: string | null
           completion_note?: string | null
           cost_basis_amount?: number | null
           cost_basis_rate?: number | null
@@ -1391,6 +1417,7 @@ export type Database = {
           ali_profit?: number | null
           ali_share_pct?: number
           attachment_url?: string | null
+          cancel_reason?: string | null
           completion_note?: string | null
           cost_basis_amount?: number | null
           cost_basis_rate?: number | null
@@ -1558,6 +1585,7 @@ export type Database = {
           ali_share_pct: number | null
           avg_buyback_rate: number | null
           base_currency: string
+          cancel_reason: string | null
           capital_amount: number | null
           capital_currency: string | null
           closed_at: string | null
@@ -1606,6 +1634,7 @@ export type Database = {
           ali_share_pct?: number | null
           avg_buyback_rate?: number | null
           base_currency?: string
+          cancel_reason?: string | null
           capital_amount?: number | null
           capital_currency?: string | null
           closed_at?: string | null
@@ -1654,6 +1683,7 @@ export type Database = {
           ali_share_pct?: number | null
           avg_buyback_rate?: number | null
           base_currency?: string
+          cancel_reason?: string | null
           capital_amount?: number | null
           capital_currency?: string | null
           closed_at?: string | null
@@ -2079,6 +2109,7 @@ export type Database = {
         Row: {
           amount: number
           attachment_url: string | null
+          cancel_reason: string | null
           completion_note: string | null
           created_at: string
           created_by: string | null
@@ -2098,6 +2129,7 @@ export type Database = {
         Insert: {
           amount: number
           attachment_url?: string | null
+          cancel_reason?: string | null
           completion_note?: string | null
           created_at?: string
           created_by?: string | null
@@ -2117,6 +2149,7 @@ export type Database = {
         Update: {
           amount?: number
           attachment_url?: string | null
+          cancel_reason?: string | null
           completion_note?: string | null
           created_at?: string
           created_by?: string | null
@@ -2685,6 +2718,10 @@ export type Database = {
         Returns: number
       }
       can_write: { Args: { _user_id: string }; Returns: boolean }
+      cancel_record: {
+        Args: { _device?: string; _id: string; _reason: string; _table: string }
+        Returns: undefined
+      }
       consume_lots_fifo: {
         Args: {
           _account_id: string
@@ -2713,6 +2750,10 @@ export type Database = {
       }
       recompute_trade_totals: {
         Args: { _trade_id: string }
+        Returns: undefined
+      }
+      set_edit_context: {
+        Args: { _device?: string; _reason: string }
         Returns: undefined
       }
     }
