@@ -77,9 +77,14 @@ function QuickSellPage() {
     queryKey: ["inv_cost", soldCurrency, receivedCurrency],
     enabled: !!soldCurrency && !!receivedCurrency,
     queryFn: async () => {
-      const { data } = await supabase.from("currency_inventory").select("*")
-        .eq("currency", soldCurrency).eq("quote_currency", receivedCurrency).maybeSingle();
-      return Number((data as any)?.avg_buy_rate ?? 0);
+      const { data } = await supabase.from("buy_transactions")
+        .select("bought_amount,paid_amount")
+        .eq("bought_currency", soldCurrency).eq("paid_currency", receivedCurrency)
+        .is("deleted_at", null).order("entry_date", { ascending: false }).limit(50);
+      const rows = data ?? [];
+      const totQty = rows.reduce((s, r: any) => s + Number(r.bought_amount || 0), 0);
+      const totCost = rows.reduce((s, r: any) => s + Number(r.paid_amount || 0), 0);
+      return totQty > 0 ? totCost / totQty : 0;
     },
   });
 
