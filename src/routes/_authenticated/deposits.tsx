@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { AccountSelect, useCustomers } from "@/components/account-select";
 import { NumberInput } from "@/components/number-input";
 import { CURRENCIES, fmt } from "@/lib/exchange";
-import { SmartLabels } from "@/components/txn-detail-dialog";
+import { SmartLabels } from "@/components/settlement-status-badge";
 import { DocumentsPanel } from "@/components/documents-panel";
 import { toast } from "sonner";
 import { Plus, CheckCircle2 } from "lucide-react";
