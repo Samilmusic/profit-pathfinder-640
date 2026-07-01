@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AccountSelect, useCustomers } from "@/components/account-select";
+import { CustomerBankAccountPicker, touchBankAccount } from "@/components/customer-bank-account-picker";
+import { maskAccount } from "@/components/customer-bank-account-form";
 import { NumberInput } from "@/components/number-input";
 import { CURRENCIES, FEE_KINDS, PAYMENT_METHODS, fmt, roundAmount } from "@/lib/exchange";
 import { SmartLabels } from "@/components/settlement-status-badge";
@@ -31,7 +33,7 @@ function Page() {
     entry_date: today, customer_id: "", currency: "AED", amount: "",
     method: "bank_transfer", source_wallet_account_id: "", paid_from_account_id: "",
     destination_bank: "", receiver_name: "", receiver_account: "", iban_card: "", country: "",
-    fee_kind: "fixed", fee_input: "", notes: "",
+    fee_kind: "fixed", fee_input: "", notes: "", customer_bank_account_id: "",
   });
 
   // Auto-pick customer's wallet
@@ -94,6 +96,7 @@ function Page() {
         notes: f.notes || null, created_by: u.user?.id,
       });
       if (error) throw error;
+      await touchBankAccount(f.customer_bank_account_id);
     },
     onSuccess: () => { toast.success("Payment order saved as draft"); qc.invalidateQueries(); setOpen(false); setF({ ...f, amount: "", fee_input: "", notes: "", receiver_name: "", receiver_account: "", iban_card: "" }); },
     onError: (e: any) => toast.error(e.message),
@@ -114,6 +117,23 @@ function Page() {
                   <SelectContent>{(customers.data ?? []).map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                 </Select>
               </F>
+              <div className="md:col-span-2">
+                <CustomerBankAccountPicker
+                  customerId={f.customer_id || null}
+                  currency={f.currency}
+                  value={f.customer_bank_account_id || null}
+                  label="Receiver account (from customer's saved banks)"
+                  onChange={(id, row) => setF((p: any) => ({
+                    ...p,
+                    customer_bank_account_id: id ?? "",
+                    destination_bank: row?.bank_name ?? p.destination_bank,
+                    receiver_name: row?.holder_name ?? p.receiver_name,
+                    receiver_account: row?.account_number ?? p.receiver_account,
+                    iban_card: row?.iban ?? row?.card_number ?? p.iban_card,
+                    country: row?.country ?? p.country,
+                  }))}
+                />
+              </div>
               <F label="Currency">
                 <Select value={f.currency} onValueChange={(v) => setF({ ...f, currency: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
