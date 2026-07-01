@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { Plus, FileText } from "lucide-react";
 import { SettlementStatusBadge } from "@/components/settlement-status-badge";
 import { TxnDetailDialog } from "@/components/txn-detail-dialog";
+import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/sell")({ component: Page });
 
@@ -38,6 +39,49 @@ function Page() {
     const a = Number(f.sold_amount); const r = Number(f.sell_rate);
     return a && r ? a * r : 0;
   }, [f.sold_amount, f.sell_rate]);
+
+  // FIFO preview: pull available lots for current source & currency
+  const lots = useQuery({
+    queryKey: ["sell-fifo-lots", f.sold_currency, f.sold_from_account_id],
+    enabled: !!f.sold_currency,
+    queryFn: async () => {
+      let q = supabase
+        .from("inventory_lots_view")
+        .select("*")
+        .eq("currency", f.sold_currency)
+        .gt("remaining_amount", 0)
+        .order("entry_date", { ascending: true })
+        .order("created_at", { ascending: true });
+      if (f.sold_from_account_id) q = q.eq("account_id", f.sold_from_account_id);
+      const { data, error } = await q;
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const preview = useMemo(() => {
+    const want = Number(f.sold_amount) || 0;
+    const rows: Array<{ lot: any; take: number }> = [];
+    let remaining = want;
+    let totalCost = 0;
+    let costCcy: string | null = null;
+    for (const l of lots.data ?? []) {
+      if (remaining <= 0) break;
+      const take = Math.min(remaining, Number(l.remaining_amount));
+      rows.push({ lot: l, take });
+      totalCost += take * Number(l.cost_basis_rate);
+      if (!costCcy) costCcy = l.cost_basis_currency;
+      remaining -= take;
+    }
+    const covered = want - remaining;
+    const blended = covered > 0 ? totalCost / covered : 0;
+    const receivedCcyMatchesCost = costCcy && costCcy === f.received_currency;
+    const gross = receivedCcyMatchesCost ? received_amount - totalCost : 0;
+    const milad = gross * Number(f.milad_pct || 0) / 100;
+    const ali = gross * Number(f.ali_pct || 0) / 100;
+    const available = (lots.data ?? []).reduce((s, l) => s + Number(l.remaining_amount), 0);
+    return { rows, covered, shortfall: Math.max(0, remaining), totalCost, blended, costCcy, gross, milad, ali, available, receivedCcyMatchesCost };
+  }, [lots.data, f.sold_amount, f.received_currency, f.milad_pct, f.ali_pct, received_amount]);
 
   const q = useQuery({
     queryKey: ["sells"],
