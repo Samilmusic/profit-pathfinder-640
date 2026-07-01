@@ -197,6 +197,13 @@ export type Database = {
             referencedRelation: "accounts"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "brought_in_money_deposit_account_id_fkey"
+            columns: ["deposit_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
         ]
       }
       buy_transactions: {
@@ -304,6 +311,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "buy_transactions_paid_from_account_id_fkey"
+            columns: ["paid_from_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
             foreignKeyName: "buy_transactions_received_into_account_id_fkey"
             columns: ["received_into_account_id"]
             isOneToOne: false
@@ -316,6 +330,149 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "accounts"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buy_transactions_received_into_account_id_fkey"
+            columns: ["received_into_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+        ]
+      }
+      customer_credit: {
+        Row: {
+          base_currency: string
+          created_at: string
+          credit_limit: number
+          customer_id: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          base_currency?: string
+          created_at?: string
+          credit_limit?: number
+          customer_id: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          base_currency?: string
+          created_at?: string
+          credit_limit?: number
+          customer_id?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_credit_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: true
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_deposits: {
+        Row: {
+          amount: number
+          completion_note: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          customer_id: string
+          deleted_at: string | null
+          deposit_account_id: string
+          entry_date: string
+          id: string
+          notes: string | null
+          settlement_status: Database["public"]["Enums"]["settlement_status"]
+          updated_at: string
+          wallet_account_id: string
+        }
+        Insert: {
+          amount: number
+          completion_note?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency: string
+          customer_id: string
+          deleted_at?: string | null
+          deposit_account_id: string
+          entry_date?: string
+          id?: string
+          notes?: string | null
+          settlement_status?: Database["public"]["Enums"]["settlement_status"]
+          updated_at?: string
+          wallet_account_id: string
+        }
+        Update: {
+          amount?: number
+          completion_note?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          customer_id?: string
+          deleted_at?: string | null
+          deposit_account_id?: string
+          entry_date?: string
+          id?: string
+          notes?: string | null
+          settlement_status?: Database["public"]["Enums"]["settlement_status"]
+          updated_at?: string
+          wallet_account_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_deposits_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_deposits_deposit_account_id_fkey"
+            columns: ["deposit_account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "customer_deposits_deposit_account_id_fkey"
+            columns: ["deposit_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_deposits_deposit_account_id_fkey"
+            columns: ["deposit_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "customer_deposits_wallet_account_id_fkey"
+            columns: ["wallet_account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "customer_deposits_wallet_account_id_fkey"
+            columns: ["wallet_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_deposits_wallet_account_id_fkey"
+            columns: ["wallet_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
           },
         ]
       }
@@ -513,6 +670,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "expenses_paid_from_account_id_fkey"
+            columns: ["paid_from_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
             foreignKeyName: "expenses_related_buy_id_fkey"
             columns: ["related_buy_id"]
             isOneToOne: false
@@ -576,6 +740,144 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "accounts"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ledger_entries_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+        ]
+      }
+      payment_orders: {
+        Row: {
+          amount: number
+          completion_note: string | null
+          country: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          customer_id: string
+          deleted_at: string | null
+          destination_bank: string | null
+          entry_date: string
+          fee_input: number | null
+          fee_kind: Database["public"]["Enums"]["fee_kind"]
+          iban_card: string | null
+          id: string
+          method: Database["public"]["Enums"]["payment_method"]
+          notes: string | null
+          paid_from_account_id: string | null
+          receiver_account: string | null
+          receiver_name: string | null
+          service_charge_amount: number
+          service_charge_currency: string | null
+          settlement_status: Database["public"]["Enums"]["settlement_status"]
+          source_wallet_account_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          completion_note?: string | null
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency: string
+          customer_id: string
+          deleted_at?: string | null
+          destination_bank?: string | null
+          entry_date?: string
+          fee_input?: number | null
+          fee_kind?: Database["public"]["Enums"]["fee_kind"]
+          iban_card?: string | null
+          id?: string
+          method: Database["public"]["Enums"]["payment_method"]
+          notes?: string | null
+          paid_from_account_id?: string | null
+          receiver_account?: string | null
+          receiver_name?: string | null
+          service_charge_amount?: number
+          service_charge_currency?: string | null
+          settlement_status?: Database["public"]["Enums"]["settlement_status"]
+          source_wallet_account_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          completion_note?: string | null
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          customer_id?: string
+          deleted_at?: string | null
+          destination_bank?: string | null
+          entry_date?: string
+          fee_input?: number | null
+          fee_kind?: Database["public"]["Enums"]["fee_kind"]
+          iban_card?: string | null
+          id?: string
+          method?: Database["public"]["Enums"]["payment_method"]
+          notes?: string | null
+          paid_from_account_id?: string | null
+          receiver_account?: string | null
+          receiver_name?: string | null
+          service_charge_amount?: number
+          service_charge_currency?: string | null
+          settlement_status?: Database["public"]["Enums"]["settlement_status"]
+          source_wallet_account_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_orders_paid_from_account_id_fkey"
+            columns: ["paid_from_account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "payment_orders_paid_from_account_id_fkey"
+            columns: ["paid_from_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_orders_paid_from_account_id_fkey"
+            columns: ["paid_from_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "payment_orders_source_wallet_account_id_fkey"
+            columns: ["source_wallet_account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "payment_orders_source_wallet_account_id_fkey"
+            columns: ["source_wallet_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_orders_source_wallet_account_id_fkey"
+            columns: ["source_wallet_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
           },
         ]
       }
@@ -732,6 +1034,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "sell_transactions_received_into_account_id_fkey"
+            columns: ["received_into_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
             foreignKeyName: "sell_transactions_sold_from_account_id_fkey"
             columns: ["sold_from_account_id"]
             isOneToOne: false
@@ -743,6 +1052,60 @@ export type Database = {
             columns: ["sold_from_account_id"]
             isOneToOne: false
             referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sell_transactions_sold_from_account_id_fkey"
+            columns: ["sold_from_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+        ]
+      }
+      service_charges: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          customer_id: string | null
+          entry_date: string
+          id: string
+          kind: Database["public"]["Enums"]["fee_kind"]
+          notes: string | null
+          ref_id: string | null
+          ref_type: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency: string
+          customer_id?: string | null
+          entry_date?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["fee_kind"]
+          notes?: string | null
+          ref_id?: string | null
+          ref_type: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          customer_id?: string | null
+          entry_date?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["fee_kind"]
+          notes?: string | null
+          ref_id?: string | null
+          ref_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_charges_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
             referencedColumns: ["id"]
           },
         ]
@@ -818,6 +1181,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "transfers_from_account_id_fkey"
+            columns: ["from_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
             foreignKeyName: "transfers_to_account_id_fkey"
             columns: ["to_account_id"]
             isOneToOne: false
@@ -830,6 +1200,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "accounts"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transfers_to_account_id_fkey"
+            columns: ["to_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
           },
         ]
       }
@@ -867,10 +1244,45 @@ export type Database = {
         }
         Relationships: []
       }
+      company_vs_customer_funds: {
+        Row: {
+          balance: number | null
+          bucket: string | null
+          currency: string | null
+        }
+        Relationships: []
+      }
       currency_inventory: {
         Row: {
           currency: string | null
           total_amount: number | null
+        }
+        Relationships: []
+      }
+      customer_wallet_balances: {
+        Row: {
+          account_id: string | null
+          balance: number | null
+          currency: string | null
+          customer_id: string | null
+          customer_name: string | null
+          last_activity: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounts_holder_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_charge_daily: {
+        Row: {
+          currency: string | null
+          entry_date: string | null
+          total: number | null
         }
         Relationships: []
       }
