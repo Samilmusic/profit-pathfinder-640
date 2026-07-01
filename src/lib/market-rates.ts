@@ -21,7 +21,7 @@ export function useLatestMarketRates() {
         .from("market_rates_latest" as any)
         .select("*");
       if (error) throw error;
-      return (data ?? []) as MarketRateRow[];
+      return (data ?? []) as unknown as MarketRateRow[];
     },
     refetchInterval: 60_000,
     staleTime: 30_000,
