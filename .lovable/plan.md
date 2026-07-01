@@ -1,70 +1,94 @@
-## Sell Workflow → Deal Lifecycle Upgrade
+## Scope
 
-Replace "Draft" concept with a real **Deal Status** state machine on sell transactions. Inventory still decreases immediately on save; profit is only realized when the deal is closed with payment confirmed.
+20 premium UX/productivity upgrades. Accounting logic, database triggers, profit rules and settlement math stay exactly as they are. Everything below is presentation, indexing, and small helper tables.
 
-### 1. Database (migration)
+Because this is a very large surface area, I will ship it in **4 phases** so you can review after each. Say "go" and I start Phase 1. Between phases you can reorder or drop items.
 
-Add to `sell_transactions`:
-- `deal_status` enum: `open`, `waiting_payment`, `partially_paid`, `waiting_receipt`, `ready_to_close`, `closed`, `cancelled` (default `open`)
-- `amount_received` numeric default 0
-- `payment_difference_reason` text
-- `closed_at`, `closed_by`
-- `expected_payment_date` date (optional, drives "Overdue")
+---
 
-New table `sell_payments` (customer payments against a sell):
-- `sell_id`, `entry_date`, `currency`, `amount`, `received_into_account_id`, `notes`, standard audit cols
-- ledger trigger: credits `received_into_account_id`
-- trigger recomputes `amount_received` and `deal_status` on parent sell:
-  - sum < received_amount → `partially_paid`
-  - sum >= received_amount AND has receipt doc → `ready_to_close`
-  - none yet → `waiting_payment`
+## Phase 1 — Foundations that everything else reuses
 
-Update sell triggers:
-- `trg_sell_ledger_after`: only post the **received** leg when `deal_status = 'closed'`; sold-leg (inventory out) always posts on insert.
-- `trg_sell_calc_and_ledger`: only feed `recompute_cycle_profit` on close.
-- Remove `enforce_txn_completion` gate tied to `settlement_status='completed'` for sells; add `enforce_sell_close` that requires: receiving account, amount_received ≥ received_amount (or reason), receipt doc (unless admin override flag).
+1. **Auto document numbers** (`SELL-2026-000021`, `BUY-…`, `BR-…`, `EXP-…`)
+   - Add nullable `doc_no text unique` on `sell_transactions`, `buy_transactions`, `brought_in_money`, `expenses`.
+   - `BEFORE INSERT` trigger fills it from a per-year sequence. Existing rows get backfilled once.
+   - Displayed everywhere the row appears (list rows, detail headers, timeline, search results).
 
-RPC `close_sell_deal(_id, _override boolean)` — validates, sets `deal_status='closed'`, posts received leg, sets `closed_at/by`.
-RPC `cancel_sell_deal(_id, _reason)` — restores lots via existing consumption reverse path, sets `cancelled`.
+2. **Click-to-copy everywhere**
+   - Reuse existing `CopyButton`. Wrap IBAN, card, phone, reference, doc_no, account no, txn id, customer id in a new `<Copyable value>` component so it's one-line to add.
 
-### 2. Sell form (`sell.tsx` + `quick-sell.tsx`)
+3. **Smart global search (⌘K / mobile search bar)**
+   - Extend the existing command palette with a debounced multi-table query: customers (name/phone/notes), customer_bank_accounts (iban/card/bank), accounts, sell/buy/brought-in/expenses (doc_no, reference, notes, amount-as-text), sell_payments (reference), documents (filename).
+   - Results grouped by category with icons, keyboard nav, Enter routes to the record.
 
-- Remove any "Save as Draft" wording.
-- Primary bottom bar (mobile-safe, sticky, `safe-area-inset-bottom`):
-  - `Save as Open Deal` (creates sell with `deal_status='open'`, inventory out, no received-leg yet)
-  - `Save & Close Now` (only enabled if receiving account + receipt + amount known — same-day cash sales)
-  - `Cancel`
-- Receiving account no longer blocks Open Deal save (it's needed only to close).
-- Show live status preview: "This will create an Open Deal. Customer will owe {received_amount} {ccy}."
+4. **Beautiful empty states**
+   - `<EmptyState icon title body action>` component. Replace bare "No rows" across lists (deals, expenses, customers, receipts, transfers, cycles, alerts).
 
-### 3. Deal detail page (`sells.$id.tsx` — new route)
+5. **Premium UI polish pass**
+   - Standardize the semantic tone tokens: `--tone-positive` (green), `--tone-warn` (orange), `--tone-danger` (red), `--tone-info` (blue) in `src/styles.css`.
+   - Card hover lift, subtle fade-in on lists, consistent typography scale. No new libraries.
 
-- Header: deal code, status badge, customer, sold/received summary.
-- **Payments panel**: list `sell_payments`; "+ Record payment" (amount, account, date, receipt upload).
-- **Documents panel**: reuse existing `DocumentsPanel`.
-- **Timeline**: Created → AED Delivered → Waiting for Payment → Receipt Uploaded → Payment Confirmed → Closed.
-- **Close Deal** button: enabled only when validation passes; opens confirm modal (+ optional difference reason).
-- **Cancel Deal** button (admin/writer) with mandatory reason.
+---
 
-Existing `sell.tsx` list rows link to this detail page and show the new status badge.
+## Phase 2 — Dashboard & operator cockpit
 
-### 4. Command Center
+6. **Today's Summary widget** — AED bought, AED sold, IRR received, IRR paid, open deals, closed deals, expenses, new customers, net cash movement. Backed by a SQL view `today_summary` (SUMs grouped by currency + direction, filtered on `entry_date = current_date`).
 
-Add widgets driven by `deal_status`:
-- Open Deals · Waiting for Payment · Partially Paid · Waiting for Receipt · Ready to Close · Overdue Deals (>expected_payment_date or >3d old and not closed).
+7. **Recent Activity feed** — reads existing `audit_events` (already populated by triggers). Row: time · user (from `profiles`) · human action · clickable to the record. Groups "today / yesterday / earlier".
 
-### 5. Terminology sweep
+8. **Quick Actions panel** — 5 large tap targets (New Deal, New Brought-In, New Expense, New Transfer, New Customer) at the top of the dashboard and as a mobile FAB speed-dial.
 
-Grep and remove "Draft" from sell-related UI, toasts, dialogs, and empty states. Keep "Draft" untouched elsewhere (e.g. customer bank-account drafts) — scoped to Sell only.
+9. **Open Deal reminders** — derived from `sell_transactions.entry_date` + status: green ≤1d, yellow ≤2d, orange ≤3d, red >7d. Colored dot + tooltip on every deal row, filter chip in Deals list, count badge on the sidebar.
 
-### Technical notes
+10. **Soft notification center** — reuse the existing `NotificationBell`. Extend derived alerts: deal aged > threshold, receipt uploaded (last 1h), rate updated, inventory below avg cost, customer payment received. Non-blocking, dismissable.
 
-- Migration adds enum, columns, table, triggers, RPCs, and GRANT/RLS for `sell_payments` (authenticated CRUD via `can_write`, service_role all).
-- `recompute_cycle_profit` already ignores non-closed sells once we gate its trigger on `deal_status='closed'`.
-- Backward-compat: existing sell rows get `deal_status='closed'` (they already posted received leg). Migration sets that default for historical rows.
-- Mobile: reuse existing sticky action bar pattern from Brought-In / Accounts new pages.
+---
 
-### Out of scope
+## Phase 3 — Deal, Customer, Account depth
 
-- No change to Buy, Deposit, Brought-In, Transfer workflows.
-- No change to profit-sharing math.
+11. **Deal timeline (visual)** — vertical stepper on the Sell detail page. Steps: Created → Waiting Payment → Payment Received → Receipt Uploaded → Currency Delivered → Closed. Each step is a button; popover shows date, time, user, notes. Data sources: `sell_transactions`, `sell_payments`, `documents`, `audit_events`.
+
+12. **Customer quick profile card** — hover/click a customer opens a side sheet: outstanding balance (from `customer_credit`), last deal, last payment, last receipt, total volume, favorite currency (mode of received_currency), avg deal size, current open deals. All computed client-side from already-fetched queries plus one `customer_quick_stats(customer_id)` SQL view for speed.
+
+13. **Inventory drill-down** — clicking an inventory currency card opens a table of lots (`inventory_lots` + `lot_consumptions`): rate, source (brought-in / sell), owner, location account, status (open/exhausted), remaining amount, age in days.
+
+14. **Account quick stats** — opening any account shows: current balance, today's movement, this week, txn count, last txn, largest txn. Built from a single `account_quick_stats` view keyed by `account_id`.
+
+15. **Rate comparison on Buy/Sell forms** — already partially shipped via `RateComparison`; extend to show explicit "Market · Our · Δ · Δ%" row with green/red tone in the form summary card, and mirror it on the deal detail page.
+
+---
+
+## Phase 4 — Safeguards, closing, mobile
+
+16. **Duplicate warning (non-blocking)** — before saving a receipt / payment, run three checks:
+    - same file hash in `documents`
+    - same `reference_number` on any payment in last 30d
+    - same `customer + amount + ±10min` window in `sell_payments`
+    Show a yellow banner with "Save anyway" / "Review".
+
+17. **Daily Closing** — one button "Close Today" on the dashboard. Runs a `daily_reconciliation_check()` SQL function that returns issues in each bucket (open deals, missing receipts, negative balances, unmatched payments, inventory issues, duplicates). If empty → toast "Daily reconciliation completed" and insert a row in existing `daily_closings`. If not empty → a checklist modal with click-through links.
+
+18. **Market intelligence card** — dashboard tile: current market, our avg cost, Δ, unrealized P/L, reference rate, last updated, auto-refresh every 5 min (reusing the existing `market_rate_deltas` + `inventory_exposure` views).
+
+19. **Favorites (pinning)** — new tiny table `favorites(user_id, entity_type, entity_id)`. Star icon on customers, accounts, deals. "Pinned" section at the top of each list.
+
+20. **Mobile speed pass** — audit every primary flow to ≤3 taps: bottom sticky save on all forms, 44px min tap target, skeleton loaders on lists, prefetch on `<Link>` hover/touchstart. No new lib.
+
+---
+
+## Technical section (for you and me only)
+
+- **New tables**: `favorites` (user_id uuid, entity_type text, entity_id uuid, created_at, PK compound). Standard grants + RLS `user_id = auth.uid()`.
+- **New columns**: `doc_no text unique` on 4 transaction tables; nullable → backfilled by trigger.
+- **New views**: `today_summary`, `customer_quick_stats`, `account_quick_stats`. All `security_invoker=on`, `SELECT` grants to `authenticated`.
+- **New RPC**: `daily_reconciliation_check()` returning `jsonb` — read-only, `SECURITY INVOKER`.
+- **New client components**: `Copyable`, `EmptyState`, `DealTimeline`, `CustomerQuickProfile`, `InventoryLotsDrawer`, `AccountQuickStats`, `TodaySummary`, `RecentActivity`, `QuickActionsBar`, `DuplicateWarningBanner`, `DailyClosingButton`, `FavoritesStar`.
+- **No changes** to: profit triggers, FIFO logic, ledger triggers, settlement enum, cycle recomputation, RLS policies on financial tables.
+- **Migrations**: one per phase; each includes grants + RLS + trigger creation in the required order.
+
+---
+
+## Delivery order
+
+Phase 1 → 2 → 3 → 4. After each phase I stop, you test, then say "next" or "adjust X".
+
+Reply **"go"** to start Phase 1, or tell me which items to reorder / cut.
