@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { Plus, FileText } from "lucide-react";
 import { SettlementStatusBadge } from "@/components/settlement-status-badge";
 import { TxnDetailDialog } from "@/components/txn-detail-dialog";
+import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/buy")({ component: Page });
 
@@ -30,12 +31,25 @@ function Page() {
     entry_date: today, bought_currency: "AED", bought_amount: "", buy_rate: "",
     paid_currency: "IRR", paid_from_account_id: "", received_into_account_id: "",
     customer_id: "", owner: "shared", notes: "",
+    trade_cycle_id: "",
   });
 
   const paid_amount = useMemo(() => {
     const a = Number(f.bought_amount); const r = Number(f.buy_rate);
     return a && r ? a * r : 0;
   }, [f.bought_amount, f.buy_rate]);
+
+  // Open cycles this buy could close (paid ccy = intermediate, bought ccy = initial)
+  const openCyclesQ = useQuery({
+    queryKey: ["v_open_cycles_for_buy", f.paid_currency, f.bought_currency],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("v_open_cycles").select("*")
+        .eq("intermediate_currency", f.paid_currency)
+        .eq("initial_currency", f.bought_currency);
+      if (error) throw error;
+      return (data ?? []).filter((c: any) => Number(c.intermediate_remaining) > 0);
+    },
+  });
 
   const q = useQuery({
     queryKey: ["buys"],
@@ -62,6 +76,7 @@ function Page() {
         owner: f.owner,
         notes: f.notes || null,
         created_by: u.user?.id,
+        trade_cycle_id: f.trade_cycle_id || null,
       };
       const { error } = await supabase.from("buy_transactions").insert(payload);
       if (error) throw error;
