@@ -118,7 +118,7 @@ function Page() {
         customer_id: f.customer_id || null,
         customer_phone: f.customer_phone || null,
         customer_account_ref: f.customer_account_ref || null,
-        milad_pct: milad, ali_pct: ali,
+        milad_share_pct: milad, ali_share_pct: ali,
         notes: f.notes || null,
         created_by: u.user?.id,
         creates_cycle: f.creates_cycle,
