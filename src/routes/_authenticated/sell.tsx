@@ -155,6 +155,48 @@ function Page() {
                 <F label="Received amount (auto)"><Input readOnly value={received_amount ? fmt(received_amount, f.received_currency) : ""} /></F>
                 <F label="Sold from account"><AccountSelect currency={f.sold_currency} value={f.sold_from_account_id} onChange={(v) => setF({ ...f, sold_from_account_id: v })} /></F>
                 <F label="Received into account"><AccountSelect currency={f.received_currency} value={f.received_into_account_id} onChange={(v) => setF({ ...f, received_into_account_id: v })} /></F>
+                <div className="md:col-span-2">
+                  <Card className="bg-muted/40 border-dashed">
+                    <CardContent className="p-3 space-y-2 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium">FIFO cost preview</span>
+                        <Badge variant="outline" className="font-mono">Available: {fmt(preview.available, f.sold_currency)} {f.sold_currency}</Badge>
+                      </div>
+                      {preview.shortfall > 0 && Number(f.sold_amount) > 0 && (
+                        <div className="text-destructive text-xs">
+                          Not enough inventory — short by {fmt(preview.shortfall, f.sold_currency)} {f.sold_currency}.
+                        </div>
+                      )}
+                      {preview.rows.length > 0 && (
+                        <div className="space-y-1">
+                          {preview.rows.map(({ lot, take }) => (
+                            <div key={lot.id} className="flex justify-between font-mono text-xs">
+                              <span>{lot.lot_code} · {lot.account_name || "—"}</span>
+                              <span>{fmt(take, f.sold_currency)} × {fmt(lot.cost_basis_rate)} {lot.cost_basis_currency}/{f.sold_currency}</span>
+                            </div>
+                          ))}
+                          <div className="border-t pt-1 grid grid-cols-2 gap-2 text-xs">
+                            <div>Blended cost rate</div><div className="text-right font-mono">{fmt(preview.blended)} {preview.costCcy}/{f.sold_currency}</div>
+                            <div>Sell rate</div><div className="text-right font-mono">{fmt(Number(f.sell_rate) || 0)}</div>
+                            <div>Cost basis</div><div className="text-right font-mono">{fmt(preview.totalCost)} {preview.costCcy}</div>
+                            <div>Received</div><div className="text-right font-mono">{fmt(received_amount)} {f.received_currency}</div>
+                            <div className="font-medium">Expected profit</div>
+                            <div className={"text-right font-mono " + (preview.gross >= 0 ? "text-accent" : "text-destructive")}>
+                              {preview.receivedCcyMatchesCost ? `${fmt(preview.gross)} ${preview.costCcy}` : "—"}
+                            </div>
+                            <div>Milad share</div><div className="text-right font-mono">{fmt(preview.milad)}</div>
+                            <div>Ali share</div><div className="text-right font-mono">{fmt(preview.ali)}</div>
+                          </div>
+                          {!preview.receivedCcyMatchesCost && preview.costCcy && (
+                            <div className="text-xs text-muted-foreground">
+                              Profit not shown: received currency ({f.received_currency}) differs from cost basis currency ({preview.costCcy}).
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
                 <F label="Customer phone"><Input value={f.customer_phone} onChange={(e) => setF({ ...f, customer_phone: e.target.value })} /></F>
                 <F label="Customer account/card ref"><Input value={f.customer_account_ref} onChange={(e) => setF({ ...f, customer_account_ref: e.target.value })} /></F>
                 <F label="Milad %"><Input type="number" value={f.milad_pct} onChange={(e) => setF({ ...f, milad_pct: e.target.value, ali_pct: String(100 - Number(e.target.value)) })} /></F>
