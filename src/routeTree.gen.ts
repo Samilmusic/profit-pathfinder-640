@@ -36,6 +36,7 @@ import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedAliInvestorRouteImport } from './routes/_authenticated/ali-investor'
 import { Route as AuthenticatedAccountsRouteImport } from './routes/_authenticated/accounts'
 import { Route as AuthenticatedTradesIdRouteImport } from './routes/_authenticated/trades.$id'
+import { Route as AuthenticatedDepositsNewRouteImport } from './routes/_authenticated/deposits.new'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -177,6 +178,12 @@ const AuthenticatedTradesIdRoute = AuthenticatedTradesIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AuthenticatedTradesRoute,
 } as any)
+const AuthenticatedDepositsNewRoute =
+  AuthenticatedDepositsNewRouteImport.update({
+    id: '/new',
+    path: '/new',
+    getParentRoute: () => AuthenticatedDepositsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -190,7 +197,7 @@ export interface FileRoutesByFullPath {
   '/customers': typeof AuthenticatedCustomersRoute
   '/daily-closing': typeof AuthenticatedDailyClosingRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/deposits': typeof AuthenticatedDepositsRoute
+  '/deposits': typeof AuthenticatedDepositsRouteWithChildren
   '/expenses': typeof AuthenticatedExpensesRoute
   '/held-by-person': typeof AuthenticatedHeldByPersonRoute
   '/inventory': typeof AuthenticatedInventoryRoute
@@ -204,6 +211,7 @@ export interface FileRoutesByFullPath {
   '/transfers': typeof AuthenticatedTransfersRoute
   '/trust': typeof AuthenticatedTrustRoute
   '/wallets': typeof AuthenticatedWalletsRoute
+  '/deposits/new': typeof AuthenticatedDepositsNewRoute
   '/trades/$id': typeof AuthenticatedTradesIdRoute
 }
 export interface FileRoutesByTo {
@@ -218,7 +226,7 @@ export interface FileRoutesByTo {
   '/customers': typeof AuthenticatedCustomersRoute
   '/daily-closing': typeof AuthenticatedDailyClosingRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/deposits': typeof AuthenticatedDepositsRoute
+  '/deposits': typeof AuthenticatedDepositsRouteWithChildren
   '/expenses': typeof AuthenticatedExpensesRoute
   '/held-by-person': typeof AuthenticatedHeldByPersonRoute
   '/inventory': typeof AuthenticatedInventoryRoute
@@ -232,6 +240,7 @@ export interface FileRoutesByTo {
   '/transfers': typeof AuthenticatedTransfersRoute
   '/trust': typeof AuthenticatedTrustRoute
   '/wallets': typeof AuthenticatedWalletsRoute
+  '/deposits/new': typeof AuthenticatedDepositsNewRoute
   '/trades/$id': typeof AuthenticatedTradesIdRoute
 }
 export interface FileRoutesById {
@@ -248,7 +257,7 @@ export interface FileRoutesById {
   '/_authenticated/customers': typeof AuthenticatedCustomersRoute
   '/_authenticated/daily-closing': typeof AuthenticatedDailyClosingRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/_authenticated/deposits': typeof AuthenticatedDepositsRoute
+  '/_authenticated/deposits': typeof AuthenticatedDepositsRouteWithChildren
   '/_authenticated/expenses': typeof AuthenticatedExpensesRoute
   '/_authenticated/held-by-person': typeof AuthenticatedHeldByPersonRoute
   '/_authenticated/inventory': typeof AuthenticatedInventoryRoute
@@ -262,6 +271,7 @@ export interface FileRoutesById {
   '/_authenticated/transfers': typeof AuthenticatedTransfersRoute
   '/_authenticated/trust': typeof AuthenticatedTrustRoute
   '/_authenticated/wallets': typeof AuthenticatedWalletsRoute
+  '/_authenticated/deposits/new': typeof AuthenticatedDepositsNewRoute
   '/_authenticated/trades/$id': typeof AuthenticatedTradesIdRoute
 }
 export interface FileRouteTypes {
@@ -292,6 +302,7 @@ export interface FileRouteTypes {
     | '/transfers'
     | '/trust'
     | '/wallets'
+    | '/deposits/new'
     | '/trades/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -320,6 +331,7 @@ export interface FileRouteTypes {
     | '/transfers'
     | '/trust'
     | '/wallets'
+    | '/deposits/new'
     | '/trades/$id'
   id:
     | '__root__'
@@ -349,6 +361,7 @@ export interface FileRouteTypes {
     | '/_authenticated/transfers'
     | '/_authenticated/trust'
     | '/_authenticated/wallets'
+    | '/_authenticated/deposits/new'
     | '/_authenticated/trades/$id'
   fileRoutesById: FileRoutesById
 }
@@ -549,8 +562,28 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTradesIdRouteImport
       parentRoute: typeof AuthenticatedTradesRoute
     }
+    '/_authenticated/deposits/new': {
+      id: '/_authenticated/deposits/new'
+      path: '/new'
+      fullPath: '/deposits/new'
+      preLoaderRoute: typeof AuthenticatedDepositsNewRouteImport
+      parentRoute: typeof AuthenticatedDepositsRoute
+    }
   }
 }
+
+interface AuthenticatedDepositsRouteChildren {
+  AuthenticatedDepositsNewRoute: typeof AuthenticatedDepositsNewRoute
+}
+
+const AuthenticatedDepositsRouteChildren: AuthenticatedDepositsRouteChildren = {
+  AuthenticatedDepositsNewRoute: AuthenticatedDepositsNewRoute,
+}
+
+const AuthenticatedDepositsRouteWithChildren =
+  AuthenticatedDepositsRoute._addFileChildren(
+    AuthenticatedDepositsRouteChildren,
+  )
 
 interface AuthenticatedTradesRouteChildren {
   AuthenticatedTradesIdRoute: typeof AuthenticatedTradesIdRoute
@@ -573,7 +606,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRoute
   AuthenticatedDailyClosingRoute: typeof AuthenticatedDailyClosingRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedDepositsRoute: typeof AuthenticatedDepositsRoute
+  AuthenticatedDepositsRoute: typeof AuthenticatedDepositsRouteWithChildren
   AuthenticatedExpensesRoute: typeof AuthenticatedExpensesRoute
   AuthenticatedHeldByPersonRoute: typeof AuthenticatedHeldByPersonRoute
   AuthenticatedInventoryRoute: typeof AuthenticatedInventoryRoute
@@ -599,7 +632,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCustomersRoute: AuthenticatedCustomersRoute,
   AuthenticatedDailyClosingRoute: AuthenticatedDailyClosingRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedDepositsRoute: AuthenticatedDepositsRoute,
+  AuthenticatedDepositsRoute: AuthenticatedDepositsRouteWithChildren,
   AuthenticatedExpensesRoute: AuthenticatedExpensesRoute,
   AuthenticatedHeldByPersonRoute: AuthenticatedHeldByPersonRoute,
   AuthenticatedInventoryRoute: AuthenticatedInventoryRoute,
@@ -626,13 +659,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

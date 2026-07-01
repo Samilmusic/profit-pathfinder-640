@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useMemo, useState } from "react";
@@ -23,27 +23,7 @@ export const Route = createFileRoute("/_authenticated/deposits")({ component: Pa
 
 function Page() {
   const qc = useQueryClient();
-  const customers = useCustomers();
-  const [open, setOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
-  const today = new Date().toISOString().slice(0, 10);
-  const [f, setF] = useState<any>({
-    entry_date: today, customer_id: "", currency: "AED", amount: "",
-    deposit_account_id: "", wallet_account_id: "", notes: "",
-  });
-
-  // Auto-pick the customer's wallet in that currency
-  const walletQ = useQuery({
-    queryKey: ["cust_wallet", f.customer_id, f.currency],
-    enabled: !!f.customer_id && !!f.currency,
-    queryFn: async () => {
-      const { data } = await supabase.from("accounts").select("id")
-        .eq("holder_customer_id", f.customer_id).eq("currency", f.currency)
-        .eq("account_type", "customer_wallet").is("deleted_at", null).limit(1);
-      return data?.[0]?.id ?? null;
-    },
-  });
-  useEffect(() => { if (walletQ.data) setF((p: any) => ({ ...p, wallet_account_id: walletQ.data })); }, [walletQ.data]);
 
   const q = useQuery({
     queryKey: ["customer_deposits"],
@@ -56,57 +36,12 @@ function Page() {
     },
   });
 
-  const create = useMutation({
-    mutationFn: async () => {
-      if (!f.customer_id) throw new Error("Pick a customer");
-      if (!f.deposit_account_id) throw new Error("Pick a receiving company account");
-      if (!f.wallet_account_id) throw new Error("Customer wallet not found for that currency");
-      const { data: u } = await supabase.auth.getUser();
-      const { error } = await supabase.from("customer_deposits").insert({
-        entry_date: f.entry_date, customer_id: f.customer_id, currency: f.currency,
-        amount: Number(f.amount), deposit_account_id: f.deposit_account_id,
-        wallet_account_id: f.wallet_account_id, notes: f.notes || null,
-        created_by: u.user?.id,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => { toast.success("Deposit saved as draft. Upload receipt & complete to credit wallet."); qc.invalidateQueries(); setOpen(false); setF({ ...f, amount: "", notes: "" }); },
-    onError: (e: any) => toast.error(e.message),
-  });
-
   return (
     <>
       <PageHeader title="Customer Deposits" description="Money customers place with us with no immediate exchange. Increases their wallet." actions={
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><Button size="lg" className="h-12"><Plus className="h-4 w-4 mr-1" /> New deposit</Button></DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader><DialogTitle>New customer deposit</DialogTitle></DialogHeader>
-            <form onSubmit={(e) => { e.preventDefault(); create.mutate(); }} className="grid md:grid-cols-2 gap-3">
-              <F label="Date"><Input type="date" value={f.entry_date} onChange={(e) => setF({ ...f, entry_date: e.target.value })} /></F>
-              <F label="Customer">
-                <Select value={f.customer_id} onValueChange={(v) => setF({ ...f, customer_id: v })}>
-                  <SelectTrigger><SelectValue placeholder="Select customer" /></SelectTrigger>
-                  <SelectContent>{(customers.data ?? []).map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-                </Select>
-              </F>
-              <F label="Currency">
-                <Select value={f.currency} onValueChange={(v) => setF({ ...f, currency: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{CURRENCIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                </Select>
-              </F>
-              <F label="Amount"><NumberInput currency={f.currency} value={f.amount} onChange={(v) => setF({ ...f, amount: v })} required /></F>
-              <div className="md:col-span-2"><F label="Received into company account">
-                <AccountSelect value={f.deposit_account_id} onChange={(v) => setF({ ...f, deposit_account_id: v })} currency={f.currency} excludeTypes={["customer_wallet"]} />
-              </F></div>
-              <div className="md:col-span-2"><F label="Notes"><Textarea value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} /></F></div>
-              <div className="md:col-span-2 flex justify-end gap-2">
-                <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
-                <Button type="submit" disabled={create.isPending}>Save draft</Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <Link to="/deposits/new">
+          <Button size="lg" className="h-12"><Plus className="h-4 w-4 mr-1" /> New deposit</Button>
+        </Link>
       } />
       <Card><CardContent className="p-0 overflow-x-auto">
         <Table>
