@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,66 +7,32 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
 import { fmt } from "@/lib/exchange";
-import { holderLabel, holderShort } from "@/lib/settlement";
 import {
   ArrowDownToLine, ShoppingCart, TrendingUp, Receipt, ArrowLeftRight,
-  Users, Wallet as WalletIcon, AlertTriangle, ClipboardList, HandCoins,
-  ShieldCheck, Landmark, Send, ArrowUpFromLine, Radar, LineChart as LineChartIcon,
+  Landmark, ChevronDown, ChevronRight, Layers, Users2, Activity,
+  PackageCheck, Timer, Boxes, Clock,
 } from "lucide-react";
-import { fmtProfit } from "@/lib/exchange";
-import {
-  LineChart, Line as RLine, XAxis, Tooltip, ResponsiveContainer,
-} from "recharts";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
 });
 
-const quickActions = [
-  { to: "/brought-in", label: "Add Brought-In", icon: ArrowDownToLine },
-  { to: "/buy", label: "New Buy", icon: ShoppingCart },
-  { to: "/sell", label: "New Sell", icon: TrendingUp },
-  { to: "/expenses", label: "Add Expense", icon: Receipt },
-  { to: "/transfers", label: "Transfer", icon: ArrowLeftRight },
-  { to: "/customers", label: "Add Customer", icon: Users },
-  { to: "/accounts", label: "Add Account", icon: WalletIcon },
-  { to: "/deposits", label: "Customer Deposit", icon: ArrowUpFromLine },
-  { to: "/payment-orders", label: "Payment Order", icon: Send },
-  { to: "/wallets", label: "Customer Wallets", icon: Landmark },
-  { to: "/trust", label: "Trust vs Company", icon: ShieldCheck },
-] as const;
+const CURRENCY_ACCENT: Record<string, string> = {
+  AED: "from-emerald-500/15 to-emerald-500/0 border-emerald-500/30",
+  IRR: "from-amber-500/15 to-amber-500/0 border-amber-500/30",
+  USD: "from-sky-500/15 to-sky-500/0 border-sky-500/30",
+  GBP: "from-violet-500/15 to-violet-500/0 border-violet-500/30",
+  EUR: "from-blue-500/15 to-blue-500/0 border-blue-500/30",
+  USDT: "from-teal-500/15 to-teal-500/0 border-teal-500/30",
+};
+const CURRENCY_DOT: Record<string, string> = {
+  AED: "bg-emerald-500", IRR: "bg-amber-500", USD: "bg-sky-500",
+  GBP: "bg-violet-500", EUR: "bg-blue-500", USDT: "bg-teal-500",
+};
 
 function DashboardPage() {
   const today = new Date().toISOString().slice(0, 10);
-
-  const kpiAssetsQ = useQuery({
-    queryKey: ["v_total_assets_by_currency"],
-    queryFn: async () => (await supabase.from("v_total_assets_by_currency").select("*")).data ?? [],
-  });
-  const kpiCashQ = useQuery({
-    queryKey: ["v_cash_available"],
-    queryFn: async () => (await supabase.from("v_cash_available").select("*")).data ?? [],
-  });
-  const kpiCircQ = useQuery({
-    queryKey: ["v_money_in_circulation"],
-    queryFn: async () => (await supabase.from("v_money_in_circulation").select("*")).data ?? [],
-  });
-  const kpiTodayQ = useQuery({
-    queryKey: ["v_today_profit"],
-    queryFn: async () => (await supabase.from("v_today_profit").select("*").maybeSingle()).data,
-  });
-  const kpiMonthQ = useQuery({
-    queryKey: ["v_month_profit"],
-    queryFn: async () => (await supabase.from("v_month_profit").select("*").maybeSingle()).data,
-  });
-  const kpiSeriesQ = useQuery({
-    queryKey: ["v_daily_profit_series"],
-    queryFn: async () => (await supabase.from("v_daily_profit_series").select("*")).data ?? [],
-  });
-  const kpiAliQ = useQuery({
-    queryKey: ["v_ali_capital_summary"],
-    queryFn: async () => (await supabase.from("v_ali_capital_summary").select("*").maybeSingle()).data,
-  });
+  const [openCurrency, setOpenCurrency] = useState<string | null>(null);
 
   const balancesQ = useQuery({
     queryKey: ["account_balances"],
@@ -75,20 +42,13 @@ function DashboardPage() {
       return data ?? [];
     },
   });
-
-  const balByTypeQ = useQuery({
-    queryKey: ["v_balances_by_currency_type"],
+  const lotsQ = useQuery({
+    queryKey: ["dashboard_inventory_lots"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("v_balances_by_currency_type").select("*");
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
-
-  const inventoryQ = useQuery({
-    queryKey: ["currency_inventory"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("currency_inventory").select("*");
+      const { data, error } = await supabase
+        .from("inventory_lots")
+        .select("id,lot_code,currency,account_id,original_amount,remaining_amount,cost_basis_rate,cost_basis_currency,source_ref_type,source_description,entry_date,status")
+        .order("entry_date", { ascending: false });
       if (error) throw error;
       return data ?? [];
     },
@@ -110,59 +70,26 @@ function DashboardPage() {
       return data ?? [];
     },
   });
-  const todayExpensesQ = useQuery({
-    queryKey: ["today_expenses"],
+  const openSellsQ = useQuery({
+    queryKey: ["dashboard_open_sells"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("expenses").select("*").eq("entry_date", today).is("deleted_at", null);
+      const { data, error } = await supabase
+        .from("sell_transactions")
+        .select("id,entry_date,deal_status,sold_currency,sold_amount,received_currency,received_amount,customer_name")
+        .is("deleted_at", null)
+        .not("deal_status", "in", "(closed,cancelled)")
+        .order("entry_date", { ascending: false });
       if (error) throw error;
       return data ?? [];
     },
   });
-
-  const balances = balancesQ.data ?? [];
-  const totalByCurrency = (cur: string) =>
-    balances.filter((b: any) => b.currency === cur).reduce((s: number, b: any) => s + Number(b.current_balance || 0), 0);
-  const cashTotal = balances.filter((b: any) => b.account_type === "cash").reduce((s: number, b: any) => s + Number(b.current_balance || 0), 0);
-
-  const grossProfit = (todaySellsQ.data ?? []).reduce((s: number, r: any) => s + Number(r.gross_profit || 0), 0);
-  const miladShare = (todaySellsQ.data ?? []).reduce((s: number, r: any) => s + Number(r.milad_profit || 0), 0);
-  const aliShare = (todaySellsQ.data ?? []).reduce((s: number, r: any) => s + Number(r.ali_profit || 0), 0);
-  const businessExpensesReducingProfit = (todayExpensesQ.data ?? [])
-    .filter((e: any) => e.reduces_profit)
-    .reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
-  const netProfit = grossProfit - businessExpensesReducingProfit;
-
-  const lowBalance = balances.filter((b: any) => Number(b.current_balance) < 0);
-
-  const pendingBuysQ = useQuery({
-    queryKey: ["action_center", "buys"],
+  const closedTodayQ = useQuery({
+    queryKey: ["dashboard_closed_today", today],
     queryFn: async () => {
-      const { data, error } = await supabase.from("buy_transactions").select("*").is("deleted_at", null).not("settlement_status", "in", "(completed,cancelled)").order("entry_date");
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
-  const pendingSellsQ = useQuery({
-    queryKey: ["action_center", "sells"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("sell_transactions").select("*").is("deleted_at", null).not("settlement_status", "in", "(completed,cancelled)").order("entry_date");
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
-  const holdingQ = useQuery({
-    queryKey: ["action_center", "holdings"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("account_balances").select("*").eq("account_type", "person_holding");
-      if (error) throw error;
-      return (data ?? []).filter((b: any) => Math.abs(Number(b.current_balance || 0)) > 0.0001);
-    },
-  });
-
-  const trustQ = useQuery({
-    queryKey: ["company_vs_customer_funds"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("company_vs_customer_funds").select("*");
+      const { data, error } = await supabase
+        .from("sell_transactions").select("id")
+        .is("deleted_at", null).eq("deal_status", "closed")
+        .gte("closed_at", `${today}T00:00:00`).lte("closed_at", `${today}T23:59:59`);
       if (error) throw error;
       return data ?? [];
     },
@@ -175,379 +102,455 @@ function DashboardPage() {
       return data ?? [];
     },
   });
-  const pendingDepositsQ = useQuery({
-    queryKey: ["action_center", "deposits"],
+  const recentQ = useQuery({
+    queryKey: ["dashboard_recent_activity"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("customer_deposits").select("*, customer:customers(name)").is("deleted_at", null).neq("settlement_status", "completed").neq("settlement_status", "cancelled").order("entry_date");
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
-  const pendingOrdersQ = useQuery({
-    queryKey: ["action_center", "orders"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("payment_orders").select("*, customer:customers(name)").is("deleted_at", null).neq("settlement_status", "completed").neq("settlement_status", "cancelled").order("entry_date");
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
-  const scTodayQ = useQuery({
-    queryKey: ["sc_today", today],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("service_charges").select("*").eq("entry_date", today);
-      if (error) throw error;
-      return data ?? [];
+      const [bi, bu, se, ex, tr] = await Promise.all([
+        supabase.from("brought_in_money").select("id,created_at,entry_date,amount,currency,brought_by,source_name").is("deleted_at", null).order("created_at", { ascending: false }).limit(6),
+        supabase.from("buy_transactions").select("id,created_at,entry_date,bought_amount,bought_currency,paid_amount,paid_currency").is("deleted_at", null).order("created_at", { ascending: false }).limit(6),
+        supabase.from("sell_transactions").select("id,created_at,entry_date,sold_amount,sold_currency,received_amount,received_currency,customer_name,deal_status").is("deleted_at", null).order("created_at", { ascending: false }).limit(6),
+        supabase.from("expenses").select("id,created_at,entry_date,amount,currency,category").is("deleted_at", null).order("created_at", { ascending: false }).limit(6),
+        supabase.from("transfers").select("id,created_at,entry_date,amount,currency").is("deleted_at", null).order("created_at", { ascending: false }).limit(6),
+      ]);
+      const rows: any[] = [
+        ...(bi.data ?? []).map(r => ({ kind: "brought_in", ...r, when: r.created_at, text: `${r.brought_by ?? "Someone"} brought ${fmt(r.amount, r.currency)}${r.source_name ? " · " + r.source_name : ""}` })),
+        ...(bu.data ?? []).map(r => ({ kind: "buy", ...r, when: r.created_at, text: `Bought ${fmt(r.bought_amount, r.bought_currency)} for ${fmt(r.paid_amount, r.paid_currency)}` })),
+        ...(se.data ?? []).map(r => ({ kind: "sell", ...r, when: r.created_at, text: `Sold ${fmt(r.sold_amount, r.sold_currency)} → ${fmt(r.received_amount, r.received_currency)}${r.customer_name ? " · " + r.customer_name : ""}` })),
+        ...(ex.data ?? []).map(r => ({ kind: "expense", ...r, when: r.created_at, text: `Expense ${fmt(r.amount, r.currency)}${r.category ? " · " + r.category : ""}` })),
+        ...(tr.data ?? []).map(r => ({ kind: "transfer", ...r, when: r.created_at, text: `Transfer ${fmt(r.amount, r.currency)}` })),
+      ];
+      return rows.sort((a, b) => (a.when < b.when ? 1 : -1)).slice(0, 10);
     },
   });
 
-  const alerts: { text: string; tone: "warn" | "info" }[] = [];
-  (pendingBuysQ.data ?? []).forEach((r: any) => {
-    if (r.money_holder_type && r.money_holder_type !== "customer") {
-      alerts.push({ text: `${fmt(r.paid_amount, r.paid_currency)} is with ${holderShort(r.money_holder_type)} and must be deposited or settled — buy from ${r.entry_date}.`, tone: "warn" });
+  // ---- derived state ----
+  const balances = (balancesQ.data ?? []) as any[];
+  const lots = (lotsQ.data ?? []) as any[];
+
+  // Inventory summary per currency (from live lots)
+  const inventoryByCurrency = useMemo(() => {
+    const byCur = new Map<string, {
+      currency: string; available: number; lotCount: number; pendingLots: number;
+      accounts: Set<string>; costNum: number; costDen: number;
+    }>();
+    for (const l of lots) {
+      const rem = Number(l.remaining_amount || 0);
+      if (rem <= 0 && l.status === "depleted") continue;
+      const cur = String(l.currency);
+      const entry = byCur.get(cur) ?? { currency: cur, available: 0, lotCount: 0, pendingLots: 0, accounts: new Set<string>(), costNum: 0, costDen: 0 };
+      entry.available += rem;
+      entry.lotCount += 1;
+      if (l.status === "partial") entry.pendingLots += 1;
+      if (l.account_id) entry.accounts.add(l.account_id);
+      if (l.cost_basis_rate && Number(l.cost_basis_rate) > 0) {
+        entry.costNum += Number(l.cost_basis_rate) * rem;
+        entry.costDen += rem;
+      }
+      byCur.set(cur, entry);
     }
-    if (r.currency_holder_type && r.currency_holder_type !== "customer") {
-      alerts.push({ text: `${fmt(r.bought_amount, r.bought_currency)} is with ${holderShort(r.currency_holder_type)} and must be delivered — buy from ${r.entry_date}.`, tone: "warn" });
+    // Also include account count from account_balances for currencies present
+    const acctByCur = new Map<string, Set<string>>();
+    for (const b of balances) {
+      if (Math.abs(Number(b.current_balance || 0)) < 0.0001) continue;
+      if (!acctByCur.has(b.currency)) acctByCur.set(b.currency, new Set());
+      acctByCur.get(b.currency)!.add(b.account_id);
     }
-  });
-  (pendingSellsQ.data ?? []).forEach((r: any) => {
-    if (r.settlement_status === "payment_received") {
-      alerts.push({ text: `Payment received for sell on ${r.entry_date} — currency delivery pending`, tone: "warn" });
+    for (const [cur, s] of acctByCur) {
+      const e = byCur.get(cur);
+      if (e) s.forEach(a => e.accounts.add(a));
     }
-    if (r.settlement_status === "currency_delivered") {
-      alerts.push({ text: `Currency delivered on ${r.entry_date} — payment / receipt still pending`, tone: "warn" });
+    return Array.from(byCur.values())
+      .filter(e => Math.abs(e.available) > 0.0001)
+      .sort((a, b) => (a.currency === "AED" ? -1 : b.currency === "AED" ? 1 : a.currency.localeCompare(b.currency)));
+  }, [lots, balances]);
+
+  // Deal status buckets
+  const openSells = (openSellsQ.data ?? []) as any[];
+  const dealBucket = (s: string) => openSells.filter(d => d.deal_status === s).length;
+  const openCount = openSells.length;
+
+  // Customer balances
+  const wallets = (walletsQ.data ?? []) as any[];
+  const owedByCustomers = wallets.filter(w => Number(w.balance) < -0.0001);
+  const owedToCustomers = wallets.filter(w => Number(w.balance) > 0.0001);
+  const groupSum = (rows: any[]) => {
+    const m = new Map<string, number>();
+    rows.forEach(r => m.set(r.currency, (m.get(r.currency) ?? 0) + Math.abs(Number(r.balance || 0))));
+    return Array.from(m.entries());
+  };
+
+  // Today by currency
+  const buys = (todayBuysQ.data ?? []) as any[];
+  const sells = (todaySellsQ.data ?? []) as any[];
+  const sumByCur = (rows: any[], amountKey: string, curKey: string) => {
+    const m = new Map<string, number>();
+    rows.forEach(r => m.set(r[curKey], (m.get(r[curKey]) ?? 0) + Number(r[amountKey] || 0)));
+    return m;
+  };
+  const boughtToday = sumByCur(buys, "bought_amount", "bought_currency");
+  const soldToday = sumByCur(sells, "sold_amount", "sold_currency");
+  const openedToday = sells.length;
+  const closedToday = (closedTodayQ.data ?? []).length;
+
+  // Inventory health
+  const lotHealth = useMemo(() => {
+    const h = { available: 0, partial: 0, depleted: 0 };
+    for (const l of lots) {
+      if (l.status === "available") h.available += 1;
+      else if (l.status === "partial") h.partial += 1;
+      else if (l.status === "depleted") h.depleted += 1;
     }
-    if (r.settlement_status === "awaiting_receipt") {
-      alerts.push({ text: `Sell on ${r.entry_date} — receipt / final proof missing`, tone: "warn" });
+    return h;
+  }, [lots]);
+
+  // Grouped account balances (for section 3)
+  const groupedAccounts = useMemo(() => {
+    // Sort: cash first, then bank, then person_holding/customer_wallet
+    const order: Record<string, number> = { cash: 0, aed_bank: 1, toman_bank: 1, foreign_currency: 1, wallet: 2, person_holding: 3, customer_wallet: 4, pending_delivery: 5, other: 6 };
+    const byName = new Map<string, { name: string; type: string; lines: { currency: string; amount: number }[] }>();
+    for (const b of balances) {
+      const amt = Number(b.current_balance || 0);
+      if (Math.abs(amt) < 0.0001) continue;
+      const key = b.name;
+      if (!byName.has(key)) byName.set(key, { name: b.name, type: b.account_type, lines: [] });
+      byName.get(key)!.lines.push({ currency: b.currency, amount: amt });
     }
-  });
-  (holdingQ.data ?? []).forEach((b: any) => {
-    alerts.push({ text: `${fmt(b.current_balance, b.currency)} held in ${b.name}`, tone: "info" });
-  });
-  (walletsQ.data ?? []).forEach((w: any) => {
-    const bal = Number(w.balance || 0);
-    if (bal < -0.0001) {
-      alerts.push({ text: `${w.customer_name} owes us ${fmt(-bal, w.currency)} (wallet debt)`, tone: "warn" });
-    } else if (bal > 0.0001) {
-      alerts.push({ text: `We hold ${fmt(bal, w.currency)} for ${w.customer_name}`, tone: "info" });
-    }
-  });
-  (pendingDepositsQ.data ?? []).forEach((r: any) => {
-    alerts.push({ text: `Deposit from ${r.customer?.name} ${fmt(r.amount, r.currency)} — needs receipt & completion`, tone: "warn" });
-  });
-  (pendingOrdersQ.data ?? []).forEach((r: any) => {
-    alerts.push({ text: `Payment order for ${r.customer?.name} ${fmt(r.amount, r.currency)} → ${r.receiver_name || r.destination_bank || "receiver"} pending`, tone: "warn" });
-  });
+    return Array.from(byName.values()).sort((a, b) => (order[a.type] ?? 9) - (order[b.type] ?? 9) || a.name.localeCompare(b.name));
+  }, [balances]);
 
   return (
     <>
       <PageHeader
-        title="Dashboard"
-        description="Live view of balances, today's activity, and profit sharing."
+        title="Treasury Dashboard"
+        description="Live inventory, deal pipeline, and account positions across every currency."
       />
 
-      {/* Premium KPI hero row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        <HeroKpi
-          label="Total assets"
-          value={fmtProfit((kpiAssetsQ.data ?? []).reduce((s: number, r: any) => s + Number(r.balance || 0), 0))}
-          hint={`${(kpiAssetsQ.data ?? []).length} currencies`}
-          tone="primary"
-        />
-        <HeroKpi
-          label="Today's profit"
-          value={fmtProfit(Number((kpiTodayQ.data as any)?.gross_profit ?? 0))}
-          hint={`${(kpiTodayQ.data as any)?.sell_count ?? 0} sells`}
-          tone="success"
-        />
-        <HeroKpi
-          label="This month"
-          value={fmtProfit(Number((kpiMonthQ.data as any)?.gross_profit ?? 0))}
-          hint={`${(kpiMonthQ.data as any)?.sell_count ?? 0} sells`}
-          tone="success"
-        />
-        <HeroKpi
-          label="Cash available"
-          value={fmtProfit((kpiCashQ.data ?? []).reduce((s: number, r: any) => s + Number(r.balance || 0), 0))}
-          hint="Cash + banks"
-          tone="info"
-        />
+      {/* SECTION 1 — INVENTORY BY CURRENCY */}
+      <SectionTitle icon={<Boxes className="h-4 w-4" />} title="Inventory by currency" hint="Never merged. Each currency stands alone." />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        {inventoryByCurrency.length === 0 && (
+          <Card className="col-span-full"><CardContent className="p-6 text-sm text-muted-foreground">No inventory yet. Add a Brought-In or Buy to begin.</CardContent></Card>
+        )}
+        {inventoryByCurrency.map((c) => {
+          const isOpen = openCurrency === c.currency;
+          const avg = c.costDen > 0 ? c.costNum / c.costDen : null;
+          return (
+            <button
+              key={c.currency}
+              type="button"
+              onClick={() => setOpenCurrency(isOpen ? null : c.currency)}
+              className={`text-left rounded-xl border bg-gradient-to-br p-4 transition-all hover:shadow-lg ${CURRENCY_ACCENT[c.currency] ?? "from-primary/10 to-transparent border-primary/30"} ${isOpen ? "ring-2 ring-primary/40" : ""}`}
+              style={{ boxShadow: "var(--shadow-soft)" }}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className={`h-2.5 w-2.5 rounded-full ${CURRENCY_DOT[c.currency] ?? "bg-primary"}`} />
+                  <span className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">{c.currency}</span>
+                </div>
+                {isOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+              </div>
+              <div className="text-2xl md:text-3xl font-bold tracking-tight mt-2 font-mono">{fmt(c.available, c.currency)}</div>
+              <div className="text-[11px] text-muted-foreground mt-0.5">Available</div>
+              <div className="grid grid-cols-3 gap-2 mt-4 text-xs">
+                <MiniStat label="Accounts" value={String(c.accounts.size)} />
+                <MiniStat label="Lots" value={String(c.lotCount)} />
+                <MiniStat label="Pending" value={String(c.pendingLots)} tone={c.pendingLots > 0 ? "warn" : undefined} />
+              </div>
+              <div className="mt-3 pt-3 border-t border-border/60 flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Avg cost</span>
+                <span className="font-mono font-semibold">{avg === null ? "Not applicable" : fmt(avg)}</span>
+              </div>
+            </button>
+          );
+        })}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <MiniKpi
-          label="Money in circulation"
-          value={fmtProfit((kpiCircQ.data ?? []).reduce((s: number, r: any) => s + Number(r.balance || 0), 0))}
-        />
-        <MiniKpi
-          label="Customer funds"
-          value={fmtProfit((trustQ.data ?? []).filter((r: any) => r.bucket === "customer").reduce((s: number, r: any) => s + Number(r.balance || 0), 0))}
-        />
-        <MiniKpi
-          label="Service fees (today)"
-          value={fmtProfit((scTodayQ.data ?? []).reduce((s: number, r: any) => s + Number(r.amount||0), 0))}
-        />
-        <MiniKpi
-          label="ROI (Ali)"
-          value={(() => {
-            const c = kpiAliQ.data as any;
-            const inb = Number(c?.total_brought_in ?? 0);
-            const p = Number(c?.total_profit_share ?? 0);
-            return inb > 0 ? ((p / inb) * 100).toFixed(1) + "%" : "—";
-          })()}
-        />
-      </div>
+      {/* SECTION 2 — LOT DRILLDOWN */}
+      {openCurrency && (
+        <Card className="mb-6 border-primary/40" style={{ boxShadow: "var(--shadow-elevated)" }}>
+          <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Layers className="h-4 w-4 text-primary" />
+              {openCurrency} inventory lots
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" asChild><Link to="/inventory">Full inventory</Link></Button>
+              <Button size="sm" variant="ghost" onClick={() => setOpenCurrency(null)}>Close</Button>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            {/* Grouped by account */}
+            {(() => {
+              const curLots = lots.filter(l => l.currency === openCurrency && (Number(l.remaining_amount) > 0 || l.status !== "depleted"));
+              const acctMap = new Map<string, string>();
+              balances.forEach((b: any) => acctMap.set(b.account_id, b.name));
+              const byAccount = new Map<string, any[]>();
+              curLots.forEach(l => {
+                const key = l.account_id ?? "unassigned";
+                if (!byAccount.has(key)) byAccount.set(key, []);
+                byAccount.get(key)!.push(l);
+              });
+              if (byAccount.size === 0) return <div className="p-6 text-sm text-muted-foreground">No active lots for {openCurrency}.</div>;
+              return Array.from(byAccount.entries()).map(([acctId, ls]) => {
+                const acctName = acctMap.get(acctId) ?? "Unassigned";
+                const acctTotal = ls.reduce((s, l) => s + Number(l.remaining_amount || 0), 0);
+                return (
+                  <div key={acctId} className="border-b last:border-0">
+                    <div className="flex items-center justify-between px-4 py-2 bg-muted/40">
+                      <div className="flex items-center gap-2 text-sm font-semibold">
+                        <Landmark className="h-3.5 w-3.5 text-muted-foreground" /> {acctName}
+                      </div>
+                      <div className="font-mono text-sm">{fmt(acctTotal, openCurrency)}</div>
+                    </div>
+                    <div className="divide-y">
+                      {ls.map(l => {
+                        const noBasis = !l.cost_basis_rate || Number(l.cost_basis_rate) <= 0 || l.cost_basis_currency === l.currency;
+                        const isDirect = l.source_ref_type === "brought_in" && noBasis;
+                        return (
+                          <div key={l.id} className="px-4 py-2 grid grid-cols-12 gap-2 items-center text-xs">
+                            <div className="col-span-3 font-mono">{l.lot_code}</div>
+                            <div className="col-span-3 font-mono font-semibold">{fmt(l.remaining_amount, l.currency)}</div>
+                            <div className="col-span-3 text-muted-foreground">
+                              {noBasis
+                                ? (isDirect ? <span>Direct Deposit</span> : <span>Not applicable</span>)
+                                : <span>Rate <span className="font-mono">{fmt(l.cost_basis_rate)}</span> {l.cost_basis_currency}/{l.currency}</span>}
+                            </div>
+                            <div className="col-span-2 text-muted-foreground truncate">{l.source_description ?? l.source_ref_type ?? "—"}</div>
+                            <div className="col-span-1 text-right"><StatusPill status={l.status} /></div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              });
+            })()}
+          </CardContent>
+        </Card>
+      )}
 
-      <Card className="mb-6 backdrop-blur bg-card/80" style={{ boxShadow: "var(--shadow-elevated)" }}>
-        <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-base flex items-center gap-2"><LineChartIcon className="h-4 w-4 text-primary" /> Profit trend (30 days)</CardTitle>
-          <Button asChild size="sm" variant="ghost"><Link to="/ali-investor"><Radar className="h-4 w-4 mr-1" /> Ali view</Link></Button>
-        </CardHeader>
-        <CardContent className="h-48">
-          <ResponsiveContainer>
-            <LineChart data={(kpiSeriesQ.data ?? []) as any[]}>
-              <XAxis dataKey="day" tickFormatter={(v) => String(v).slice(5)} fontSize={10} />
-              <Tooltip />
-              <RLine type="monotone" dataKey="gross_profit" stroke="var(--primary)" strokeWidth={2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+      {/* SECTION 7 — QUICK ACTIONS */}
+      <SectionTitle icon={<TrendingUp className="h-4 w-4" />} title="Quick actions" />
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-6">
         <Button asChild size="lg" className="h-16 text-base font-semibold col-span-2 md:col-span-1 shadow-md">
-          <Link to="/quick-sell"><TrendingUp className="h-5 w-5 mr-2" /> New Sell</Link>
+          <Link to="/quick-sell"><TrendingUp className="h-5 w-5 mr-2" /> New Deal</Link>
         </Button>
+        <Button asChild size="lg" variant="outline" className="h-16"><Link to="/brought-in"><ArrowDownToLine className="h-5 w-5 mr-2" /> Brought-In</Link></Button>
         <Button asChild size="lg" variant="outline" className="h-16"><Link to="/buy"><ShoppingCart className="h-5 w-5 mr-2" /> Buy</Link></Button>
-        <Button asChild size="lg" variant="outline" className="h-16"><Link to="/brought-in"><ArrowDownToLine className="h-5 w-5 mr-2" /> Brought In</Link></Button>
         <Button asChild size="lg" variant="outline" className="h-16"><Link to="/expenses"><Receipt className="h-5 w-5 mr-2" /> Expense</Link></Button>
+        <Button asChild size="lg" variant="outline" className="h-16"><Link to="/transfers"><ArrowLeftRight className="h-5 w-5 mr-2" /> Transfer</Link></Button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-        <StatCard label="AED balance" value={fmt(totalByCurrency("AED"), "AED")} />
-        <StatCard label="Toman balance" value={fmt(totalByCurrency("IRR"), "IRR")} />
-        <StatCard label="USD balance" value={fmt(totalByCurrency("USD"), "USD")} />
-        <StatCard label="Cash total (mixed)" value={fmt(cashTotal)} />
-        <StatCard label="Cash with People" value={String((holdingQ.data ?? []).length) + " lines"} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+        {/* SECTION 4 — OPEN DEALS */}
+        <Card className="lg:col-span-1" style={{ boxShadow: "var(--shadow-soft)" }}>
+          <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-base flex items-center gap-2"><Timer className="h-4 w-4 text-primary" /> Open deals</CardTitle>
+            <Button size="sm" variant="ghost" asChild><Link to="/sell">Open</Link></Button>
+          </CardHeader>
+          <CardContent>
+            <div className="text-4xl font-bold tracking-tight">{openCount}</div>
+            <div className="text-xs text-muted-foreground mb-3">Deals not yet closed</div>
+            <div className="grid grid-cols-2 gap-2">
+              <DealTile label="Waiting Payment" count={dealBucket("waiting_payment")} tone="warn" />
+              <DealTile label="Waiting Receipt" count={dealBucket("waiting_receipt")} tone="info" />
+              <DealTile label="Partially Paid" count={dealBucket("partially_paid")} tone="info" />
+              <DealTile label="Ready to Close" count={dealBucket("ready_to_close")} tone="success" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* SECTION 5 — CUSTOMER BALANCES */}
+        <Card className="lg:col-span-1" style={{ boxShadow: "var(--shadow-soft)" }}>
+          <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-base flex items-center gap-2"><Users2 className="h-4 w-4 text-primary" /> Customer balances</CardTitle>
+            <Button size="sm" variant="ghost" asChild><Link to="/wallets">Wallets</Link></Button>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <div className="flex items-baseline justify-between">
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">Customers owe us</div>
+                <Badge variant="secondary">{owedByCustomers.length}</Badge>
+              </div>
+              {groupSum(owedByCustomers).length === 0
+                ? <div className="text-sm text-muted-foreground mt-1">No debts.</div>
+                : groupSum(owedByCustomers).map(([cur, amt]) => (
+                    <div key={cur} className="flex justify-between text-sm mt-1">
+                      <span className="text-muted-foreground">{cur}</span>
+                      <span className="font-mono font-semibold text-emerald-600">{fmt(amt, cur)}</span>
+                    </div>
+                  ))}
+            </div>
+            <div className="pt-3 border-t">
+              <div className="flex items-baseline justify-between">
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">We owe customers</div>
+                <Badge variant="secondary">{owedToCustomers.length}</Badge>
+              </div>
+              {groupSum(owedToCustomers).length === 0
+                ? <div className="text-sm text-muted-foreground mt-1">Nothing owed.</div>
+                : groupSum(owedToCustomers).map(([cur, amt]) => (
+                    <div key={cur} className="flex justify-between text-sm mt-1">
+                      <span className="text-muted-foreground">{cur}</span>
+                      <span className="font-mono font-semibold text-destructive">{fmt(amt, cur)}</span>
+                    </div>
+                  ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* SECTION 6 — TODAY */}
+        <Card className="lg:col-span-1" style={{ boxShadow: "var(--shadow-soft)" }}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2"><Clock className="h-4 w-4 text-primary" /> Today</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div>
+              <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Bought</div>
+              {boughtToday.size === 0 ? <div className="text-sm text-muted-foreground">—</div> :
+                Array.from(boughtToday.entries()).map(([cur, amt]) => (
+                  <div key={cur} className="flex justify-between text-sm"><span className="text-muted-foreground">{cur}</span><span className="font-mono">{fmt(amt, cur)}</span></div>
+                ))}
+            </div>
+            <div>
+              <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Sold</div>
+              {soldToday.size === 0 ? <div className="text-sm text-muted-foreground">—</div> :
+                Array.from(soldToday.entries()).map(([cur, amt]) => (
+                  <div key={cur} className="flex justify-between text-sm"><span className="text-muted-foreground">{cur}</span><span className="font-mono">{fmt(amt, cur)}</span></div>
+                ))}
+            </div>
+            <div className="pt-2 border-t grid grid-cols-2 gap-2">
+              <MiniStat label="Deals opened" value={String(openedToday)} />
+              <MiniStat label="Deals closed" value={String(closedToday)} />
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
+      {/* SECTION 3 — ACCOUNT BALANCES */}
+      <SectionTitle icon={<Landmark className="h-4 w-4" />} title="Account balances" hint="Grouped by account, one line per currency." />
       <Card className="mb-6" style={{ boxShadow: "var(--shadow-soft)" }}>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2"><Landmark className="h-4 w-4 text-primary" /> Balances by currency & account type</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0 overflow-x-auto">
-          {(() => {
-            const rows = (balByTypeQ.data ?? []) as any[];
-            const currencies = Array.from(new Set(rows.map(r => r.currency))).sort();
-            const types = Array.from(new Set(rows.map(r => r.account_type))).sort();
-            const cell = (c: string, t: string) =>
-              rows.find(r => r.currency === c && r.account_type === t)?.total_balance;
-            const typeLabel: Record<string,string> = {
-              cash: "Cash Box", toman_bank: "IRR Bank", aed_bank: "AED Bank",
-              foreign_currency: "FX Bank", wallet: "Crypto",
-              person_holding: "Cash with Person", customer_wallet: "Customer Wallet",
-              pending_delivery: "Pending Delivery", other: "Other",
-            };
-            if (currencies.length === 0) return <div className="p-4 text-sm text-muted-foreground">No accounts yet.</div>;
-            return (
-              <table className="w-full text-sm">
-                <thead className="bg-muted/40 text-xs uppercase tracking-wide">
-                  <tr>
-                    <th className="text-left p-2 font-medium">Currency</th>
-                    {types.map(t => <th key={t} className="text-right p-2 font-medium">{typeLabel[t] ?? t}</th>)}
-                    <th className="text-right p-2 font-medium">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {currencies.map(c => {
-                    const total = rows.filter(r => r.currency === c).reduce((s, r) => s + Number(r.total_balance || 0), 0);
-                    return (
-                      <tr key={c} className="border-t">
-                        <td className="p-2 font-medium">{c}</td>
-                        {types.map(t => {
-                          const v = cell(c, t);
-                          return <td key={t} className="text-right p-2 font-mono text-xs">{v === undefined || Number(v) === 0 ? "—" : fmt(Number(v), c)}</td>;
-                        })}
-                        <td className="text-right p-2 font-mono font-semibold">{fmt(total, c)}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            );
-          })()}
-        </CardContent>
-      </Card>
-
-      <Card className="mb-6 border-emerald-500/30" style={{ boxShadow: "var(--shadow-soft)" }}>
-        <CardHeader className="flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-base flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-emerald-600" /> Trust separation</CardTitle>
-          <Button size="sm" variant="outline" asChild><Link to="/trust">View report</Link></Button>
-        </CardHeader>
-        <CardContent className="grid md:grid-cols-2 gap-4 text-sm">
-          <div>
-            <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Company assets</div>
-            {(trustQ.data ?? []).filter((r: any) => r.bucket === "company").map((r: any) => (
-              <div key={r.currency} className="flex justify-between border-b py-1 last:border-0">
-                <span className="text-muted-foreground">{r.currency}</span>
-                <span className="font-mono">{fmt(r.balance, r.currency)}</span>
+        <CardContent className="p-0 divide-y">
+          {groupedAccounts.length === 0 && <div className="p-6 text-sm text-muted-foreground">No account activity yet.</div>}
+          {groupedAccounts.map(acct => (
+            <div key={acct.name} className="p-3 grid grid-cols-1 md:grid-cols-4 gap-2 items-center">
+              <div className="md:col-span-1">
+                <div className="text-sm font-semibold">{acct.name}</div>
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{accountTypeLabel(acct.type)}</div>
               </div>
-            ))}
-          </div>
-          <div>
-            <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Customer trust funds</div>
-            {(trustQ.data ?? []).filter((r: any) => r.bucket === "customer").map((r: any) => (
-              <div key={r.currency} className="flex justify-between border-b py-1 last:border-0">
-                <span className="text-muted-foreground">{r.currency}</span>
-                <span className={"font-mono " + (Number(r.balance) < 0 ? "text-destructive" : "")}>{fmt(r.balance, r.currency)}</span>
+              <div className="md:col-span-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {acct.lines.map(l => (
+                  <div key={l.currency} className="flex items-center justify-between rounded-md bg-muted/40 px-3 py-1.5">
+                    <span className="text-xs text-muted-foreground">{l.currency}</span>
+                    <span className={"font-mono text-sm " + (l.amount < 0 ? "text-destructive" : "")}>{fmt(l.amount, l.currency)}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-            {(trustQ.data ?? []).filter((r: any) => r.bucket === "customer").length === 0 && (
-              <div className="text-xs text-muted-foreground">No customer balances.</div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="mb-6 border-warning/40" style={{ boxShadow: "var(--shadow-soft)" }}>
-        <CardHeader className="flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-base flex items-center gap-2"><ClipboardList className="h-4 w-4" /> Action Center</CardTitle>
-          <Button size="sm" variant="outline" asChild><Link to="/pending-settlements">View all</Link></Button>
-        </CardHeader>
-        <CardContent className="space-y-1 text-sm max-h-72 overflow-y-auto">
-          {alerts.length === 0 ? (
-            <p className="text-muted-foreground">Nothing pending. All transactions are settled.</p>
-          ) : alerts.slice(0, 12).map((a, i) => (
-            <div key={i} className="flex items-start gap-2 py-1 border-b last:border-0">
-              <span className={a.tone === "warn" ? "text-warning" : "text-sky-600"}>●</span>
-              <span className="flex-1">{a.text}</span>
             </div>
           ))}
-          {alerts.length > 12 && (
-            <div className="text-xs text-muted-foreground pt-2">+ {alerts.length - 12} more…</div>
-          )}
         </CardContent>
       </Card>
 
-      <Card className="mb-6" style={{ boxShadow: "var(--shadow-soft)" }}>
-        <CardHeader>
-          <CardTitle className="text-base">Quick actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2">
-            {quickActions.map((a) => (
-              <Button key={a.to} asChild variant="outline" className="h-20 flex-col gap-1">
-                <Link to={a.to}>
-                  <a.icon className="h-5 w-5" />
-                  <span className="text-xs">{a.label}</span>
-                </Link>
-              </Button>
-            ))}
-            <Button asChild variant="outline" className="h-20 flex-col gap-1">
-              <Link to="/pending-settlements"><ClipboardList className="h-5 w-5" /><span className="text-xs">Pending</span></Link>
-            </Button>
-            <Button asChild variant="outline" className="h-20 flex-col gap-1">
-              <Link to="/held-by-person"><HandCoins className="h-5 w-5" /><span className="text-xs">Cash with People</span></Link>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid md:grid-cols-2 gap-4 mb-6">
-        <Card>
-          <CardHeader><CardTitle className="text-base">Today at a glance</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <Row label="Buys" value={`${todayBuysQ.data?.length ?? 0}`} />
-            <Row label="Sells" value={`${todaySellsQ.data?.length ?? 0}`} />
-            <Row label="Expenses" value={`${todayExpensesQ.data?.length ?? 0}`} />
-            <Row label="Gross profit" value={fmt(grossProfit)} />
-            <Row label="Business expenses (reduce profit)" value={fmt(businessExpensesReducingProfit)} />
-            <Row label="Net profit" value={fmt(netProfit)} accent />
-            <Row label="Service charges (today)" value={(scTodayQ.data ?? []).length === 0 ? "—" : (scTodayQ.data ?? []).reduce((s: number, r: any) => s + Number(r.amount||0), 0).toFixed(2)} />
-            <Row label="Milad share" value={fmt(miladShare)} />
-            <Row label="Ali share" value={fmt(aliShare)} />
+      {/* SECTION 8 — INVENTORY HEALTH + SECTION 9 — RECENT ACTIVITY */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+        <Card style={{ boxShadow: "var(--shadow-soft)" }}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2"><PackageCheck className="h-4 w-4 text-primary" /> Inventory health</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-3 gap-2">
+            <HealthTile label="Available" count={lotHealth.available} tone="success" />
+            <HealthTile label="Partial" count={lotHealth.partial} tone="warn" />
+            <HealthTile label="Depleted" count={lotHealth.depleted} tone="muted" />
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-base">Alerts</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-warning" />
+        <Card className="lg:col-span-2" style={{ boxShadow: "var(--shadow-soft)" }}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2"><Activity className="h-4 w-4 text-primary" /> Recent activity</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            {lowBalance.length === 0 ? (
-              <p className="text-muted-foreground">No negative balances. All good.</p>
-            ) : (
-              lowBalance.map((b: any) => (
-                <div key={b.account_id} className="flex justify-between">
-                  <span>{b.name}</span>
-                  <Badge variant="destructive">{fmt(b.current_balance, b.currency)}</Badge>
-                </div>
-              ))
-            )}
+          <CardContent className="p-0 divide-y max-h-80 overflow-y-auto">
+            {(recentQ.data ?? []).length === 0 && <div className="p-6 text-sm text-muted-foreground">No activity yet.</div>}
+            {(recentQ.data ?? []).map((r: any, idx: number) => (
+              <div key={r.kind + r.id + idx} className="px-4 py-2 flex items-center gap-3 text-sm">
+                <ActivityDot kind={r.kind} />
+                <div className="flex-1 truncate">{r.text}</div>
+                <div className="text-[11px] text-muted-foreground shrink-0">{new Date(r.when).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</div>
+              </div>
+            ))}
           </CardContent>
         </Card>
       </div>
-
-      <Card>
-        <CardHeader><CardTitle className="text-base">Currency inventory</CardTitle></CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {(inventoryQ.data ?? []).map((i: any) => (
-              <div key={i.currency} className="rounded-lg border p-3 bg-secondary/40">
-                <div className="text-xs text-muted-foreground">{i.currency}</div>
-                <div className="text-lg font-semibold">{fmt(i.total_amount)}</div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
     </>
   );
 }
 
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <Card style={{ boxShadow: "var(--shadow-soft)" }}>
-      <CardContent className="p-4">
-        <div className="text-xs text-muted-foreground">{label}</div>
-        <div className="text-xl font-semibold tracking-tight mt-1">{value}</div>
-      </CardContent>
-    </Card>
-  );
-}
+// ---------- Presentational helpers ----------
 
-function HeroKpi({ label, value, hint, tone }: { label: string; value: string; hint?: string; tone: "primary" | "success" | "info" }) {
-  const accent =
-    tone === "success" ? "from-emerald-500/10 to-transparent border-emerald-500/30" :
-    tone === "info" ? "from-sky-500/10 to-transparent border-sky-500/30" :
-    "from-primary/10 to-transparent border-primary/30";
+function SectionTitle({ icon, title, hint }: { icon: React.ReactNode; title: string; hint?: string }) {
   return (
-    <Card className={"backdrop-blur bg-gradient-to-br " + accent} style={{ boxShadow: "var(--shadow-elevated)" }}>
-      <CardContent className="p-4">
-        <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{label}</div>
-        <div className="text-2xl md:text-3xl font-bold tracking-tight mt-1">{value}</div>
-        {hint && <div className="text-[11px] text-muted-foreground mt-1">{hint}</div>}
-      </CardContent>
-    </Card>
-  );
-}
-
-function MiniKpi({ label, value }: { label: string; value: string }) {
-  return (
-    <Card className="backdrop-blur bg-card/70" style={{ boxShadow: "var(--shadow-soft)" }}>
-      <CardContent className="p-3">
-        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
-        <div className="text-lg font-semibold tracking-tight mt-0.5">{value}</div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function Row({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
-  return (
-    <div className="flex justify-between items-center py-1 border-b last:border-0">
-      <span className="text-muted-foreground">{label}</span>
-      <span className={accent ? "font-semibold text-accent" : "font-medium"}>{value}</span>
+    <div className="flex items-baseline justify-between mb-3">
+      <div className="flex items-center gap-2">
+        <span className="text-primary">{icon}</span>
+        <h2 className="text-sm font-semibold tracking-wide uppercase">{title}</h2>
+      </div>
+      {hint && <div className="text-[11px] text-muted-foreground">{hint}</div>}
     </div>
   );
+}
+
+function MiniStat({ label, value, tone }: { label: string; value: string; tone?: "warn" }) {
+  return (
+    <div className="rounded-md bg-background/60 border border-border/50 px-2 py-1.5">
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className={"font-mono font-semibold text-sm " + (tone === "warn" ? "text-amber-600" : "")}>{value}</div>
+    </div>
+  );
+}
+
+function StatusPill({ status }: { status: string }) {
+  const map: Record<string, string> = {
+    available: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30",
+    partial: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30",
+    depleted: "bg-muted text-muted-foreground border-border",
+  };
+  return <span className={"text-[10px] uppercase px-1.5 py-0.5 rounded border " + (map[status] ?? map.depleted)}>{status}</span>;
+}
+
+function DealTile({ label, count, tone }: { label: string; count: number; tone: "warn" | "info" | "success" }) {
+  const tint = tone === "warn" ? "border-amber-500/30 bg-amber-500/10"
+    : tone === "success" ? "border-emerald-500/30 bg-emerald-500/10"
+    : "border-sky-500/30 bg-sky-500/10";
+  return (
+    <div className={"rounded-md border p-2 " + tint}>
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="text-lg font-bold">{count}</div>
+    </div>
+  );
+}
+
+function HealthTile({ label, count, tone }: { label: string; count: number; tone: "success" | "warn" | "muted" }) {
+  const tint = tone === "success" ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+    : tone === "warn" ? "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+    : "border-border bg-muted/50 text-muted-foreground";
+  return (
+    <div className={"rounded-lg border p-3 text-center " + tint}>
+      <div className="text-2xl font-bold">{count}</div>
+      <div className="text-[11px] uppercase tracking-wide">{label}</div>
+    </div>
+  );
+}
+
+function ActivityDot({ kind }: { kind: string }) {
+  const cls: Record<string, string> = {
+    brought_in: "bg-emerald-500", buy: "bg-sky-500", sell: "bg-violet-500", expense: "bg-rose-500", transfer: "bg-amber-500",
+  };
+  return <span className={"h-2 w-2 rounded-full shrink-0 " + (cls[kind] ?? "bg-primary")} />;
+}
+
+function accountTypeLabel(t: string) {
+  const m: Record<string, string> = {
+    cash: "Cash Box", aed_bank: "AED Bank", toman_bank: "IRR Bank", foreign_currency: "FX Bank",
+    wallet: "Crypto Wallet", person_holding: "Cash with Person", customer_wallet: "Customer Wallet",
+    pending_delivery: "Pending Delivery", other: "Other",
+  };
+  return m[t] ?? t;
 }
