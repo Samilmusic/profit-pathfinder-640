@@ -126,24 +126,30 @@ function CommandCenter() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         <ActionCard
-          icon={HandCoins} tone="warn" title="Held by Milad" count={heldMilad.length}
-          empty="Nothing held" to="/held-by-person"
+          icon={HandCoins} tone="warn" title="Cash with Milad" count={heldMilad.length}
+          empty="No cash with Milad" to="/held-by-person"
         >
-          {heldMilad.map((b: any) => <Line key={b.account_id} label={b.name} value={fmt(b.current_balance, b.currency)} />)}
+          {heldMilad.map((b: any) => (
+            <Line key={b.account_id} label={`${fmt(b.current_balance, b.currency)} ${b.currency} with Milad — must be deposited or settled`} value={b.name} />
+          ))}
         </ActionCard>
 
         <ActionCard
-          icon={HandCoins} tone="warn" title="Held by Ali" count={heldAli.length}
-          empty="Nothing held" to="/held-by-person"
+          icon={HandCoins} tone="warn" title="Cash with Ali" count={heldAli.length}
+          empty="No cash with Ali" to="/held-by-person"
         >
-          {heldAli.map((b: any) => <Line key={b.account_id} label={b.name} value={fmt(b.current_balance, b.currency)} />)}
+          {heldAli.map((b: any) => (
+            <Line key={b.account_id} label={`${fmt(b.current_balance, b.currency)} ${b.currency} with Ali — must be deposited or settled`} value={b.name} />
+          ))}
         </ActionCard>
 
         <ActionCard
-          icon={Users} tone="info" title="Held by Customer" count={heldCustomer.length}
-          empty="Nothing held" to="/held-by-person"
+          icon={Users} tone="info" title="Cash with Customer" count={heldCustomer.length}
+          empty="No cash with customers" to="/held-by-person"
         >
-          {heldCustomer.slice(0, 5).map((b: any) => <Line key={b.account_id} label={b.name} value={fmt(b.current_balance, b.currency)} />)}
+          {heldCustomer.slice(0, 5).map((b: any) => (
+            <Line key={b.account_id} label={`${fmt(b.current_balance, b.currency)} ${b.currency} still with customer — payment pending`} value={b.name} />
+          ))}
           {heldCustomer.length > 5 && <div className="text-xs text-muted-foreground pt-1">+ {heldCustomer.length - 5} more</div>}
         </ActionCard>
 
