@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { DOC_TYPES, docTypeLabel, type DocType } from "@/lib/settlement";
 import { toast } from "sonner";
-import { Paperclip, Upload, ExternalLink, Trash2 } from "lucide-react";
+import { Paperclip, Upload, ExternalLink, Trash2, Camera } from "lucide-react";
 
 export type RefType = "buy" | "sell" | "expense" | "transfer" | "brought_in" | "customer" | "account" | "other";
 
@@ -23,6 +23,7 @@ export function DocumentsPanel({
 }) {
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
   const [docType, setDocType] = useState<DocType>("payment_receipt");
   const [notes, setNotes] = useState("");
   const [uploading, setUploading] = useState(false);
