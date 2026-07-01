@@ -1,0 +1,2 @@
+INSERT INTO public.user_roles (user_id, role) VALUES ('b2cefafd-ff36-4412-8941-18070a0112e0','admin') ON CONFLICT DO NOTHING;
+INSERT INTO public.profiles (id, email, display_name) VALUES ('b2cefafd-ff36-4412-8941-18070a0112e0','heidariali91@yahoo.com','Ali') ON CONFLICT (id) DO NOTHING;
