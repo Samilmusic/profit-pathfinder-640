@@ -45,3 +45,34 @@ export function docTypeLabel(t: string | null | undefined) {
 export function holderLabel(h: string | null | undefined) {
   return HOLDER_TYPES.find((x) => x.value === h)?.label ?? h ?? "";
 }
+
+export const MONEY_LOCATIONS = [
+  { value: "cash_box", label: "Cash Box" },
+  { value: "aed_bank", label: "AED Bank" },
+  { value: "toman_bank", label: "Toman Bank" },
+  { value: "foreign_bank", label: "Foreign Bank" },
+  { value: "held_milad", label: "Held by Milad" },
+  { value: "held_ali", label: "Held by Ali" },
+  { value: "held_customer", label: "Held by Customer" },
+  { value: "pending_delivery", label: "Pending Delivery" },
+  { value: "pending_deposit", label: "Pending Deposit" },
+] as const;
+
+export type MoneyLocation = (typeof MONEY_LOCATIONS)[number]["value"];
+
+export function moneyLocationLabel(v: string | null | undefined) {
+  return MONEY_LOCATIONS.find((x) => x.value === v)?.label ?? v ?? "—";
+}
+
+export const EXPENSE_KINDS = [
+  { value: "petrol", label: "Petrol" },
+  { value: "parking", label: "Parking" },
+  { value: "delivery", label: "Delivery" },
+  { value: "transfer_fee", label: "Transfer Fee" },
+  { value: "bank_charge", label: "Bank Charge" },
+  { value: "personal_ali", label: "Personal (Ali)" },
+  { value: "business", label: "Business Expense" },
+  { value: "other", label: "Other" },
+] as const;
+
+export type ExpenseKind = (typeof EXPENSE_KINDS)[number]["value"];
