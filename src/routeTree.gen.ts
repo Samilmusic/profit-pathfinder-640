@@ -41,6 +41,7 @@ import { Route as AuthenticatedCustomersIndexRouteImport } from './routes/_authe
 import { Route as AuthenticatedBroughtInIndexRouteImport } from './routes/_authenticated/brought-in.index'
 import { Route as AuthenticatedAccountsIndexRouteImport } from './routes/_authenticated/accounts.index'
 import { Route as AuthenticatedTradesIdRouteImport } from './routes/_authenticated/trades.$id'
+import { Route as AuthenticatedSellsIdRouteImport } from './routes/_authenticated/sells.$id'
 import { Route as AuthenticatedDepositsNewRouteImport } from './routes/_authenticated/deposits.new'
 import { Route as AuthenticatedCustomersIdRouteImport } from './routes/_authenticated/customers.$id'
 import { Route as AuthenticatedBroughtInNewRouteImport } from './routes/_authenticated/brought-in.new'
@@ -216,6 +217,11 @@ const AuthenticatedTradesIdRoute = AuthenticatedTradesIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AuthenticatedTradesRoute,
 } as any)
+const AuthenticatedSellsIdRoute = AuthenticatedSellsIdRouteImport.update({
+  id: '/sells/$id',
+  path: '/sells/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDepositsNewRoute =
   AuthenticatedDepositsNewRouteImport.update({
     id: '/new',
@@ -271,6 +277,7 @@ export interface FileRoutesByFullPath {
   '/brought-in/new': typeof AuthenticatedBroughtInNewRoute
   '/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/deposits/new': typeof AuthenticatedDepositsNewRoute
+  '/sells/$id': typeof AuthenticatedSellsIdRoute
   '/trades/$id': typeof AuthenticatedTradesIdRoute
   '/accounts/': typeof AuthenticatedAccountsIndexRoute
   '/brought-in/': typeof AuthenticatedBroughtInIndexRoute
@@ -304,6 +311,7 @@ export interface FileRoutesByTo {
   '/brought-in/new': typeof AuthenticatedBroughtInNewRoute
   '/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/deposits/new': typeof AuthenticatedDepositsNewRoute
+  '/sells/$id': typeof AuthenticatedSellsIdRoute
   '/trades/$id': typeof AuthenticatedTradesIdRoute
   '/accounts': typeof AuthenticatedAccountsIndexRoute
   '/brought-in': typeof AuthenticatedBroughtInIndexRoute
@@ -343,6 +351,7 @@ export interface FileRoutesById {
   '/_authenticated/brought-in/new': typeof AuthenticatedBroughtInNewRoute
   '/_authenticated/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/_authenticated/deposits/new': typeof AuthenticatedDepositsNewRoute
+  '/_authenticated/sells/$id': typeof AuthenticatedSellsIdRoute
   '/_authenticated/trades/$id': typeof AuthenticatedTradesIdRoute
   '/_authenticated/accounts/': typeof AuthenticatedAccountsIndexRoute
   '/_authenticated/brought-in/': typeof AuthenticatedBroughtInIndexRoute
@@ -382,6 +391,7 @@ export interface FileRouteTypes {
     | '/brought-in/new'
     | '/customers/$id'
     | '/deposits/new'
+    | '/sells/$id'
     | '/trades/$id'
     | '/accounts/'
     | '/brought-in/'
@@ -415,6 +425,7 @@ export interface FileRouteTypes {
     | '/brought-in/new'
     | '/customers/$id'
     | '/deposits/new'
+    | '/sells/$id'
     | '/trades/$id'
     | '/accounts'
     | '/brought-in'
@@ -453,6 +464,7 @@ export interface FileRouteTypes {
     | '/_authenticated/brought-in/new'
     | '/_authenticated/customers/$id'
     | '/_authenticated/deposits/new'
+    | '/_authenticated/sells/$id'
     | '/_authenticated/trades/$id'
     | '/_authenticated/accounts/'
     | '/_authenticated/brought-in/'
@@ -693,6 +705,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTradesIdRouteImport
       parentRoute: typeof AuthenticatedTradesRoute
     }
+    '/_authenticated/sells/$id': {
+      id: '/_authenticated/sells/$id'
+      path: '/sells/$id'
+      fullPath: '/sells/$id'
+      preLoaderRoute: typeof AuthenticatedSellsIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/deposits/new': {
       id: '/_authenticated/deposits/new'
       path: '/new'
@@ -808,6 +827,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedTrustRoute: typeof AuthenticatedTrustRoute
   AuthenticatedWalletsRoute: typeof AuthenticatedWalletsRoute
   AuthenticatedBroughtInNewRoute: typeof AuthenticatedBroughtInNewRoute
+  AuthenticatedSellsIdRoute: typeof AuthenticatedSellsIdRoute
   AuthenticatedBroughtInIndexRoute: typeof AuthenticatedBroughtInIndexRoute
 }
 
@@ -836,6 +856,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedTrustRoute: AuthenticatedTrustRoute,
   AuthenticatedWalletsRoute: AuthenticatedWalletsRoute,
   AuthenticatedBroughtInNewRoute: AuthenticatedBroughtInNewRoute,
+  AuthenticatedSellsIdRoute: AuthenticatedSellsIdRoute,
   AuthenticatedBroughtInIndexRoute: AuthenticatedBroughtInIndexRoute,
 }
 

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useMemo, useState } from "react";
@@ -17,7 +17,7 @@ import { maskAccount } from "@/components/customer-bank-account-form";
 import { CURRENCIES, fmt } from "@/lib/exchange";
 import { toast } from "sonner";
 import { Plus, FileText } from "lucide-react";
-import { SettlementStatusBadge } from "@/components/settlement-status-badge";
+import { DealStatusBadge } from "@/components/deal-status-badge";
 import { TxnDetailDialog } from "@/components/txn-detail-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -36,7 +36,7 @@ function Page() {
     entry_date: today, sold_currency: "AED", sold_amount: "", sell_rate: "",
     received_currency: "IRR", sold_from_account_id: "", received_into_account_id: "",
     customer_id: "", customer_phone: "", customer_account_ref: "", customer_bank_account_id: "",
-    milad_pct: "50", ali_pct: "50", notes: "",
+    milad_pct: "50", ali_pct: "50", notes: "", expected_payment_date: "",
     creates_cycle: true,
   });
 
@@ -102,7 +102,7 @@ function Page() {
   });
 
   const create = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (opts: { closeNow: boolean }) => {
       const milad = Number(f.milad_pct); const ali = Number(f.ali_pct);
       if (Math.abs(milad + ali - 100) > 0.01) throw new Error("Milad % + Ali % must equal 100");
       const { data: u } = await supabase.auth.getUser();
@@ -122,12 +122,24 @@ function Page() {
         notes: f.notes || null,
         created_by: u.user?.id,
         creates_cycle: f.creates_cycle,
+        expected_payment_date: f.expected_payment_date || null,
+        deal_status: "open",
       };
-      const { error } = await supabase.from("sell_transactions").insert(payload);
+      const { data: inserted, error } = await supabase.from("sell_transactions").insert(payload).select("id").single();
       if (error) throw error;
       await touchBankAccount(f.customer_bank_account_id);
+      if (opts.closeNow && inserted?.id) {
+        const { error: cerr } = await (supabase as any).rpc("close_sell_deal", { _id: inserted.id, _override: true, _difference_reason: null });
+        if (cerr) throw cerr;
+      }
+      return inserted?.id as string | undefined;
     },
-    onSuccess: () => { toast.success("Sell recorded"); qc.invalidateQueries(); setOpen(false); setF({ ...f, sold_amount: "", sell_rate: "", notes: "" }); },
+    onSuccess: (_id, vars) => {
+      toast.success(vars.closeNow ? "Deal closed" : "Open deal saved — waiting for payment");
+      qc.invalidateQueries();
+      setOpen(false);
+      setF({ ...f, sold_amount: "", sell_rate: "", notes: "" });
+    },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -140,8 +152,8 @@ function Page() {
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" /> New sell</Button></DialogTrigger>
             <DialogContent className="max-w-3xl">
-              <DialogHeader><DialogTitle>New sell transaction</DialogTitle></DialogHeader>
-              <form onSubmit={(e) => { e.preventDefault(); create.mutate(); }} className="grid md:grid-cols-2 gap-3">
+              <DialogHeader><DialogTitle>New sell — Open Deal</DialogTitle></DialogHeader>
+              <form onSubmit={(e) => { e.preventDefault(); create.mutate({ closeNow: false }); }} className="grid md:grid-cols-2 gap-3">
                 <F label="Date"><Input type="date" value={f.entry_date} onChange={(e) => setF({ ...f, entry_date: e.target.value })} /></F>
                 <F label="Customer">
                   <Select value={f.customer_id} onValueChange={(v) => setF({ ...f, customer_id: v })}>
@@ -177,13 +189,16 @@ function Page() {
                 </F>
                 <F label="Received amount (auto)"><Input readOnly value={received_amount ? fmt(received_amount, f.received_currency) : ""} /></F>
                 <F label="Sold from account (source)"><AccountSelect currency={f.sold_currency} value={f.sold_from_account_id} onChange={(v) => setF({ ...f, sold_from_account_id: v })} /></F>
-                <F label={`Received into ${f.received_currency} account (required)`}>
+                <F label={`Received into ${f.received_currency} account (required to close deal)`}>
                   <AccountSelect currency={f.received_currency} value={f.received_into_account_id} onChange={(v) => setF({ ...f, received_into_account_id: v })} placeholder={`Pick a ${f.received_currency} account`} />
                   {!f.received_into_account_id && (
-                    <div className="text-[11px] text-destructive mt-1">
-                      Required — the received {f.received_currency} must land in a real account balance.
+                    <div className="text-[11px] text-muted-foreground mt-1">
+                      Optional for Open Deal · required before closing.
                     </div>
                   )}
+                </F>
+                <F label="Expected payment date (optional)">
+                  <Input type="date" value={f.expected_payment_date} onChange={(e) => setF({ ...f, expected_payment_date: e.target.value })} />
                 </F>
                 <div className="md:col-span-2">
                   <Card className="bg-muted/40 border-dashed">
@@ -259,25 +274,30 @@ function Page() {
                 <div className="md:col-span-2 flex justify-end gap-2">
                   <Button variant="ghost" type="button" onClick={() => setOpen(false)}>Cancel</Button>
                   <Button
+                    type="button"
+                    variant="outline"
+                    disabled={
+                      create.isPending || !f.sold_amount || !f.sell_rate ||
+                      !f.sold_from_account_id || preview.shortfall > 0 ||
+                      !f.received_into_account_id
+                    }
+                    onClick={() => create.mutate({ closeNow: true })}
+                    title="Same-day cash: post received leg immediately"
+                  >Save &amp; Close Now</Button>
+                  <Button
                     type="submit"
                     disabled={
-                      create.isPending ||
-                      !f.sold_amount ||
-                      !f.sell_rate ||
-                      !f.sold_from_account_id ||
-                      !f.received_into_account_id ||
-                      preview.shortfall > 0
+                      create.isPending || !f.sold_amount || !f.sell_rate ||
+                      !f.sold_from_account_id || preview.shortfall > 0
                     }
                     title={
                       preview.shortfall > 0
                         ? `Not enough inventory (short ${fmt(preview.shortfall, f.sold_currency)})`
-                        : !f.received_into_account_id
-                          ? "Pick the account that will receive the payment"
-                          : !f.sold_from_account_id
-                            ? "Pick the source account for the sold currency"
-                            : undefined
+                        : !f.sold_from_account_id
+                          ? "Pick the source account for the sold currency"
+                          : "Inventory decreases now; customer owes the receivable"
                     }
-                  >Save</Button>
+                  >Save as Open Deal</Button>
                 </div>
               </form>
             </DialogContent>
@@ -290,18 +310,22 @@ function Page() {
           <TableBody>
             {(q.data ?? []).map((r: any) => (
               <TableRow key={r.id}>
-                <TableCell>{r.entry_date}</TableCell>
+                <TableCell>
+                  <Link to="/sells/$id" params={{ id: r.id }} className="underline decoration-dotted underline-offset-2">{r.entry_date}</Link>
+                </TableCell>
                 <TableCell className="font-mono">{fmt(r.sold_amount, r.sold_currency)}</TableCell>
                 <TableCell className="font-mono">{fmt(r.sell_rate)}</TableCell>
                 <TableCell className="font-mono">{fmt(r.received_amount, r.received_currency)}</TableCell>
                 <TableCell className="text-right font-mono text-accent">{fmt(r.gross_profit)}</TableCell>
                 <TableCell className="text-right font-mono">{fmt(r.milad_profit)}</TableCell>
                 <TableCell className="text-right font-mono">{fmt(r.ali_profit)}</TableCell>
-                <TableCell><SettlementStatusBadge value={r.settlement_status} /></TableCell>
+                <TableCell><DealStatusBadge value={r.deal_status} /></TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1">
-                    <Button variant="ghost" size="sm" onClick={() => setDetailRow(r)}>
-                      <FileText className="h-4 w-4 mr-1" /> Manage
+                    <Button asChild variant="ghost" size="sm">
+                      <Link to="/sells/$id" params={{ id: r.id }}>
+                        <FileText className="h-4 w-4 mr-1" /> Open deal
+                      </Link>
                     </Button>
                     <RecordActions
                       table="sell_transactions"
