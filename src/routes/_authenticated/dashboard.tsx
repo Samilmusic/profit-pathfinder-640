@@ -220,6 +220,36 @@ function DashboardPage() {
         <StatCard label="Held by people" value={String((holdingQ.data ?? []).length) + " lines"} />
       </div>
 
+      <Card className="mb-6 border-emerald-500/30" style={{ boxShadow: "var(--shadow-soft)" }}>
+        <CardHeader className="flex-row items-center justify-between space-y-0">
+          <CardTitle className="text-base flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-emerald-600" /> Trust separation</CardTitle>
+          <Button size="sm" variant="outline" asChild><Link to="/trust">View report</Link></Button>
+        </CardHeader>
+        <CardContent className="grid md:grid-cols-2 gap-4 text-sm">
+          <div>
+            <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Company assets</div>
+            {(trustQ.data ?? []).filter((r: any) => r.bucket === "company").map((r: any) => (
+              <div key={r.currency} className="flex justify-between border-b py-1 last:border-0">
+                <span className="text-muted-foreground">{r.currency}</span>
+                <span className="font-mono">{fmt(r.balance, r.currency)}</span>
+              </div>
+            ))}
+          </div>
+          <div>
+            <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Customer trust funds</div>
+            {(trustQ.data ?? []).filter((r: any) => r.bucket === "customer").map((r: any) => (
+              <div key={r.currency} className="flex justify-between border-b py-1 last:border-0">
+                <span className="text-muted-foreground">{r.currency}</span>
+                <span className={"font-mono " + (Number(r.balance) < 0 ? "text-destructive" : "")}>{fmt(r.balance, r.currency)}</span>
+              </div>
+            ))}
+            {(trustQ.data ?? []).filter((r: any) => r.bucket === "customer").length === 0 && (
+              <div className="text-xs text-muted-foreground">No customer balances.</div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       <Card className="mb-6 border-warning/40" style={{ boxShadow: "var(--shadow-soft)" }}>
         <CardHeader className="flex-row items-center justify-between space-y-0">
           <CardTitle className="text-base flex items-center gap-2"><ClipboardList className="h-4 w-4" /> Action Center</CardTitle>
@@ -274,6 +304,7 @@ function DashboardPage() {
             <Row label="Gross profit" value={fmt(grossProfit)} />
             <Row label="Business expenses (reduce profit)" value={fmt(businessExpensesReducingProfit)} />
             <Row label="Net profit" value={fmt(netProfit)} accent />
+            <Row label="Service charges (today)" value={(scTodayQ.data ?? []).length === 0 ? "—" : (scTodayQ.data ?? []).reduce((s: number, r: any) => s + Number(r.amount||0), 0).toFixed(2)} />
             <Row label="Milad share" value={fmt(miladShare)} />
             <Row label="Ali share" value={fmt(aliShare)} />
           </CardContent>
