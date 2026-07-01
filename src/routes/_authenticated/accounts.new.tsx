@@ -200,7 +200,16 @@ function NewAccountPage() {
             kind === "person" ? "Label *" :
             "Name *"
           }>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={nameSuggestion} className="h-11 text-base" required />
+            <Input
+              value={effectiveName}
+              onChange={(e) => { setNameTouched(true); setName(e.target.value); }}
+              placeholder={nameSuggestion}
+              className="h-11 text-base"
+              required
+            />
+            {kind === "person" && (
+              <p className="text-[11px] text-muted-foreground">Auto-suggested — edit if you want a different label.</p>
+            )}
           </F>
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -224,12 +233,24 @@ function NewAccountPage() {
                   <SelectContent>
                     <SelectItem value="ali">Ali</SelectItem>
                     <SelectItem value="milad">Milad</SelectItem>
+                    <SelectItem value="customer">Customer</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
               </F>
             )}
           </div>
+
+          {kind === "person" && (person === "customer" || person === "other") && (
+            <F label={person === "customer" ? "Customer name *" : "Person name *"}>
+              <Input
+                value={personName}
+                onChange={(e) => setPersonName(e.target.value)}
+                placeholder={person === "customer" ? "e.g. Reza Mohammadi" : "e.g. Driver, Courier"}
+                className="h-11 text-base"
+              />
+            </F>
+          )}
 
           <F label="Opening balance">
             <NumberInput currency={currency} value={openingBalance} onChange={(e) => setOpeningBalance((e.target as HTMLInputElement).value)} placeholder="0" />
