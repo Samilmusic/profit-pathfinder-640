@@ -370,7 +370,17 @@ function NewBroughtInPage() {
             <div className="mt-3 space-y-3">
               <div className="grid grid-cols-2 gap-2">
                 <F label={`Rate (${currency} per 1 ${convertedCurrency})`}>
-                  <NumberInput value={conversionRate} onChange={(e) => setConversionRate((e.target as HTMLInputElement).value)} placeholder="e.g. 46600" />
+                  <div className="flex flex-col gap-1">
+                    <NumberInput value={conversionRate} onChange={(e) => setConversionRate((e.target as HTMLInputElement).value)} placeholder="e.g. 46600" />
+                    {(convertedCurrency === "AED" || convertedCurrency === "USD") && (
+                      <UseMarketRateButton
+                        currency={convertedCurrency}
+                        which="mid"
+                        onApply={(r: number) => setConversionRate(String(r))}
+                        className="self-start"
+                      />
+                    )}
+                  </div>
                 </F>
                 <F label="Converted currency">
                   <Select value={convertedCurrency} onValueChange={(v) => { setConvertedCurrency(v); setFinalAccountId(""); }}>
