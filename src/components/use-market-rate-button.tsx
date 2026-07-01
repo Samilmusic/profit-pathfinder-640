@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { TrendingUp } from "lucide-react";
-import { useLatestMarketRates, findRate, rateFreshness } from "@/lib/market-rates";
+import { useLatestMarketRates, pickDisplayRate, rateFreshness } from "@/lib/market-rates";
 import { toast } from "sonner";
 
 /**
@@ -19,7 +19,7 @@ export function UseMarketRateButton({
   className?: string;
 }) {
   const q = useLatestMarketRates();
-  const row = findRate(q.data, currency);
+  const { row } = pickDisplayRate(q.data, currency);
   const value =
     which === "buy" ? row?.buy_rate : which === "sell" ? row?.sell_rate : row?.mid_rate;
   const fresh = rateFreshness(row?.fetched_at);
