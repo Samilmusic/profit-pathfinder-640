@@ -35,10 +35,11 @@ function Page() {
   });
 
   const grouped = useMemo(() => {
-    const map = new Map<string, { customer_id: string; name: string; wallets: any[]; lastActivity: string | null }>();
+    type G = { customer_id: string; name: string; wallets: any[]; lastActivity: string | null };
+    const map = new Map<string, G>();
     (walletsQ.data ?? []).forEach((w: any) => {
       if (!w.customer_id) return;
-      const g = map.get(w.customer_id) ?? { customer_id: w.customer_id, name: w.customer_name || "—", wallets: [], lastActivity: null };
+      const g: G = map.get(w.customer_id) ?? { customer_id: w.customer_id, name: w.customer_name || "—", wallets: [] as any[], lastActivity: null };
       g.wallets.push(w);
       if (w.last_activity && (!g.lastActivity || w.last_activity > g.lastActivity)) g.lastActivity = w.last_activity;
       map.set(w.customer_id, g);
