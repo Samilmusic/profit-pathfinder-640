@@ -367,11 +367,11 @@ function StepCard({ n, title, done, children }: { n: number; title: string; done
   );
 }
 
-function PL({ label, value, accent }: { label: string; value: string; accent?: "success" | "danger" }) {
+function PL({ label, value, accent }: { label: string; value: string; accent?: "success" | "danger" | "warn" }) {
   return (
     <div className="flex justify-between items-center py-0.5">
       <span className="text-muted-foreground text-xs">{label}</span>
-      <span className={`font-mono ${accent === "success" ? "text-emerald-700 font-semibold" : accent === "danger" ? "text-destructive font-semibold" : ""}`}>{value}</span>
+      <span className={`font-mono ${accent === "success" ? "text-emerald-700 font-semibold" : accent === "danger" ? "text-destructive font-semibold" : accent === "warn" ? "text-amber-600 font-semibold" : ""}`}>{value}</span>
     </div>
   );
 }
