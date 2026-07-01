@@ -178,7 +178,7 @@ function NewBroughtInPage() {
   return (
     <div
       className="min-h-[100dvh] w-full bg-background"
-      style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 120px)" }}
+      style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 180px)" }}
     >
       <div className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-2xl items-center gap-2 px-4 py-3">
