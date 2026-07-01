@@ -19,6 +19,7 @@ import { Plus, FileText } from "lucide-react";
 import { SettlementStatusBadge } from "@/components/settlement-status-badge";
 import { TxnDetailDialog } from "@/components/txn-detail-dialog";
 import { UseMarketRateButton } from "@/components/use-market-rate-button";
+import { RateComparison } from "@/components/rate-comparison";
 import { Badge } from "@/components/ui/badge";
 import { RecordActions } from "@/components/record-actions";
 import { EDIT_FIELDS } from "@/lib/edit-fields";
@@ -126,6 +127,12 @@ function Page() {
                         className="self-start"
                       />
                     )}
+                    <RateComparison
+                      currency={f.bought_currency}
+                      side="buy"
+                      txnRate={Number(f.buy_rate) || null}
+                      onApply={(r) => setF({ ...f, buy_rate: String(r) })}
+                    />
                   </div>
                 </F>
                 <F label="Paid currency">
