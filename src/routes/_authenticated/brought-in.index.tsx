@@ -5,8 +5,9 @@ import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { fmt } from "@/lib/exchange";
+import { fmt, CURRENCIES } from "@/lib/exchange";
 import { Plus } from "lucide-react";
+import { RecordActions } from "@/components/record-actions";
 
 export const Route = createFileRoute("/_authenticated/brought-in/")({ component: Page });
 
@@ -43,6 +44,7 @@ function Page() {
             <TableHead>Rate</TableHead>
             <TableHead className="text-right">Converted</TableHead>
             <TableHead>Final acct</TableHead>
+            <TableHead></TableHead>
           </TableRow></TableHeader>
           <TableBody>
             {(q.data ?? []).map((r: any) => (
@@ -56,9 +58,23 @@ function Page() {
                 <TableCell className="font-mono text-sm">{r.convert_enabled ? r.conversion_rate : "—"}</TableCell>
                 <TableCell className="text-right font-mono">{r.convert_enabled ? fmt(r.converted_amount, r.converted_currency) : "—"}</TableCell>
                 <TableCell>{r.convert_enabled ? r.final_account?.name : "—"}</TableCell>
+                <TableCell className="text-right">
+                  <RecordActions
+                    table="brought_in_money"
+                    row={r}
+                    invalidateKeys={["brought_in"]}
+                    fields={[
+                      { key: "entry_date", label: "Date", type: "date" },
+                      { key: "amount", label: "Amount", type: "number", step: "0.01" },
+                      { key: "currency", label: "Currency", type: "select", options: CURRENCIES.map((c: string) => ({ value: c, label: c })) },
+                      { key: "source_name", label: "Source name" },
+                      { key: "notes", label: "Notes", type: "textarea" },
+                    ]}
+                  />
+                </TableCell>
               </TableRow>
             ))}
-            {q.data && q.data.length === 0 && <TableRow><TableCell colSpan={9} className="text-center py-10 text-muted-foreground">Nothing brought in yet.</TableCell></TableRow>}
+            {q.data && q.data.length === 0 && <TableRow><TableCell colSpan={10} className="text-center py-10 text-muted-foreground">Nothing brought in yet.</TableCell></TableRow>}
           </TableBody>
         </Table>
       </CardContent></Card>
