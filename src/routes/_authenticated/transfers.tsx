@@ -18,6 +18,7 @@ import { Plus, FileText } from "lucide-react";
 import { SettlementStatusBadge } from "@/components/settlement-status-badge";
 import { TxnDetailDialog } from "@/components/txn-detail-dialog";
 import { RecordActions } from "@/components/record-actions";
+import { EDIT_FIELDS } from "@/lib/edit-fields";
 
 export const Route = createFileRoute("/_authenticated/transfers")({ component: Page });
 
@@ -108,13 +109,7 @@ function Page() {
                       row={r}
                       onView={() => setDetailRow(r)}
                       invalidateKeys={["transfers"]}
-                      fields={[
-                        { key: "entry_date", label: "Date", type: "date" },
-                        { key: "amount", label: "Amount", type: "number", step: "0.01" },
-                        { key: "currency", label: "Currency", type: "select", options: CURRENCIES.map((c: string) => ({ value: c, label: c })) },
-                        { key: "reason", label: "Reason" },
-                        { key: "notes", label: "Notes", type: "textarea" },
-                      ]}
+                      fields={EDIT_FIELDS.transfers}
                     />
                   </div>
                 </TableCell>

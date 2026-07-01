@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { fmt, CURRENCIES } from "@/lib/exchange";
 import { Plus } from "lucide-react";
 import { RecordActions } from "@/components/record-actions";
+import { EDIT_FIELDS } from "@/lib/edit-fields";
 
 export const Route = createFileRoute("/_authenticated/brought-in/")({ component: Page });
 
@@ -87,13 +88,7 @@ function Page() {
                     table="brought_in_money"
                     row={r}
                     invalidateKeys={["brought_in"]}
-                    fields={[
-                      { key: "entry_date", label: "Date", type: "date" },
-                      { key: "amount", label: "Amount", type: "number", step: "0.01" },
-                      { key: "currency", label: "Currency", type: "select", options: CURRENCIES.map((c: string) => ({ value: c, label: c })) },
-                      { key: "source_name", label: "Source name" },
-                      { key: "notes", label: "Notes", type: "textarea" },
-                    ]}
+                    fields={EDIT_FIELDS.brought_in_money}
                   />
                 </TableCell>
               </TableRow>

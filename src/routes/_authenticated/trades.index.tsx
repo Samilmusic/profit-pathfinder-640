@@ -17,6 +17,7 @@ import { CURRENCIES, fmtProfit } from "@/lib/exchange";
 import { toast } from "sonner";
 import { Plus, ArrowRight } from "lucide-react";
 import { RecordActions } from "@/components/record-actions";
+import { EDIT_FIELDS } from "@/lib/edit-fields";
 
 export const Route = createFileRoute("/_authenticated/trades/")({ component: Page });
 
@@ -201,11 +202,7 @@ function Page() {
                       table="trade_cycles"
                       row={t}
                       invalidateKeys={["trades"]}
-                      fields={[
-                        { key: "entry_date", label: "Date", type: "date" },
-                        { key: "code", label: "Code" },
-                        { key: "notes", label: "Notes", type: "textarea" },
-                      ]}
+                      fields={EDIT_FIELDS.trade_cycles}
                     />
                   </div>
                 </TableCell>
