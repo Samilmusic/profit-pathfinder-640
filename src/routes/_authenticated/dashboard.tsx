@@ -75,12 +75,46 @@ function DashboardPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("sell_transactions")
-        .select("id,entry_date,deal_status,sold_currency,sold_amount,received_currency,received_amount,customer_name")
+        .select("id,entry_date,deal_status,sold_currency,sold_amount,received_currency,received_amount,received_into_account_id,sold_from_account_id,customer_name")
         .is("deleted_at", null)
         .not("deal_status", "in", "(closed,cancelled)")
         .order("entry_date", { ascending: false });
       if (error) throw error;
-      return data ?? [];
+      const sells = data ?? [];
+      if (sells.length === 0) return [];
+      const ids = sells.map((s: any) => s.id);
+      const [paysRes, docsRes] = await Promise.all([
+        supabase.from("sell_payments").select("sell_id,currency,amount,receipt_url").is("deleted_at", null).in("sell_id", ids),
+        supabase.from("documents").select("ref_id,doc_type").eq("ref_type", "sell").in("ref_id", ids),
+      ]);
+      const paysBy = new Map<string, any[]>();
+      (paysRes.data ?? []).forEach((p: any) => {
+        if (!paysBy.has(p.sell_id)) paysBy.set(p.sell_id, []);
+        paysBy.get(p.sell_id)!.push(p);
+      });
+      const docsBy = new Map<string, any[]>();
+      (docsRes.data ?? []).forEach((d: any) => {
+        if (!docsBy.has(d.ref_id)) docsBy.set(d.ref_id, []);
+        docsBy.get(d.ref_id)!.push(d);
+      });
+      const RECEIPT_TYPES = new Set(["payment_receipt","bank_transfer_screenshot","cash_delivery_receipt","whatsapp_confirmation"]);
+      return sells.map((s: any) => {
+        const pays = paysBy.get(s.id) ?? [];
+        const docs = docsBy.get(s.id) ?? [];
+        const paid = pays.filter(p => p.currency === s.received_currency).reduce((n, p) => n + Number(p.amount || 0), 0);
+        const payment_received = paid + 0.0001 >= Number(s.received_amount || 0) && Number(s.received_amount || 0) > 0;
+        const partially_paid = paid > 0.0001 && !payment_received;
+        const receipt_uploaded = docs.some(d => RECEIPT_TYPES.has(d.doc_type)) || pays.some(p => !!p.receipt_url);
+        const currency_delivered = !!s.sold_from_account_id;
+        const closed = s.deal_status === "closed";
+        let derived: string;
+        if (closed) derived = "closed";
+        else if (partially_paid) derived = "partially_paid";
+        else if (!payment_received) derived = "waiting_payment";
+        else if (!receipt_uploaded) derived = "waiting_receipt";
+        else derived = "ready_to_close";
+        return { ...s, paid, currency_delivered, payment_received, receipt_uploaded, closed, derived_status: derived };
+      });
     },
   });
   const closedTodayQ = useQuery({
@@ -166,7 +200,7 @@ function DashboardPage() {
 
   // Deal status buckets
   const openSells = (openSellsQ.data ?? []) as any[];
-  const dealBucket = (s: string) => openSells.filter(d => d.deal_status === s).length;
+  const dealBucket = (s: string) => openSells.filter(d => d.derived_status === s).length;
   const openCount = openSells.length;
 
   // Customer balances

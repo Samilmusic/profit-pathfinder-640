@@ -38,11 +38,41 @@ function CommandCenter() {
   });
   const openDealsQ = useQuery({
     queryKey: ["cc_open_deals"],
-    queryFn: async () => (await supabase.from("sell_transactions")
-      .select("id, entry_date, deal_status, customer_id, received_amount, received_currency, expected_payment_date, customer:customers(name)")
-      .is("deleted_at", null)
-      .not("deal_status", "in", "(closed,cancelled)")
-      .order("entry_date", { ascending: false })).data ?? [],
+    queryFn: async () => {
+      const { data } = await supabase.from("sell_transactions")
+        .select("id, entry_date, deal_status, customer_id, sold_from_account_id, received_into_account_id, received_amount, received_currency, expected_payment_date, customer:customers(name)")
+        .is("deleted_at", null)
+        .not("deal_status", "in", "(closed,cancelled)")
+        .order("entry_date", { ascending: false });
+      const sells = data ?? [];
+      if (sells.length === 0) return [];
+      const ids = sells.map((s: any) => s.id);
+      const [pr, dr] = await Promise.all([
+        supabase.from("sell_payments").select("sell_id,currency,amount,receipt_url").is("deleted_at", null).in("sell_id", ids),
+        supabase.from("documents").select("ref_id,doc_type").eq("ref_type", "sell").in("ref_id", ids),
+      ]);
+      const paysBy = new Map<string, any[]>();
+      (pr.data ?? []).forEach((p: any) => { if (!paysBy.has(p.sell_id)) paysBy.set(p.sell_id, []); paysBy.get(p.sell_id)!.push(p); });
+      const docsBy = new Map<string, any[]>();
+      (dr.data ?? []).forEach((d: any) => { if (!docsBy.has(d.ref_id)) docsBy.set(d.ref_id, []); docsBy.get(d.ref_id)!.push(d); });
+      const RECEIPT = new Set(["payment_receipt","bank_transfer_screenshot","cash_delivery_receipt","whatsapp_confirmation"]);
+      return sells.map((s: any) => {
+        const pays = paysBy.get(s.id) ?? [];
+        const docs = docsBy.get(s.id) ?? [];
+        const paid = pays.filter(p => p.currency === s.received_currency).reduce((n, p) => n + Number(p.amount || 0), 0);
+        const payment_received = paid + 0.0001 >= Number(s.received_amount || 0) && Number(s.received_amount || 0) > 0;
+        const partial = paid > 0.0001 && !payment_received;
+        const receipt_uploaded = docs.some(d => RECEIPT.has(d.doc_type)) || pays.some(p => !!p.receipt_url);
+        const closed = s.deal_status === "closed";
+        let derived: string;
+        if (closed) derived = "closed";
+        else if (partial) derived = "partially_paid";
+        else if (!payment_received) derived = "waiting_payment";
+        else if (!receipt_uploaded) derived = "waiting_receipt";
+        else derived = "ready_to_close";
+        return { ...s, derived_status: derived };
+      });
+    },
   });
   const depositsQ = useQuery({
     queryKey: ["cc_deposits"],
@@ -109,13 +139,13 @@ function CommandCenter() {
   const cyclesInLoss = trades.filter((t: any) => Number(t.realized_profit || 0) < 0);
 
   const deals: any[] = openDealsQ.data ?? [];
-  const dealsByStatus = (s: string) => deals.filter((d) => d.deal_status === s);
-  const dOpen = dealsByStatus("open");
+  const dealsByStatus = (s: string) => deals.filter((d) => d.derived_status === s);
+  const dOpen = deals.filter((d) => !["closed"].includes(d.derived_status));
   const dWaitPay = dealsByStatus("waiting_payment");
   const dPartial = dealsByStatus("partially_paid");
   const dWaitRec = dealsByStatus("waiting_receipt");
   const dReady = dealsByStatus("ready_to_close");
-  const overdueDeals = deals.filter((d) => d.expected_payment_date && d.expected_payment_date < today && d.deal_status !== "closed");
+  const overdueDeals = deals.filter((d) => d.expected_payment_date && d.expected_payment_date < today && d.derived_status !== "closed");
 
   return (
     <>
