@@ -56,6 +56,9 @@ function QuickSellPage() {
   }, [balancesQ.data]);
   const sourceBalance = sourceId ? (balMap.get(sourceId) ?? 0) : null;
   const destBalance = destId ? (balMap.get(destId) ?? 0) : null;
+  const accCcy = (id: string) => (accounts.data ?? []).find((a: any) => a.id === id)?.currency as string | undefined;
+  const sourceAccountCcy = sourceId ? accCcy(sourceId) : undefined;
+  const destAccountCcy = destId ? accCcy(destId) : undefined;
 
   // Auto-fill last rate for this pair
   const lastRateQ = useQuery({
@@ -141,8 +144,12 @@ function QuickSellPage() {
   if (!soldN) validationErrors.push("Enter sold amount");
   if (!rateN) validationErrors.push("Enter sell rate");
   if (!sourceId) validationErrors.push("Pick source account");
+  if (!destId) validationErrors.push(`Pick a ${receivedCurrency} receiving account`);
+  if (sourceId && sourceAccountCcy && sourceAccountCcy !== soldCurrency)
+    validationErrors.push(`Source account must be ${soldCurrency}`);
+  if (destId && destAccountCcy && destAccountCcy !== receivedCurrency)
+    validationErrors.push(`Receiving account must be ${receivedCurrency} because customer is paying ${receivedCurrency}`);
   const closeErrors: string[] = [];
-  if (!destId) closeErrors.push("Pick receiving account to close");
   if (!note) closeErrors.push("Add a confirmation note to close");
 
   const save = useMutation({
