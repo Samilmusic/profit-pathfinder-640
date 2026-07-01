@@ -93,6 +93,12 @@ function CommandCenter() {
     m.movement_type === "pay_third_party" || m.movement_type === "receive_third_party"
   );
 
+  // Cycle-profit alerts: intermediate currency still awaiting buyback
+  const cyclesAwaitingBuyback = trades.filter((t: any) =>
+    (Number(t.intermediate_received || 0) - Number(t.intermediate_used || 0)) > 0.0001
+  );
+  const cyclesInLoss = trades.filter((t: any) => Number(t.realized_profit || 0) < 0);
+
   return (
     <>
       <PageHeader
