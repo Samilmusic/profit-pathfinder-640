@@ -54,8 +54,8 @@ function Page() {
   return (
     <>
       <PageHeader
-        title="Held by Person"
-        description="Money or currency physically held by a person, not yet in a bank or cash box. Balances stay visible until delivered."
+        title="Cash with People"
+        description="Money or currency physically with a person, not yet in a bank or cash box. Balances stay visible until delivered or deposited."
       />
       <div className="grid md:grid-cols-2 gap-4">
         {Array.from(grouped.entries()).map(([who, list]) => {

@@ -58,7 +58,7 @@ export function smartLabelsFor(row: any): { tone: Tone; label: string }[] {
   }
   if ((row.money_holder_type && row.money_holder_type !== "customer") ||
       (row.currency_holder_type && row.currency_holder_type !== "customer")) {
-    out.push({ tone: "info", label: "Held by person" });
+    out.push({ tone: "info", label: "Cash with person" });
   }
   return out;
 }

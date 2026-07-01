@@ -44,7 +44,7 @@ const nav = [
   { to: "/expenses", label: "Expenses", icon: Receipt },
   { to: "/transfers", label: "Transfers", icon: ArrowLeftRight },
   { to: "/pending-settlements", label: "Pending Settlements", icon: ClipboardList },
-  { to: "/held-by-person", label: "Held by Person", icon: HandCoins },
+  { to: "/held-by-person", label: "Cash with People", icon: HandCoins },
   { to: "/wallets", label: "Customer Wallets", icon: Landmark },
   { to: "/deposits", label: "Deposits", icon: ArrowUpFromLine },
   { to: "/payment-orders", label: "Payment Orders", icon: Send },
