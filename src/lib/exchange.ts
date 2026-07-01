@@ -4,12 +4,15 @@ export const CURRENCIES = ["AED", "IRR", "USD", "GBP", "EUR", "USDT"] as const;
 export type Currency = string;
 
 export const ACCOUNT_TYPES = [
-  { value: "cash", label: "Cash / Cash Box" },
-  { value: "toman_bank", label: "Toman Bank" },
+  { value: "cash", label: "Cash Box (any currency)" },
+  { value: "toman_bank", label: "Toman / IRR Bank" },
   { value: "aed_bank", label: "AED Bank" },
-  { value: "foreign_currency", label: "Foreign Currency" },
+  { value: "foreign_currency", label: "Foreign Currency Bank (USD/GBP/EUR)" },
   { value: "wallet", label: "Wallet / Crypto" },
+  { value: "person_holding", label: "Held by Person (Milad / Ali / Customer)" },
   { value: "customer_wallet", label: "Customer Wallet (Trust)" },
+  { value: "pending_delivery", label: "Pending Delivery / In Transit" },
+  { value: "other", label: "Other" },
 ] as const;
 
 export const OWNERS = ["milad", "ali", "shared", "other"] as const;

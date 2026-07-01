@@ -157,8 +157,15 @@ function Page() {
                   </Select>
                 </F>
                 <F label="Received amount (auto)"><Input readOnly value={received_amount ? fmt(received_amount, f.received_currency) : ""} /></F>
-                <F label="Sold from account"><AccountSelect currency={f.sold_currency} value={f.sold_from_account_id} onChange={(v) => setF({ ...f, sold_from_account_id: v })} /></F>
-                <F label="Received into account"><AccountSelect currency={f.received_currency} value={f.received_into_account_id} onChange={(v) => setF({ ...f, received_into_account_id: v })} /></F>
+                <F label="Sold from account (source)"><AccountSelect currency={f.sold_currency} value={f.sold_from_account_id} onChange={(v) => setF({ ...f, sold_from_account_id: v })} /></F>
+                <F label={`Received into ${f.received_currency} account (required)`}>
+                  <AccountSelect currency={f.received_currency} value={f.received_into_account_id} onChange={(v) => setF({ ...f, received_into_account_id: v })} placeholder={`Pick a ${f.received_currency} account`} />
+                  {!f.received_into_account_id && (
+                    <div className="text-[11px] text-destructive mt-1">
+                      Required — the received {f.received_currency} must land in a real account balance.
+                    </div>
+                  )}
+                </F>
                 <div className="md:col-span-2">
                   <Card className="bg-muted/40 border-dashed">
                     <CardContent className="p-3 space-y-2 text-sm">
@@ -229,9 +236,19 @@ function Page() {
                       create.isPending ||
                       !f.sold_amount ||
                       !f.sell_rate ||
+                      !f.sold_from_account_id ||
+                      !f.received_into_account_id ||
                       preview.shortfall > 0
                     }
-                    title={preview.shortfall > 0 ? `Not enough inventory (short ${fmt(preview.shortfall, f.sold_currency)})` : undefined}
+                    title={
+                      preview.shortfall > 0
+                        ? `Not enough inventory (short ${fmt(preview.shortfall, f.sold_currency)})`
+                        : !f.received_into_account_id
+                          ? "Pick the account that will receive the payment"
+                          : !f.sold_from_account_id
+                            ? "Pick the source account for the sold currency"
+                            : undefined
+                    }
                   >Save</Button>
                 </div>
               </form>

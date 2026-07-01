@@ -76,6 +76,15 @@ function DashboardPage() {
     },
   });
 
+  const balByTypeQ = useQuery({
+    queryKey: ["v_balances_by_currency_type"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("v_balances_by_currency_type").select("*");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const inventoryQ = useQuery({
     queryKey: ["currency_inventory"],
     queryFn: async () => {
@@ -320,6 +329,54 @@ function DashboardPage() {
         <StatCard label="Cash total (mixed)" value={fmt(cashTotal)} />
         <StatCard label="Held by people" value={String((holdingQ.data ?? []).length) + " lines"} />
       </div>
+
+      <Card className="mb-6" style={{ boxShadow: "var(--shadow-soft)" }}>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2"><Landmark className="h-4 w-4 text-primary" /> Balances by currency & account type</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0 overflow-x-auto">
+          {(() => {
+            const rows = (balByTypeQ.data ?? []) as any[];
+            const currencies = Array.from(new Set(rows.map(r => r.currency))).sort();
+            const types = Array.from(new Set(rows.map(r => r.account_type))).sort();
+            const cell = (c: string, t: string) =>
+              rows.find(r => r.currency === c && r.account_type === t)?.total_balance;
+            const typeLabel: Record<string,string> = {
+              cash: "Cash Box", toman_bank: "IRR Bank", aed_bank: "AED Bank",
+              foreign_currency: "FX Bank", wallet: "Crypto",
+              person_holding: "Held by Person", customer_wallet: "Customer Wallet",
+              pending_delivery: "Pending Delivery", other: "Other",
+            };
+            if (currencies.length === 0) return <div className="p-4 text-sm text-muted-foreground">No accounts yet.</div>;
+            return (
+              <table className="w-full text-sm">
+                <thead className="bg-muted/40 text-xs uppercase tracking-wide">
+                  <tr>
+                    <th className="text-left p-2 font-medium">Currency</th>
+                    {types.map(t => <th key={t} className="text-right p-2 font-medium">{typeLabel[t] ?? t}</th>)}
+                    <th className="text-right p-2 font-medium">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currencies.map(c => {
+                    const total = rows.filter(r => r.currency === c).reduce((s, r) => s + Number(r.total_balance || 0), 0);
+                    return (
+                      <tr key={c} className="border-t">
+                        <td className="p-2 font-medium">{c}</td>
+                        {types.map(t => {
+                          const v = cell(c, t);
+                          return <td key={t} className="text-right p-2 font-mono text-xs">{v === undefined || Number(v) === 0 ? "—" : fmt(Number(v), c)}</td>;
+                        })}
+                        <td className="text-right p-2 font-mono font-semibold">{fmt(total, c)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            );
+          })()}
+        </CardContent>
+      </Card>
 
       <Card className="mb-6 border-emerald-500/30" style={{ boxShadow: "var(--shadow-soft)" }}>
         <CardHeader className="flex-row items-center justify-between space-y-0">

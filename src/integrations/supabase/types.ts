@@ -2249,6 +2249,15 @@ export type Database = {
         }
         Relationships: []
       }
+      v_balances_by_currency_type: {
+        Row: {
+          account_count: number | null
+          account_type: string | null
+          currency: string | null
+          total_balance: number | null
+        }
+        Relationships: []
+      }
       v_cash_available: {
         Row: {
           balance: number | null
@@ -2341,6 +2350,8 @@ export type Database = {
         | "wallet"
         | "person_holding"
         | "customer_wallet"
+        | "pending_delivery"
+        | "other"
       app_role: "admin" | "milad" | "ali" | "viewer"
       brought_in_by: "milad" | "ali" | "customer" | "other"
       brought_in_reason:
@@ -2581,6 +2592,8 @@ export const Constants = {
         "wallet",
         "person_holding",
         "customer_wallet",
+        "pending_delivery",
+        "other",
       ],
       app_role: ["admin", "milad", "ali", "viewer"],
       brought_in_by: ["milad", "ali", "customer", "other"],
