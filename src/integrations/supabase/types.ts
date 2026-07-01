@@ -1420,12 +1420,103 @@ export type Database = {
         }
         Relationships: []
       }
+      sell_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          currency: string
+          deleted_at: string | null
+          entry_date: string
+          id: string
+          notes: string | null
+          receipt_url: string | null
+          received_into_account_id: string | null
+          sell_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          currency: string
+          deleted_at?: string | null
+          entry_date?: string
+          id?: string
+          notes?: string | null
+          receipt_url?: string | null
+          received_into_account_id?: string | null
+          sell_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          deleted_at?: string | null
+          entry_date?: string
+          id?: string
+          notes?: string | null
+          receipt_url?: string | null
+          received_into_account_id?: string | null
+          sell_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sell_payments_received_into_account_id_fkey"
+            columns: ["received_into_account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "sell_payments_received_into_account_id_fkey"
+            columns: ["received_into_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sell_payments_received_into_account_id_fkey"
+            columns: ["received_into_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "sell_payments_received_into_account_id_fkey"
+            columns: ["received_into_account_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "sell_payments_sell_id_fkey"
+            columns: ["sell_id"]
+            isOneToOne: false
+            referencedRelation: "sale_allocations_view"
+            referencedColumns: ["sell_id"]
+          },
+          {
+            foreignKeyName: "sell_payments_sell_id_fkey"
+            columns: ["sell_id"]
+            isOneToOne: false
+            referencedRelation: "sell_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sell_transactions: {
         Row: {
           ali_profit: number | null
           ali_share_pct: number
+          amount_received: number
           attachment_url: string | null
           cancel_reason: string | null
+          closed_at: string | null
+          closed_by: string | null
           completion_note: string | null
           cost_basis_amount: number | null
           cost_basis_rate: number | null
@@ -1439,9 +1530,11 @@ export type Database = {
           customer_id: string | null
           customer_name: string | null
           customer_phone: string | null
+          deal_status: Database["public"]["Enums"]["sell_deal_status"]
           deleted_at: string | null
           due_date: string | null
           entry_date: string
+          expected_payment_date: string | null
           gross_profit: number | null
           id: string
           milad_profit: number | null
@@ -1449,9 +1542,10 @@ export type Database = {
           money_holder_type: Database["public"]["Enums"]["holder_type"] | null
           money_location: Database["public"]["Enums"]["money_location"] | null
           notes: string | null
+          payment_difference_reason: string | null
           received_amount: number
           received_currency: string
-          received_into_account_id: string
+          received_into_account_id: string | null
           sell_rate: number
           settlement_status: Database["public"]["Enums"]["settlement_status"]
           sold_amount: number
@@ -1463,8 +1557,11 @@ export type Database = {
         Insert: {
           ali_profit?: number | null
           ali_share_pct?: number
+          amount_received?: number
           attachment_url?: string | null
           cancel_reason?: string | null
+          closed_at?: string | null
+          closed_by?: string | null
           completion_note?: string | null
           cost_basis_amount?: number | null
           cost_basis_rate?: number | null
@@ -1478,9 +1575,11 @@ export type Database = {
           customer_id?: string | null
           customer_name?: string | null
           customer_phone?: string | null
+          deal_status?: Database["public"]["Enums"]["sell_deal_status"]
           deleted_at?: string | null
           due_date?: string | null
           entry_date?: string
+          expected_payment_date?: string | null
           gross_profit?: number | null
           id?: string
           milad_profit?: number | null
@@ -1488,9 +1587,10 @@ export type Database = {
           money_holder_type?: Database["public"]["Enums"]["holder_type"] | null
           money_location?: Database["public"]["Enums"]["money_location"] | null
           notes?: string | null
+          payment_difference_reason?: string | null
           received_amount: number
           received_currency: string
-          received_into_account_id: string
+          received_into_account_id?: string | null
           sell_rate: number
           settlement_status?: Database["public"]["Enums"]["settlement_status"]
           sold_amount: number
@@ -1502,8 +1602,11 @@ export type Database = {
         Update: {
           ali_profit?: number | null
           ali_share_pct?: number
+          amount_received?: number
           attachment_url?: string | null
           cancel_reason?: string | null
+          closed_at?: string | null
+          closed_by?: string | null
           completion_note?: string | null
           cost_basis_amount?: number | null
           cost_basis_rate?: number | null
@@ -1517,9 +1620,11 @@ export type Database = {
           customer_id?: string | null
           customer_name?: string | null
           customer_phone?: string | null
+          deal_status?: Database["public"]["Enums"]["sell_deal_status"]
           deleted_at?: string | null
           due_date?: string | null
           entry_date?: string
+          expected_payment_date?: string | null
           gross_profit?: number | null
           id?: string
           milad_profit?: number | null
@@ -1527,9 +1632,10 @@ export type Database = {
           money_holder_type?: Database["public"]["Enums"]["holder_type"] | null
           money_location?: Database["public"]["Enums"]["money_location"] | null
           notes?: string | null
+          payment_difference_reason?: string | null
           received_amount?: number
           received_currency?: string
-          received_into_account_id?: string
+          received_into_account_id?: string | null
           sell_rate?: number
           settlement_status?: Database["public"]["Enums"]["settlement_status"]
           sold_amount?: number
@@ -2808,6 +2914,14 @@ export type Database = {
         Args: { _device?: string; _id: string; _reason: string; _table: string }
         Returns: undefined
       }
+      cancel_sell_deal: {
+        Args: { _id: string; _reason: string }
+        Returns: undefined
+      }
+      close_sell_deal: {
+        Args: { _difference_reason?: string; _id: string; _override?: boolean }
+        Returns: undefined
+      }
       consume_lots_fifo: {
         Args: {
           _account_id: string
@@ -2832,6 +2946,10 @@ export type Database = {
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       recompute_cycle_profit: {
         Args: { _cycle_id: string }
+        Returns: undefined
+      }
+      recompute_sell_deal_status: {
+        Args: { _sell_id: string }
         Returns: undefined
       }
       recompute_trade_totals: {
@@ -2942,6 +3060,14 @@ export type Database = {
         | "international"
         | "other"
       profit_status: "pending" | "received" | "waived" | "kept_in_wallet"
+      sell_deal_status:
+        | "open"
+        | "waiting_payment"
+        | "partially_paid"
+        | "waiting_receipt"
+        | "ready_to_close"
+        | "closed"
+        | "cancelled"
       settlement_status:
         | "draft"
         | "awaiting_payment"
@@ -3199,6 +3325,15 @@ export const Constants = {
         "other",
       ],
       profit_status: ["pending", "received", "waived", "kept_in_wallet"],
+      sell_deal_status: [
+        "open",
+        "waiting_payment",
+        "partially_paid",
+        "waiting_receipt",
+        "ready_to_close",
+        "closed",
+        "cancelled",
+      ],
       settlement_status: [
         "draft",
         "awaiting_payment",
