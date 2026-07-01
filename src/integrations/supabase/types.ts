@@ -800,6 +800,88 @@ export type Database = {
           },
         ]
       }
+      inventory_lots: {
+        Row: {
+          account_id: string | null
+          cost_basis_currency: string
+          cost_basis_rate: number
+          created_at: string
+          created_by: string | null
+          currency: string
+          entry_date: string
+          id: string
+          lot_code: string | null
+          notes: string | null
+          original_amount: number
+          remaining_amount: number
+          source_description: string | null
+          source_ref_id: string | null
+          source_ref_type: string
+          status: Database["public"]["Enums"]["inventory_lot_status"]
+          updated_at: string
+        }
+        Insert: {
+          account_id?: string | null
+          cost_basis_currency: string
+          cost_basis_rate: number
+          created_at?: string
+          created_by?: string | null
+          currency: string
+          entry_date?: string
+          id?: string
+          lot_code?: string | null
+          notes?: string | null
+          original_amount: number
+          remaining_amount: number
+          source_description?: string | null
+          source_ref_id?: string | null
+          source_ref_type: string
+          status?: Database["public"]["Enums"]["inventory_lot_status"]
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string | null
+          cost_basis_currency?: string
+          cost_basis_rate?: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          entry_date?: string
+          id?: string
+          lot_code?: string | null
+          notes?: string | null
+          original_amount?: number
+          remaining_amount?: number
+          source_description?: string | null
+          source_ref_id?: string | null
+          source_ref_type?: string
+          status?: Database["public"]["Enums"]["inventory_lot_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_lots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "inventory_lots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_lots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+        ]
+      }
       ledger_entries: {
         Row: {
           account_id: string
@@ -855,6 +937,70 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customer_wallet_balances"
             referencedColumns: ["account_id"]
+          },
+        ]
+      }
+      lot_consumptions: {
+        Row: {
+          amount: number
+          cost_amount: number
+          cost_basis_currency: string
+          cost_rate: number
+          created_at: string
+          currency: string
+          entry_date: string
+          id: string
+          lot_id: string
+          sell_ref_id: string
+          sell_ref_type: string
+        }
+        Insert: {
+          amount: number
+          cost_amount: number
+          cost_basis_currency: string
+          cost_rate: number
+          created_at?: string
+          currency: string
+          entry_date?: string
+          id?: string
+          lot_id: string
+          sell_ref_id: string
+          sell_ref_type: string
+        }
+        Update: {
+          amount?: number
+          cost_amount?: number
+          cost_basis_currency?: string
+          cost_rate?: number
+          created_at?: string
+          currency?: string
+          entry_date?: string
+          id?: string
+          lot_id?: string
+          sell_ref_id?: string
+          sell_ref_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lot_consumptions_lot_id_fkey"
+            columns: ["lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_lots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lot_consumptions_lot_id_fkey"
+            columns: ["lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_lots_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lot_consumptions_lot_id_fkey"
+            columns: ["lot_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_lot"
+            referencedColumns: ["lot_id"]
           },
         ]
       }
@@ -1757,6 +1903,69 @@ export type Database = {
           },
         ]
       }
+      inventory_lots_view: {
+        Row: {
+          account_id: string | null
+          account_name: string | null
+          cost_basis_currency: string | null
+          cost_basis_rate: number | null
+          created_at: string | null
+          created_by: string | null
+          currency: string | null
+          entry_date: string | null
+          id: string | null
+          lot_code: string | null
+          notes: string | null
+          original_amount: number | null
+          remaining_amount: number | null
+          sold_amount: number | null
+          source_description: string | null
+          source_ref_id: string | null
+          source_ref_type: string | null
+          status: Database["public"]["Enums"]["inventory_lot_status"] | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_lots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "inventory_lots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_lots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+        ]
+      }
+      profit_by_lot: {
+        Row: {
+          cost_basis_currency: string | null
+          cost_basis_rate: number | null
+          currency: string | null
+          gross_profit: number | null
+          lot_code: string | null
+          lot_id: string | null
+          sold_amount: number | null
+          source_description: string | null
+          source_ref_id: string | null
+          source_ref_type: string | null
+          total_cost: number | null
+          total_received: number | null
+        }
+        Relationships: []
+      }
       service_charge_daily: {
         Row: {
           currency: string | null
@@ -1829,6 +2038,20 @@ export type Database = {
         Returns: number
       }
       can_write: { Args: { _user_id: string }; Returns: boolean }
+      consume_lots_fifo: {
+        Args: {
+          _account_id: string
+          _amount: number
+          _currency: string
+          _entry_date: string
+          _sell_id: string
+        }
+        Returns: {
+          blended_rate: number
+          cost_ccy: string
+          total_cost: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1883,6 +2106,7 @@ export type Database = {
         | "other"
       fee_kind: "fixed" | "percent" | "manual"
       holder_type: "milad" | "ali" | "customer" | "other"
+      inventory_lot_status: "available" | "partial" | "depleted"
       ledger_ref_type:
         | "brought_in"
         | "buy"
@@ -2126,6 +2350,7 @@ export const Constants = {
       ],
       fee_kind: ["fixed", "percent", "manual"],
       holder_type: ["milad", "ali", "customer", "other"],
+      inventory_lot_status: ["available", "partial", "depleted"],
       ledger_ref_type: [
         "brought_in",
         "buy",
