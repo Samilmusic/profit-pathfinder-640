@@ -184,7 +184,9 @@ function CommandCenter() {
           empty="All settled" to="/pending-settlements"
         >
           <Line label="Open buys" value={String(buysQ.data?.length ?? 0)} />
-
+          <Line label="Open sells" value={String(sellsQ.data?.length ?? 0)} />
+          <Line label="Open deposits" value={String(depositsQ.data?.length ?? 0)} />
+          <Line label="Open payment orders" value={String(ordersQ.data?.length ?? 0)} />
         </ActionCard>
 
         <ActionCard
@@ -207,9 +209,6 @@ function CommandCenter() {
           {cyclesInLoss.slice(0, 5).map((t: any) => (
             <Line key={t.id} label={t.code} value={fmt(t.realized_profit, t.realized_profit_currency || t.initial_currency)} />
           ))}
-          <Line label="Open sells" value={String(sellsQ.data?.length ?? 0)} />
-          <Line label="Open deposits" value={String(depositsQ.data?.length ?? 0)} />
-          <Line label="Open payment orders" value={String(ordersQ.data?.length ?? 0)} />
         </ActionCard>
 
         <ActionCard
