@@ -21,23 +21,21 @@ function SettingsPage() {
   const q = useQuery({
     queryKey: ["app_settings"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("app_settings" as any).select("*");
+      const { data, error } = await supabase.from("app_settings" as any).select("*").limit(1).maybeSingle();
       if (error) throw error;
-      const m: Record<string, string> = {};
-      (data ?? []).forEach((r: any) => (m[r.key] = r.value));
-      return m;
+      return (data ?? {}) as Record<string, any>;
     },
   });
 
-  const method = q.data?.profit_recognition_method ?? "cycle";
-  const mrSource = q.data?.market_rate_source ?? "bonbast";
-  const mrRefresh = q.data?.market_rate_refresh_minutes ?? "5";
-  const mrFallback = (q.data?.market_rate_manual_fallback ?? "true") === "true";
+  const method: string = q.data?.profit_recognition_method ?? "cycle";
+  const mrSource: string = q.data?.market_rate_source ?? "bonbast";
+  const mrRefresh: number = q.data?.market_rate_refresh_minutes ?? 5;
+  const mrFallback: boolean = q.data?.market_rate_manual_fallback ?? true;
 
   const save = useMutation({
-    mutationFn: async ({ key, value }: { key: string; value: string }) => {
+    mutationFn: async (patch: Record<string, any>) => {
       const { error } = await supabase.from("app_settings" as any)
-        .upsert({ key, value }, { onConflict: "key" });
+        .upsert({ id: true, ...patch }, { onConflict: "id" });
       if (error) throw error;
     },
     onSuccess: () => {
