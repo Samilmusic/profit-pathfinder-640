@@ -13,7 +13,8 @@ import { useAccounts } from "@/components/account-select";
 import { NumberInput } from "@/components/number-input";
 import { CURRENCIES, fmt } from "@/lib/exchange";
 import { toast } from "sonner";
-import { ArrowLeft, Camera, CheckCircle2, ChevronDown, Image as ImageIcon, Paperclip, Upload, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Camera, CheckCircle2, ChevronDown, Image as ImageIcon, Paperclip, Upload, X } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/brought-in/new")({
@@ -61,6 +62,16 @@ function NewBroughtInPage() {
   const [senderName, setSenderName] = useState("");
   const [senderAccount, setSenderAccount] = useState("");
 
+  // Conversion
+  const [convertEnabled, setConvertEnabled] = useState(false);
+  const [conversionRate, setConversionRate] = useState("");
+  const [convertedCurrency, setConvertedCurrency] = useState("AED");
+  const [convertedAmount, setConvertedAmount] = useState("");
+  const [convertedAmountManual, setConvertedAmountManual] = useState(false);
+  const [finalAccountId, setFinalAccountId] = useState("");
+  const [feeAmount, setFeeAmount] = useState("");
+  const [feeKind, setFeeKind] = useState("fee");
+
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -72,6 +83,22 @@ function NewBroughtInPage() {
     () => (accounts.data ?? []).filter((a: any) => a.currency === currency && a.account_type !== "customer_wallet"),
     [accounts.data, currency],
   );
+  const finalAccounts = useMemo(
+    () => (accounts.data ?? []).filter((a: any) => a.currency === convertedCurrency && a.account_type !== "customer_wallet"),
+    [accounts.data, convertedCurrency],
+  );
+
+  // Auto-calc converted amount unless user overrode it
+  useMemo(() => {
+    if (!convertEnabled || convertedAmountManual) return;
+    const amt = Number(amount); const rate = Number(conversionRate);
+    if (amt > 0 && rate > 0) {
+      // rate expressed as: 1 converted = rate original  => converted = amt / rate
+      // But user example: 150,000,000 IRR / 46,600 = 3,218.8841 AED. So converted = amount / rate.
+      const v = amt / rate;
+      setConvertedAmount(v.toFixed(convertedCurrency === "IRR" ? 0 : 4));
+    }
+  }, [amount, conversionRate, convertEnabled, convertedAmountManual, convertedCurrency]);
 
   const balQ = useQuery({
     queryKey: ["account_balance", depositAccountId],
@@ -92,6 +119,11 @@ function NewBroughtInPage() {
     mutationFn: async () => {
       if (!depositAccountId) throw new Error("Pick a deposit account");
       if (!amount || Number(amount) <= 0) throw new Error("Enter an amount");
+      if (convertEnabled) {
+        if (!conversionRate || Number(conversionRate) <= 0) throw new Error("Enter a conversion rate");
+        if (!convertedAmount || Number(convertedAmount) <= 0) throw new Error("Enter the converted amount");
+        if (!finalAccountId) throw new Error("Pick a final deposit account");
+      }
       const { data: u } = await supabase.auth.getUser();
       const { data: row, error } = await supabase.from("brought_in_money").insert({
         entry_date: entryDate,
@@ -106,6 +138,14 @@ function NewBroughtInPage() {
         reason: reason as any,
         notes: notes || null,
         created_by: u.user?.id,
+        convert_enabled: convertEnabled,
+        conversion_rate: convertEnabled ? Number(conversionRate) : null,
+        converted_currency: convertEnabled ? convertedCurrency : null,
+        converted_amount: convertEnabled ? Number(convertedAmount) : null,
+        final_deposit_account_id: convertEnabled ? finalAccountId : null,
+        conversion_fee_amount: convertEnabled && feeAmount ? Number(feeAmount) : null,
+        conversion_fee_currency: convertEnabled && feeAmount ? convertedCurrency : null,
+        conversion_fee_kind: convertEnabled && feeAmount ? feeKind : null,
       }).select("id").single();
       if (error) throw error;
 
@@ -133,7 +173,8 @@ function NewBroughtInPage() {
     onSuccess: async (id) => {
       savePrefs({ broughtBy, currency, deposit_account_id: depositAccountId, reason });
       qc.invalidateQueries();
-      const { data } = await supabase.from("account_balances").select("current_balance").eq("account_id", depositAccountId).maybeSingle();
+      const balAcct = convertEnabled && finalAccountId ? finalAccountId : depositAccountId;
+      const { data } = await supabase.from("account_balances").select("current_balance").eq("account_id", balAcct).maybeSingle();
       setSuccess({ id, balance: data?.current_balance ?? null });
     },
     onError: (e: any) => toast.error(e.message),
