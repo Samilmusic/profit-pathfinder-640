@@ -18,6 +18,9 @@ import { CURRENCIES, fmt } from "@/lib/exchange";
 import { toast } from "sonner";
 import { Plus, FileText } from "lucide-react";
 import { DealStatusBadge } from "@/components/deal-status-badge";
+import { EmptyState } from "@/components/empty-state";
+import { Copyable } from "@/components/copyable";
+import { Sparkles } from "lucide-react";
 import { TxnDetailDialog } from "@/components/txn-detail-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -327,10 +330,13 @@ function Page() {
       />
       <Card><CardContent className="p-0 overflow-x-auto">
         <Table>
-          <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Sold</TableHead><TableHead>Rate</TableHead><TableHead>Received</TableHead><TableHead className="text-right">Profit</TableHead><TableHead className="text-right">Milad</TableHead><TableHead className="text-right">Ali</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow></TableHeader>
+          <TableHeader><TableRow><TableHead>Doc #</TableHead><TableHead>Date</TableHead><TableHead>Sold</TableHead><TableHead>Rate</TableHead><TableHead>Received</TableHead><TableHead className="text-right">Profit</TableHead><TableHead className="text-right">Milad</TableHead><TableHead className="text-right">Ali</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow></TableHeader>
           <TableBody>
             {(q.data ?? []).map((r: any) => (
-              <TableRow key={r.id}>
+              <TableRow key={r.id} className="rise-in">
+                <TableCell className="whitespace-nowrap">
+                  {r.doc_no ? <Copyable value={r.doc_no} label="Doc #" /> : <span className="text-muted-foreground text-xs">—</span>}
+                </TableCell>
                 <TableCell>
                   <Link to="/sells/$id" params={{ id: r.id }} className="underline decoration-dotted underline-offset-2">{r.entry_date}</Link>
                 </TableCell>
@@ -369,7 +375,17 @@ function Page() {
                 </TableCell>
               </TableRow>
             ))}
-            {q.data && q.data.length === 0 && <TableRow><TableCell colSpan={9} className="text-center py-10 text-muted-foreground">No sells yet.</TableCell></TableRow>}
+            {q.data && q.data.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={10} className="p-4">
+                  <EmptyState
+                    icon={Sparkles}
+                    title="No deals yet"
+                    body="Start a new sell to create your first deal. Every deal gets a document number automatically."
+                  />
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </CardContent></Card>

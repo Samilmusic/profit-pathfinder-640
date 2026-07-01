@@ -169,4 +169,32 @@
     backdrop-filter: blur(12px) saturate(140%);
     box-shadow: var(--shadow-glass);
   }
+
+  /* Semantic tone helpers — use for badges, dots, subtle chips.
+     positive = green, warn = amber, danger = red, info = blue. */
+  .tone-positive { color: oklch(0.55 0.15 160); background: oklch(0.94 0.06 160 / 0.4); }
+  .tone-warn     { color: oklch(0.55 0.15 75);  background: oklch(0.95 0.08 80  / 0.4); }
+  .tone-danger   { color: oklch(0.50 0.20 25);  background: oklch(0.95 0.08 25  / 0.4); }
+  .tone-info     { color: oklch(0.45 0.12 250); background: oklch(0.94 0.04 250 / 0.4); }
+
+  .dot-positive { background: oklch(0.65 0.16 160); }
+  .dot-warn     { background: oklch(0.75 0.16 75); }
+  .dot-danger   { background: oklch(0.60 0.22 25); }
+  .dot-info     { background: oklch(0.55 0.14 250); }
+
+  /* Subtle card lift on hover — reused across list rows and dashboard tiles. */
+  .card-lift {
+    transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+  }
+  .card-lift:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-elevated);
+  }
+
+  /* Fade + rise entry animation for list rows. */
+  @keyframes rise-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .rise-in { animation: rise-in 220ms ease-out both; }
 }
