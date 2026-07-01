@@ -13,6 +13,21 @@ export type MarketRateRow = {
   error_message: string | null;
 };
 
+export type MarketRateRecentRow = MarketRateRow & { rn: number };
+
+export type MarketRateFetchRow = {
+  id: string;
+  source: string;
+  started_at: string;
+  finished_at: string | null;
+  duration_ms: number | null;
+  success_count: number;
+  failed_count: number;
+  currencies: Record<string, { ok: boolean; buy: number | null; sell: number | null; error?: string }> | null;
+  error_message: string | null;
+  triggered_by: string | null;
+};
+
 export function useLatestMarketRates() {
   return useQuery({
     queryKey: ["market_rates_latest"],
@@ -25,6 +40,38 @@ export function useLatestMarketRates() {
     },
     refetchInterval: 60_000,
     staleTime: 30_000,
+  });
+}
+
+/** Latest + previous successful bonbast readings per currency (for trend arrows). */
+export function useRecentMarketRates() {
+  return useQuery({
+    queryKey: ["market_rates_recent"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("market_rates_recent" as any)
+        .select("*");
+      if (error) throw error;
+      return (data ?? []) as unknown as MarketRateRecentRow[];
+    },
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+  });
+}
+
+export function useMarketRateFetches(limit = 20) {
+  return useQuery({
+    queryKey: ["market_rate_fetches", limit],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("market_rate_fetches" as any)
+        .select("*")
+        .order("started_at", { ascending: false })
+        .limit(limit);
+      if (error) throw error;
+      return (data ?? []) as unknown as MarketRateFetchRow[];
+    },
+    refetchInterval: 60_000,
   });
 }
 

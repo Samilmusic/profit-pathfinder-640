@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { triggerMarketRateRefresh, useLatestMarketRates, rateFreshness, pickDisplayRate } from "@/lib/market-rates";
+import { triggerMarketRateRefresh, useLatestMarketRates, rateFreshness, pickDisplayRate, useMarketRateFetches } from "@/lib/market-rates";
+import { MARKET_CURRENCIES } from "@/lib/market-currencies";
 import { useState } from "react";
 import { fmt } from "@/lib/exchange";
 import { RefreshCw } from "lucide-react";
@@ -145,13 +146,13 @@ function SettingsPage() {
                 Refresh now
               </Button>
             </div>
-            {(["AED","USD"] as const).map((c) => {
-              const { row } = pickDisplayRate(latest.data, c);
+            {MARKET_CURRENCIES.map((cfg) => {
+              const c = cfg.code;
               const bonbastRow = latest.data?.find((r) => r.currency === c && r.source === "bonbast");
               const f = rateFreshness(bonbastRow?.fetched_at);
               return (
                 <div key={c} className="text-xs flex items-center justify-between">
-                  <span className="font-mono">{c} · bonbast</span>
+                  <span className="font-mono">{cfg.flag} {c} · bonbast</span>
                   <span className={f.tone === "ok" ? "text-emerald-600" : f.tone === "warn" ? "text-amber-600" : "text-red-600"}>
                     {f.label}{bonbastRow?.fetched_at ? ` · ${new Date(bonbastRow.fetched_at).toLocaleString()}` : ""}
                     {bonbastRow?.error_message ? ` · ${bonbastRow.error_message}` : ""}
@@ -163,11 +164,75 @@ function SettingsPage() {
               Display fallback: bonbast if fresh, otherwise manual (if set), otherwise last bonbast value.
             </div>
           </div>
+
+          <FetchStatsBlock refreshMinutes={mrRefresh} />
         </CardContent>
       </Card>
 
       <ManualRatesCard />
     </>
+  );
+}
+
+function FetchStatsBlock({ refreshMinutes }: { refreshMinutes: number }) {
+  const q = useMarketRateFetches(10);
+  const last = q.data?.[0];
+  const nextAt = last?.started_at
+    ? new Date(new Date(last.started_at).getTime() + (refreshMinutes || 5) * 60_000)
+    : null;
+  return (
+    <div className="rounded-lg border p-3 space-y-2">
+      <Label className="font-medium">Auto-refresh log</Label>
+      {!last ? (
+        <div className="text-xs text-muted-foreground">No fetches recorded yet.</div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+          <div>
+            <div className="text-[10px] uppercase text-muted-foreground">Last fetch</div>
+            <div className="font-mono">{new Date(last.started_at).toLocaleString()}</div>
+          </div>
+          <div>
+            <div className="text-[10px] uppercase text-muted-foreground">Duration</div>
+            <div className="font-mono">{last.duration_ms != null ? `${last.duration_ms} ms` : "—"}</div>
+          </div>
+          <div>
+            <div className="text-[10px] uppercase text-muted-foreground">Result</div>
+            <div className="font-mono">
+              <span className="text-emerald-600">{last.success_count} ok</span>
+              {" · "}
+              <span className={last.failed_count > 0 ? "text-red-600" : "text-muted-foreground"}>
+                {last.failed_count} failed
+              </span>
+            </div>
+          </div>
+          <div className="col-span-2 sm:col-span-3">
+            <div className="text-[10px] uppercase text-muted-foreground">Next scheduled</div>
+            <div className="font-mono">{nextAt ? nextAt.toLocaleString() : "—"}</div>
+          </div>
+          {last.error_message && (
+            <div className="col-span-2 sm:col-span-3 text-[11px] text-red-600 break-all">
+              {last.error_message}
+            </div>
+          )}
+        </div>
+      )}
+      {q.data && q.data.length > 1 && (
+        <details className="text-[11px] text-muted-foreground">
+          <summary className="cursor-pointer">Recent history</summary>
+          <div className="mt-1 space-y-1">
+            {q.data.slice(1).map((f) => (
+              <div key={f.id} className="flex justify-between font-mono">
+                <span>{new Date(f.started_at).toLocaleString()}</span>
+                <span>
+                  {f.success_count} ok · {f.failed_count} failed
+                  {f.duration_ms != null ? ` · ${f.duration_ms}ms` : ""}
+                </span>
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
+    </div>
   );
 }
 

@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { MARKET_CURRENCIES, bonbastFieldsFor } from "@/lib/market-currencies";
 
 const UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36";
 
 function parseSetCookies(headers: Headers): string {
-  // Node fetch exposes only one Set-Cookie via .get, but .getSetCookie() is available in modern runtimes.
   const anyH = headers as unknown as { getSetCookie?: () => string[] };
   const list = typeof anyH.getSetCookie === "function" ? anyH.getSetCookie() : [];
   if (list.length === 0) {
@@ -17,44 +17,31 @@ function parseSetCookies(headers: Headers): string {
     .join("; ");
 }
 
-type BonbastPayload = Record<string, string | number> & {
-  aed1?: string;
-  aed2?: string;
-  usd1?: string;
-  usd2?: string;
-  last_modified?: string;
-};
+type BonbastPayload = Record<string, string | number> & { last_modified?: string };
 
 async function scrapeBonbast(): Promise<
   { ok: true; data: BonbastPayload } | { ok: false; error: string; stage: string }
 > {
-  // Step 1 — load homepage to (a) get the token param and (b) collect cookies.
   let home: Response;
   try {
     home = await fetch("https://bonbast.com/", {
       headers: {
         "User-Agent": UA,
-        Accept:
-          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.9",
       },
     });
   } catch (e: any) {
     return { ok: false, error: e?.message ?? "network error", stage: "home_fetch" };
   }
-  if (!home.ok) {
-    return { ok: false, error: `home HTTP ${home.status}`, stage: "home_fetch" };
-  }
+  if (!home.ok) return { ok: false, error: `home HTTP ${home.status}`, stage: "home_fetch" };
+
   const cookie = parseSetCookies(home.headers);
   const html = await home.text();
   const paramMatch = html.match(/param:\s*"([^"]+)"/);
-  if (!paramMatch) {
-    return { ok: false, error: "param token not found in homepage HTML", stage: "param_extract" };
-  }
-  const param = paramMatch[1];
+  if (!paramMatch) return { ok: false, error: "param token not found", stage: "param_extract" };
 
-  // Step 2 — POST the token to /json with cookies + XHR headers.
-  const body = new URLSearchParams({ param }).toString();
+  const body = new URLSearchParams({ param: paramMatch[1] }).toString();
   let jsonRes: Response;
   try {
     jsonRes = await fetch("https://bonbast.com/json", {
@@ -74,18 +61,17 @@ async function scrapeBonbast(): Promise<
   } catch (e: any) {
     return { ok: false, error: e?.message ?? "network error", stage: "json_fetch" };
   }
-  if (!jsonRes.ok) {
-    return { ok: false, error: `json HTTP ${jsonRes.status}`, stage: "json_fetch" };
-  }
+  if (!jsonRes.ok) return { ok: false, error: `json HTTP ${jsonRes.status}`, stage: "json_fetch" };
+
   const text = await jsonRes.text();
   let payload: BonbastPayload;
   try {
     payload = JSON.parse(text) as BonbastPayload;
-  } catch (e: any) {
+  } catch {
     return { ok: false, error: "invalid JSON response", stage: "json_parse" };
   }
-  if ((payload as any).rest !== undefined && !payload.usd1) {
-    return { ok: false, error: "bonbast rejected token (rate limited?)", stage: "json_reject" };
+  if ((payload as any).rest !== undefined && !(payload as any).usd1) {
+    return { ok: false, error: "bonbast rejected token", stage: "json_reject" };
   }
   return { ok: true, data: payload };
 }
@@ -96,7 +82,7 @@ function num(v: unknown): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-async function upsertRate(
+async function insertRate(
   supabaseAdmin: any,
   currency: string,
   sell: number | null,
@@ -117,7 +103,7 @@ async function upsertRate(
     error_message: errorMessage,
   });
   if (error) console.error("[market-rates] insert failed", currency, error);
-  return status;
+  return status === "ok";
 }
 
 export const Route = createFileRoute("/api/public/hooks/fetch-market-rates")({
@@ -127,57 +113,107 @@ export const Route = createFileRoute("/api/public/hooks/fetch-market-rates")({
         new Response(JSON.stringify({ ok: true, hint: "POST to trigger fetch" }), {
           headers: { "content-type": "application/json" },
         }),
-      POST: async () => {
-        const { supabaseAdmin } = await import(
-          "@/integrations/supabase/client.server"
-        );
+      POST: async ({ request }) => {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const triggeredBy = request.headers.get("x-triggered-by") ?? "manual";
+        const startedAt = new Date();
 
         const result = await scrapeBonbast();
+        const perCurrency: Record<
+          string,
+          { ok: boolean; buy: number | null; sell: number | null; error?: string }
+        > = {};
+        let success = 0;
+        let failed = 0;
 
         if (!result.ok) {
           const errMsg = `[${result.stage}] ${result.error}`;
-          console.error("[market-rates] bonbast fetch failed:", errMsg);
-          await upsertRate(supabaseAdmin, "AED", null, null, null, errMsg);
-          await upsertRate(supabaseAdmin, "USD", null, null, null, errMsg);
+          console.error("[market-rates] scrape failed:", errMsg);
+          // Log a fetch attempt but don't touch any per-currency rows —
+          // the widget will keep showing the last successful rate for each.
+          for (const c of MARKET_CURRENCIES) {
+            perCurrency[c.code] = { ok: false, buy: null, sell: null, error: errMsg };
+            failed++;
+          }
+          const finishedAt = new Date();
+          await supabaseAdmin.from("market_rate_fetches").insert({
+            source: "bonbast",
+            started_at: startedAt.toISOString(),
+            finished_at: finishedAt.toISOString(),
+            duration_ms: finishedAt.getTime() - startedAt.getTime(),
+            success_count: 0,
+            failed_count: failed,
+            currencies: perCurrency,
+            error_message: errMsg,
+            triggered_by: triggeredBy,
+          });
           return new Response(
             JSON.stringify({
               ok: false,
               error: errMsg,
               fallback: true,
               message: "Bonbast unavailable. Using last saved/manual rate.",
+              results: perCurrency,
             }),
             { status: 200, headers: { "content-type": "application/json" } },
           );
         }
 
         const p = result.data;
-        // Convention on bonbast: `1` = sell (broker sells to you = you buy the currency),
-        // `2` = buy (broker buys from you = you sell). We record them as-is.
-        const aedSell = num(p.aed1);
-        const aedBuy = num(p.aed2);
-        const usdSell = num(p.usd1);
-        const usdBuy = num(p.usd2);
+        for (const c of MARKET_CURRENCIES) {
+          const { sellField, buyField } = bonbastFieldsFor(c.code);
+          const sell = num((p as any)[sellField]);
+          const buy = num((p as any)[buyField]);
+          if (!sell && !buy) {
+            // Not present in this payload — skip inserting a row so we don't
+            // clobber the last known value with a spurious "error" record.
+            perCurrency[c.code] = {
+              ok: false,
+              buy: null,
+              sell: null,
+              error: c.primary ? "missing in bonbast payload" : "not published",
+            };
+            if (c.primary) failed++;
+            continue;
+          }
+          const ok = await insertRate(
+            supabaseAdmin,
+            c.code,
+            sell,
+            buy,
+            {
+              [sellField]: (p as any)[sellField],
+              [buyField]: (p as any)[buyField],
+              last_modified: p.last_modified,
+            },
+            null,
+          );
+          perCurrency[c.code] = { ok, buy, sell };
+          if (ok) success++;
+          else failed++;
+        }
 
-        const outcomes: Record<string, string> = {};
-        outcomes.AED = await upsertRate(
-          supabaseAdmin,
-          "AED",
-          aedSell,
-          aedBuy,
-          { aed1: p.aed1, aed2: p.aed2, last_modified: p.last_modified },
-          aedSell || aedBuy ? null : "AED fields missing in bonbast payload",
-        );
-        outcomes.USD = await upsertRate(
-          supabaseAdmin,
-          "USD",
-          usdSell,
-          usdBuy,
-          { usd1: p.usd1, usd2: p.usd2, last_modified: p.last_modified },
-          usdSell || usdBuy ? null : "USD fields missing in bonbast payload",
-        );
+        const finishedAt = new Date();
+        await supabaseAdmin.from("market_rate_fetches").insert({
+          source: "bonbast",
+          started_at: startedAt.toISOString(),
+          finished_at: finishedAt.toISOString(),
+          duration_ms: finishedAt.getTime() - startedAt.getTime(),
+          success_count: success,
+          failed_count: failed,
+          currencies: perCurrency,
+          error_message: null,
+          triggered_by: triggeredBy,
+        });
 
         return new Response(
-          JSON.stringify({ ok: true, results: outcomes, source_last_modified: p.last_modified }),
+          JSON.stringify({
+            ok: true,
+            success,
+            failed,
+            results: perCurrency,
+            source_last_modified: p.last_modified,
+          }),
           { status: 200, headers: { "content-type": "application/json" } },
         );
       },

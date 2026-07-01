@@ -1245,6 +1245,45 @@ export type Database = {
           },
         ]
       }
+      market_rate_fetches: {
+        Row: {
+          currencies: Json | null
+          duration_ms: number | null
+          error_message: string | null
+          failed_count: number
+          finished_at: string | null
+          id: string
+          source: string
+          started_at: string
+          success_count: number
+          triggered_by: string | null
+        }
+        Insert: {
+          currencies?: Json | null
+          duration_ms?: number | null
+          error_message?: string | null
+          failed_count?: number
+          finished_at?: string | null
+          id?: string
+          source?: string
+          started_at?: string
+          success_count?: number
+          triggered_by?: string | null
+        }
+        Update: {
+          currencies?: Json | null
+          duration_ms?: number | null
+          error_message?: string | null
+          failed_count?: number
+          finished_at?: string | null
+          id?: string
+          source?: string
+          started_at?: string
+          success_count?: number
+          triggered_by?: string | null
+        }
+        Relationships: []
+      }
       market_rates: {
         Row: {
           buy_rate: number | null
@@ -2615,6 +2654,21 @@ export type Database = {
           fetched_at: string | null
           id: string | null
           mid_rate: number | null
+          sell_rate: number | null
+          source: string | null
+          status: string | null
+        }
+        Relationships: []
+      }
+      market_rates_recent: {
+        Row: {
+          buy_rate: number | null
+          currency: string | null
+          error_message: string | null
+          fetched_at: string | null
+          id: string | null
+          mid_rate: number | null
+          rn: number | null
           sell_rate: number | null
           source: string | null
           status: string | null
