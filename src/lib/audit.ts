@@ -8,7 +8,7 @@ const device = () => {
 };
 
 export async function setEditContext(reason: string) {
-  const { error } = await supabase.rpc("set_edit_context", { _reason: reason, _device: device() });
+  const { error } = await (supabase as any).rpc("set_edit_context", { _reason: reason, _device: device() });
   if (error) throw error;
 }
 
@@ -21,7 +21,7 @@ export async function withEditReason<T>(reason: string, fn: () => Promise<T>): P
 
 export async function cancelRecord(table: string, id: string, reason: string) {
   if (!reason || !reason.trim()) throw new Error("Reason for cancel is required");
-  const { error } = await supabase.rpc("cancel_record", {
+  const { error } = await (supabase as any).rpc("cancel_record", {
     _table: table,
     _id: id,
     _reason: reason.trim(),
