@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { Plus, FileText } from "lucide-react";
 import { SettlementStatusBadge } from "@/components/settlement-status-badge";
 import { TxnDetailDialog } from "@/components/txn-detail-dialog";
+import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/sell")({ component: Page });
 
@@ -38,6 +39,49 @@ function Page() {
     const a = Number(f.sold_amount); const r = Number(f.sell_rate);
     return a && r ? a * r : 0;
   }, [f.sold_amount, f.sell_rate]);
+
+  // FIFO preview: pull available lots for current source & currency
+  const lots = useQuery({
+    queryKey: ["sell-fifo-lots", f.sold_currency, f.sold_from_account_id],
+    enabled: !!f.sold_currency,
+    queryFn: async () => {
+      let q = supabase
+        .from("inventory_lots_view")
+        .select("*")
+        .eq("currency", f.sold_currency)
+        .gt("remaining_amount", 0)
+        .order("entry_date", { ascending: true })
+        .order("created_at", { ascending: true });
+      if (f.sold_from_account_id) q = q.eq("account_id", f.sold_from_account_id);
+      const { data, error } = await q;
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const preview = useMemo(() => {
+    const want = Number(f.sold_amount) || 0;
+    const rows: Array<{ lot: any; take: number }> = [];
+    let remaining = want;
+    let totalCost = 0;
+    let costCcy: string | null = null;
+    for (const l of lots.data ?? []) {
+      if (remaining <= 0) break;
+      const take = Math.min(remaining, Number(l.remaining_amount));
+      rows.push({ lot: l, take });
+      totalCost += take * Number(l.cost_basis_rate);
+      if (!costCcy) costCcy = l.cost_basis_currency;
+      remaining -= take;
+    }
+    const covered = want - remaining;
+    const blended = covered > 0 ? totalCost / covered : 0;
+    const receivedCcyMatchesCost = costCcy && costCcy === f.received_currency;
+    const gross = receivedCcyMatchesCost ? received_amount - totalCost : 0;
+    const milad = gross * Number(f.milad_pct || 0) / 100;
+    const ali = gross * Number(f.ali_pct || 0) / 100;
+    const available = (lots.data ?? []).reduce((s, l) => s + Number(l.remaining_amount), 0);
+    return { rows, covered, shortfall: Math.max(0, remaining), totalCost, blended, costCcy, gross, milad, ali, available, receivedCcyMatchesCost };
+  }, [lots.data, f.sold_amount, f.received_currency, f.milad_pct, f.ali_pct, received_amount]);
 
   const q = useQuery({
     queryKey: ["sells"],
@@ -111,6 +155,48 @@ function Page() {
                 <F label="Received amount (auto)"><Input readOnly value={received_amount ? fmt(received_amount, f.received_currency) : ""} /></F>
                 <F label="Sold from account"><AccountSelect currency={f.sold_currency} value={f.sold_from_account_id} onChange={(v) => setF({ ...f, sold_from_account_id: v })} /></F>
                 <F label="Received into account"><AccountSelect currency={f.received_currency} value={f.received_into_account_id} onChange={(v) => setF({ ...f, received_into_account_id: v })} /></F>
+                <div className="md:col-span-2">
+                  <Card className="bg-muted/40 border-dashed">
+                    <CardContent className="p-3 space-y-2 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium">FIFO cost preview</span>
+                        <Badge variant="outline" className="font-mono">Available: {fmt(preview.available, f.sold_currency)} {f.sold_currency}</Badge>
+                      </div>
+                      {preview.shortfall > 0 && Number(f.sold_amount) > 0 && (
+                        <div className="text-destructive text-xs">
+                          Not enough inventory — short by {fmt(preview.shortfall, f.sold_currency)} {f.sold_currency}.
+                        </div>
+                      )}
+                      {preview.rows.length > 0 && (
+                        <div className="space-y-1">
+                          {preview.rows.map(({ lot, take }) => (
+                            <div key={lot.id} className="flex justify-between font-mono text-xs">
+                              <span>{lot.lot_code} · {lot.account_name || "—"}</span>
+                              <span>{fmt(take, f.sold_currency)} × {fmt(lot.cost_basis_rate)} {lot.cost_basis_currency}/{f.sold_currency}</span>
+                            </div>
+                          ))}
+                          <div className="border-t pt-1 grid grid-cols-2 gap-2 text-xs">
+                            <div>Blended cost rate</div><div className="text-right font-mono">{fmt(preview.blended)} {preview.costCcy}/{f.sold_currency}</div>
+                            <div>Sell rate</div><div className="text-right font-mono">{fmt(Number(f.sell_rate) || 0)}</div>
+                            <div>Cost basis</div><div className="text-right font-mono">{fmt(preview.totalCost)} {preview.costCcy}</div>
+                            <div>Received</div><div className="text-right font-mono">{fmt(received_amount)} {f.received_currency}</div>
+                            <div className="font-medium">Expected profit</div>
+                            <div className={"text-right font-mono " + (preview.gross >= 0 ? "text-accent" : "text-destructive")}>
+                              {preview.receivedCcyMatchesCost ? `${fmt(preview.gross)} ${preview.costCcy}` : "—"}
+                            </div>
+                            <div>Milad share</div><div className="text-right font-mono">{fmt(preview.milad)}</div>
+                            <div>Ali share</div><div className="text-right font-mono">{fmt(preview.ali)}</div>
+                          </div>
+                          {!preview.receivedCcyMatchesCost && preview.costCcy && (
+                            <div className="text-xs text-muted-foreground">
+                              Profit not shown: received currency ({f.received_currency}) differs from cost basis currency ({preview.costCcy}).
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
                 <F label="Customer phone"><Input value={f.customer_phone} onChange={(e) => setF({ ...f, customer_phone: e.target.value })} /></F>
                 <F label="Customer account/card ref"><Input value={f.customer_account_ref} onChange={(e) => setF({ ...f, customer_account_ref: e.target.value })} /></F>
                 <F label="Milad %"><Input type="number" value={f.milad_pct} onChange={(e) => setF({ ...f, milad_pct: e.target.value, ali_pct: String(100 - Number(e.target.value)) })} /></F>
