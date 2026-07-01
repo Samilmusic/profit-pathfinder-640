@@ -30,9 +30,9 @@ function Page() {
         title="Brought-In Money"
         description="Capital or funds brought in by Milad, Ali, customers, or others."
         actions={
-          <Link to="/brought-in/new">
-            <Button><Plus className="h-4 w-4 mr-1" /> Add brought-in</Button>
-          </Link>
+          <Button asChild>
+            <Link to="/brought-in/new"><Plus className="h-4 w-4 mr-1" /> Add brought-in</Link>
+          </Button>
         }
       />
       <Card><CardContent className="p-0 overflow-x-auto">
