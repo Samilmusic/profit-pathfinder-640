@@ -50,7 +50,7 @@ export function fmt(n: number | string | null | undefined, currency?: string) {
   const num = typeof n === "string" ? Number(n) : n;
   if (Number.isNaN(num)) return "—";
   const d = decimalsFor(currency);
-  const s = num.toLocaleString(undefined, { maximumFractionDigits: d, minimumFractionDigits: currency === "IRR" ? 0 : 0 });
+  const s = num.toLocaleString("en-US", { maximumFractionDigits: d, minimumFractionDigits: 0 });
   return currency ? `${s} ${currency}` : s;
 }
 
@@ -59,9 +59,81 @@ export function fmtProfit(n: number | string | null | undefined, currency?: stri
   if (n === null || n === undefined || n === "") return "—";
   const num = typeof n === "string" ? Number(n) : n;
   if (Number.isNaN(num)) return "—";
-  const s = num.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 });
+  const digits = currency === "IRR" ? 0 : 2;
+  const s = num.toLocaleString("en-US", { maximumFractionDigits: digits, minimumFractionDigits: digits });
   return currency ? `${s} ${currency}` : s;
 }
+
+/**
+ * Format a numeric-like value with thousands separators for display in inputs.
+ * - Accepts raw digits "1000000" or already formatted "1,000,000".
+ * - Preserves trailing "." and trailing zeros in the decimal part (so users
+ *   can type "1000." or "1000.10" without the UI eating characters).
+ * - Empty / invalid input returns "".
+ */
+export function formatMoney(input: string | number | null | undefined, currency?: string | null): string {
+  if (input === null || input === undefined) return "";
+  let s = String(input).trim();
+  if (s === "") return "";
+  const negative = s.startsWith("-");
+  if (negative) s = s.slice(1);
+  // strip anything that's not digit or dot
+  s = s.replace(/,/g, "").replace(/[^\d.]/g, "");
+  if (s === "") return negative ? "-" : "";
+  const dotIdx = s.indexOf(".");
+  let intPart = dotIdx === -1 ? s : s.slice(0, dotIdx);
+  let decPart = dotIdx === -1 ? "" : s.slice(dotIdx + 1).replace(/\./g, "");
+  const maxDec = decimalsFor(currency ?? undefined);
+  if (maxDec === 0) {
+    decPart = "";
+  } else if (decPart.length > maxDec) {
+    decPart = decPart.slice(0, maxDec);
+  }
+  intPart = intPart.replace(/^0+(?=\d)/, "");
+  if (intPart === "") intPart = "0";
+  const withSep = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  let out = withSep;
+  if (dotIdx !== -1 && maxDec > 0) out += "." + decPart;
+  return negative ? "-" + out : out;
+}
+
+/** Parse a formatted money string back to a raw numeric string (no separators). */
+export function parseMoneyInput(input: string | number | null | undefined): string {
+  if (input === null || input === undefined) return "";
+  let s = String(input).trim();
+  if (s === "") return "";
+  const negative = s.startsWith("-");
+  if (negative) s = s.slice(1);
+  s = s.replace(/,/g, "").replace(/[^\d.]/g, "");
+  const parts = s.split(".");
+  if (parts.length > 2) s = parts[0] + "." + parts.slice(1).join("");
+  if (s === "" || s === ".") return "";
+  return negative ? "-" + s : s;
+}
+
+/** Format a rate/exchange-rate value (up to 6 decimals). */
+export function formatRate(input: string | number | null | undefined): string {
+  if (input === null || input === undefined) return "";
+  let s = String(input).trim();
+  if (s === "") return "";
+  const negative = s.startsWith("-");
+  if (negative) s = s.slice(1);
+  s = s.replace(/,/g, "").replace(/[^\d.]/g, "");
+  if (s === "") return negative ? "-" : "";
+  const dotIdx = s.indexOf(".");
+  let intPart = dotIdx === -1 ? s : s.slice(0, dotIdx);
+  let decPart = dotIdx === -1 ? "" : s.slice(dotIdx + 1).replace(/\./g, "");
+  if (decPart.length > 6) decPart = decPart.slice(0, 6);
+  intPart = intPart.replace(/^0+(?=\d)/, "");
+  if (intPart === "") intPart = "0";
+  const withSep = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  let out = withSep;
+  if (dotIdx !== -1) out += "." + decPart;
+  return negative ? "-" + out : out;
+}
+
+/** Parse a formatted rate string back to a raw numeric string. */
+export const parseRateInput = parseMoneyInput;
 
 export async function currentUserRole(): Promise<string | null> {
   const { data: userData } = await supabase.auth.getUser();
