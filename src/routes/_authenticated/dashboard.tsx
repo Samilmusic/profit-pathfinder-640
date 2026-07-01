@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
+import { MarketRatesWidget } from "@/components/market-rates-widget";
 import { fmt } from "@/lib/exchange";
 import {
   ArrowDownToLine, ShoppingCart, TrendingUp, Receipt, ArrowLeftRight,
@@ -277,6 +278,8 @@ function DashboardPage() {
         title="Treasury Dashboard"
         description="Live inventory, deal pipeline, and account positions across every currency."
       />
+
+      <MarketRatesWidget />
 
       {/* SECTION 1 — INVENTORY BY CURRENCY */}
       <SectionTitle icon={<Boxes className="h-4 w-4" />} title="Inventory by currency" hint="Never merged. Each currency stands alone." />
