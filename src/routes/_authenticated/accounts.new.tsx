@@ -141,9 +141,9 @@ function NewAccountPage() {
     >
       <div className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-2xl items-center gap-2 px-4 py-3">
-          <Link to="/accounts">
-            <Button variant="ghost" size="icon" className="h-10 w-10"><ArrowLeft className="h-5 w-5" /></Button>
-          </Link>
+          <Button asChild variant="ghost" size="icon" className="h-10 w-10">
+            <Link to="/accounts" aria-label="Back"><ArrowLeft className="h-5 w-5" /></Link>
+          </Button>
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-lg font-semibold">New Account</h1>
             <p className="truncate text-xs text-muted-foreground">Cash box, bank account, crypto wallet, or person holding</p>
@@ -279,7 +279,7 @@ function NewAccountPage() {
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 4px)" }}
       >
         <div className="mx-auto flex max-w-2xl items-center gap-2 px-3 py-2">
-          <Link to="/accounts" className="shrink-0"><Button variant="ghost" className="h-11 px-3">Cancel</Button></Link>
+          <Button asChild variant="ghost" className="h-11 px-3 shrink-0"><Link to="/accounts">Cancel</Link></Button>
           <Button className="h-11 flex-1" disabled={create.isPending} onClick={() => create.mutate()}>
             {create.isPending ? "Saving…" : "Save Account"}
           </Button>

@@ -230,9 +230,9 @@ function NewDepositPage() {
       {/* Header */}
       <div className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-2xl items-center gap-2 px-4 py-3">
-          <Link to="/deposits">
-            <Button variant="ghost" size="icon" className="h-10 w-10"><ArrowLeft className="h-5 w-5" /></Button>
-          </Link>
+          <Button asChild variant="ghost" size="icon" className="h-10 w-10">
+            <Link to="/deposits" aria-label="Back"><ArrowLeft className="h-5 w-5" /></Link>
+          </Button>
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-lg font-semibold">New Deposit</h1>
             <p className="truncate text-xs text-muted-foreground">Credits the customer wallet on completion</p>
@@ -433,9 +433,9 @@ function NewDepositPage() {
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="mx-auto flex max-w-2xl items-center gap-2 px-4 py-3">
-          <Link to="/deposits" className="shrink-0">
-            <Button variant="ghost" className="h-12">Cancel</Button>
-          </Link>
+          <Button asChild variant="ghost" className="h-12 shrink-0">
+            <Link to="/deposits">Cancel</Link>
+          </Button>
           <Button
             variant="outline"
             className="h-12 flex-1"

@@ -78,7 +78,7 @@ function CustomerProfile() {
       <PageHeader
         title={c.data?.name ?? "Customer"}
         actions={
-          <Link to="/customers"><Button variant="ghost" size="sm"><ArrowLeft className="h-4 w-4 mr-1" /> All customers</Button></Link>
+          <Button asChild variant="ghost" size="sm"><Link to="/customers"><ArrowLeft className="h-4 w-4 mr-1" /> All customers</Link></Button>
         }
       />
 

@@ -245,9 +245,9 @@ function NewBroughtInPage() {
     >
       <div className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-2xl items-center gap-2 px-4 py-3">
-          <Link to="/brought-in">
-            <Button variant="ghost" size="icon" className="h-10 w-10"><ArrowLeft className="h-5 w-5" /></Button>
-          </Link>
+          <Button asChild variant="ghost" size="icon" className="h-10 w-10">
+            <Link to="/brought-in" aria-label="Back"><ArrowLeft className="h-5 w-5" /></Link>
+          </Button>
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-lg font-semibold">New Brought-In</h1>
             <p className="truncate text-xs text-muted-foreground">Money brought in by Milad, Ali, customer or other</p>
@@ -494,9 +494,9 @@ function NewBroughtInPage() {
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 4px)" }}
       >
         <div className="mx-auto flex max-w-2xl items-center gap-2 px-3 py-2">
-          <Link to="/brought-in" className="shrink-0">
-            <Button variant="ghost" className="h-11 px-3">Cancel</Button>
-          </Link>
+          <Button asChild variant="ghost" className="h-11 px-3 shrink-0">
+            <Link to="/brought-in">Cancel</Link>
+          </Button>
           <Button
             variant="outline"
             className="h-11 px-3"
