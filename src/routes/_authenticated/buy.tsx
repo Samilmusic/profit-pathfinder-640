@@ -114,7 +114,19 @@ function Page() {
                   </Select>
                 </F>
                 <F label="Bought amount"><Input type="number" step="0.0001" value={f.bought_amount} onChange={(e) => setF({ ...f, bought_amount: e.target.value })} required /></F>
-                <F label="Buy rate (paid per 1 bought)"><Input type="number" step="0.00000001" value={f.buy_rate} onChange={(e) => setF({ ...f, buy_rate: e.target.value })} required /></F>
+                <F label="Buy rate (paid per 1 bought)">
+                  <div className="flex flex-col gap-1">
+                    <Input type="number" step="0.00000001" value={f.buy_rate} onChange={(e) => setF({ ...f, buy_rate: e.target.value })} required />
+                    {(f.bought_currency === "AED" || f.bought_currency === "USD") && (
+                      <UseMarketRateButton
+                        currency={f.bought_currency}
+                        which="buy"
+                        onApply={(r) => setF({ ...f, buy_rate: String(r) })}
+                        className="self-start"
+                      />
+                    )}
+                  </div>
+                </F>
                 <F label="Paid currency">
                   <Select value={f.paid_currency} onValueChange={(v) => setF({ ...f, paid_currency: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
