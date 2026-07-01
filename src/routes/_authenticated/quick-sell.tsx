@@ -72,30 +72,55 @@ function QuickSellPage() {
     if (!sellRate && lastRateQ.data) setSellRate(String(lastRateQ.data));
   }, [lastRateQ.data]); // eslint-disable-line
 
-  // Cost rate for profit preview
-  const costRateQ = useQuery({
-    queryKey: ["inv_cost", soldCurrency, receivedCurrency],
-    enabled: !!soldCurrency && !!receivedCurrency,
+  // FIFO inventory preview — cost basis of the sold currency in its own terms
+  const lotsQ = useQuery({
+    queryKey: ["inv_lots_qs", soldCurrency, sourceId],
+    enabled: !!soldCurrency,
     queryFn: async () => {
-      const { data } = await supabase.from("buy_transactions")
-        .select("bought_amount,paid_amount")
-        .eq("bought_currency", soldCurrency).eq("paid_currency", receivedCurrency)
-        .is("deleted_at", null).order("entry_date", { ascending: false }).limit(50);
-      const rows = data ?? [];
-      const totQty = rows.reduce((s, r: any) => s + Number(r.bought_amount || 0), 0);
-      const totCost = rows.reduce((s, r: any) => s + Number(r.paid_amount || 0), 0);
-      return totQty > 0 ? totCost / totQty : 0;
+      let q = supabase.from("inventory_lots")
+        .select("id,remaining_amount,original_amount,cost_basis_rate,cost_basis_currency,entry_date,account_id")
+        .eq("currency", soldCurrency).gt("remaining_amount", 0).neq("status", "depleted")
+        .order("entry_date", { ascending: true });
+      if (sourceId) q = q.eq("account_id", sourceId);
+      return (await q).data ?? [];
     },
   });
 
   const soldN = Number(soldAmount) || 0;
   const rateN = Number(sellRate) || 0;
   const receivedAmount = roundAmount(soldN * rateN, receivedCurrency);
-  const costRate = costRateQ.data ?? 0;
-  const costBasis = roundAmount(costRate * soldN, receivedCurrency);
-  const grossProfit = roundAmount(receivedAmount - costBasis, receivedCurrency);
-  const miladShare = roundAmount(grossProfit * 0.5, receivedCurrency);
-  const aliShare = roundAmount(grossProfit - miladShare, receivedCurrency);
+
+  // Walk FIFO to compute how much of the sold-currency inventory this deal uses.
+  const preview = useMemo(() => {
+    const lots = lotsQ.data ?? [];
+    let need = soldN;
+    let costCcy: string | null = null;
+    let totalCost = 0;
+    let covered = 0;
+    for (const l of lots) {
+      if (need <= 0) break;
+      const take = Math.min(need, Number(l.remaining_amount));
+      if (!costCcy) costCcy = l.cost_basis_currency;
+      totalCost += take * Number(l.cost_basis_rate);
+      covered += take;
+      need -= take;
+    }
+    const available = lots.reduce((s: number, l: any) => s + Number(l.remaining_amount), 0);
+    const sameCcy = costCcy && costCcy === receivedCurrency;
+    const realized = sameCcy ? receivedAmount - totalCost : 0;
+    return {
+      covered, available,
+      shortfall: Math.max(0, need),
+      costCcy: costCcy ?? soldCurrency,
+      totalCost,
+      sameCcy,
+      realized,
+      miladShare: realized * 0.5,
+      aliShare: realized * 0.5,
+    };
+  }, [lotsQ.data, soldN, receivedAmount, receivedCurrency, soldCurrency]);
+
+  const isCycleSell = !preview.sameCcy; // cross-currency → asset conversion, not profit
 
   // Recent customers (last 6 from sells)
   const recentQ = useQuery({
@@ -110,6 +135,7 @@ function QuickSellPage() {
 
   // Warnings
   const sourceOverdraft = sourceBalance !== null && soldN > sourceBalance;
+  const inventoryShort = preview.shortfall > 0.00001 && soldN > 0;
   const validationErrors: string[] = [];
   if (!customerId) validationErrors.push("Pick a customer");
   if (!soldN) validationErrors.push("Enter sold amount");
@@ -259,15 +285,33 @@ function QuickSellPage() {
           <Card>
             <CardContent className="p-4 space-y-2 text-sm">
               <div className="text-xs uppercase tracking-wide text-muted-foreground">Live P&amp;L</div>
-              <PL label="Cost rate (avg buy)" value={fmt(costRate)} />
-              <PL label="Sell rate" value={fmt(rateN)} />
+              <PL label="Sell rate" value={`${fmt(rateN)} ${receivedCurrency}/${soldCurrency}`} />
               <PL label="Received" value={fmt(receivedAmount, receivedCurrency)} />
-              <PL label="Cost basis" value={fmt(costBasis, receivedCurrency)} />
-              <div className="border-t pt-2">
-                <PL label="Gross profit" value={fmtProfit(grossProfit, receivedCurrency)} accent={grossProfit >= 0 ? "success" : "danger"} />
-                <PL label="Milad share (50%)" value={fmtProfit(miladShare, receivedCurrency)} />
-                <PL label="Ali share (50%)" value={fmtProfit(aliShare, receivedCurrency)} />
-              </div>
+              <PL label={`${soldCurrency} inventory used (FIFO)`} value={fmt(preview.covered, soldCurrency)} />
+              {isCycleSell ? (
+                <div className="border-t pt-2 space-y-1.5">
+                  <PL label="Profit status" value="Pending cycle profit" accent="warn" />
+                  <PL label="Realized profit" value={`0 ${soldCurrency}`} />
+                  <PL label="Milad share" value={`0 ${soldCurrency}`} />
+                  <PL label="Ali share" value={`0 ${soldCurrency}`} />
+                  <div className="mt-2 rounded-md border border-amber-400/40 bg-amber-50 dark:bg-amber-500/10 p-2 text-[11px] leading-snug text-amber-800 dark:text-amber-200">
+                    This is an asset conversion, not profit. {soldCurrency} inventory goes out, {receivedCurrency} inventory comes in.
+                    Profit will be realized only when the {receivedCurrency} is converted back to {soldCurrency} or this cycle is closed.
+                  </div>
+                </div>
+              ) : (
+                <div className="border-t pt-2">
+                  <PL label="Cost basis" value={fmt(preview.totalCost, preview.costCcy)} />
+                  <PL label="Realized profit" value={fmtProfit(preview.realized, receivedCurrency)} accent={preview.realized >= 0 ? "success" : "danger"} />
+                  <PL label="Milad share (50%)" value={fmtProfit(preview.miladShare, receivedCurrency)} />
+                  <PL label="Ali share (50%)" value={fmtProfit(preview.aliShare, receivedCurrency)} />
+                </div>
+              )}
+              {inventoryShort && (
+                <div className="mt-2 rounded-md border border-destructive/40 bg-destructive/5 p-2 text-[11px] text-destructive">
+                  Not enough {soldCurrency} inventory. Available: {fmt(preview.available, soldCurrency)} · Short: {fmt(preview.shortfall, soldCurrency)}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -323,11 +367,11 @@ function StepCard({ n, title, done, children }: { n: number; title: string; done
   );
 }
 
-function PL({ label, value, accent }: { label: string; value: string; accent?: "success" | "danger" }) {
+function PL({ label, value, accent }: { label: string; value: string; accent?: "success" | "danger" | "warn" }) {
   return (
     <div className="flex justify-between items-center py-0.5">
       <span className="text-muted-foreground text-xs">{label}</span>
-      <span className={`font-mono ${accent === "success" ? "text-emerald-700 font-semibold" : accent === "danger" ? "text-destructive font-semibold" : ""}`}>{value}</span>
+      <span className={`font-mono ${accent === "success" ? "text-emerald-700 font-semibold" : accent === "danger" ? "text-destructive font-semibold" : accent === "warn" ? "text-amber-600 font-semibold" : ""}`}>{value}</span>
     </div>
   );
 }
