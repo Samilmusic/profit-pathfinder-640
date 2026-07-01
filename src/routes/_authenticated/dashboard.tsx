@@ -75,7 +75,7 @@ function DashboardPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("sell_transactions")
-        .select("id,entry_date,deal_status,sold_currency,sold_amount,received_currency,received_amount,received_into_account_id,sold_from_account_id,customer_name")
+        .select("id,entry_date,deal_status,sold_currency,sold_amount,received_currency,received_amount,received_into_account_id,sold_from_account_id,currency_delivered,customer_name")
         .is("deleted_at", null)
         .not("deal_status", "in", "(closed,cancelled)")
         .order("entry_date", { ascending: false });
@@ -98,6 +98,7 @@ function DashboardPage() {
         docsBy.get(d.ref_id)!.push(d);
       });
       const RECEIPT_TYPES = new Set(["payment_receipt","bank_transfer_screenshot","cash_delivery_receipt","whatsapp_confirmation"]);
+      const DELIV_TYPES = new Set(["currency_handover_proof","cash_delivery_receipt","bank_transfer_screenshot"]);
       return sells.map((s: any) => {
         const pays = paysBy.get(s.id) ?? [];
         const docs = docsBy.get(s.id) ?? [];
@@ -105,15 +106,18 @@ function DashboardPage() {
         const payment_received = paid + 0.0001 >= Number(s.received_amount || 0) && Number(s.received_amount || 0) > 0;
         const partially_paid = paid > 0.0001 && !payment_received;
         const receipt_uploaded = docs.some(d => RECEIPT_TYPES.has(d.doc_type)) || pays.some(p => !!p.receipt_url);
-        const currency_delivered = !!s.sold_from_account_id;
+        const currency_delivered = !!s.currency_delivered;
+        const delivery_proof = docs.some(d => DELIV_TYPES.has(d.doc_type));
         const closed = s.deal_status === "closed";
         let derived: string;
         if (closed) derived = "closed";
         else if (partially_paid) derived = "partially_paid";
         else if (!payment_received) derived = "waiting_payment";
         else if (!receipt_uploaded) derived = "waiting_receipt";
+        else if (!currency_delivered) derived = "waiting_currency_delivery";
+        else if (!delivery_proof) derived = "waiting_delivery_proof";
         else derived = "ready_to_close";
-        return { ...s, paid, currency_delivered, payment_received, receipt_uploaded, closed, derived_status: derived };
+        return { ...s, paid, currency_delivered, payment_received, receipt_uploaded, delivery_proof, closed, derived_status: derived };
       });
     },
   });
@@ -387,8 +391,10 @@ function DashboardPage() {
             <div className="text-xs text-muted-foreground mb-3">Deals not yet closed</div>
             <div className="grid grid-cols-2 gap-2">
               <DealTile label="Waiting Payment" count={dealBucket("waiting_payment")} tone="warn" />
-              <DealTile label="Waiting Receipt" count={dealBucket("waiting_receipt")} tone="info" />
+              <DealTile label="Waiting Payment Receipt" count={dealBucket("waiting_receipt")} tone="info" />
               <DealTile label="Partially Paid" count={dealBucket("partially_paid")} tone="info" />
+              <DealTile label="Waiting Currency Delivery" count={dealBucket("waiting_currency_delivery")} tone="warn" />
+              <DealTile label="Waiting Delivery Proof" count={dealBucket("waiting_delivery_proof")} tone="warn" />
               <DealTile label="Ready to Close" count={dealBucket("ready_to_close")} tone="success" />
             </div>
           </CardContent>
