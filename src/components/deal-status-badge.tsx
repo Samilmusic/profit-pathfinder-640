@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 
 export type DealStatus =
   | "open" | "waiting_payment" | "partially_paid" | "waiting_receipt"
+  | "waiting_currency_delivery" | "waiting_delivery_proof"
   | "ready_to_close" | "closed" | "cancelled";
 
 const META: Record<DealStatus, { label: string; cls: string }> = {
@@ -10,6 +11,8 @@ const META: Record<DealStatus, { label: string; cls: string }> = {
   waiting_payment: { label: "Waiting for Payment", cls: "bg-amber-100 text-amber-900 border-amber-200" },
   partially_paid:  { label: "Partially Paid",      cls: "bg-amber-100 text-amber-900 border-amber-200" },
   waiting_receipt: { label: "Waiting for Receipt", cls: "bg-amber-100 text-amber-900 border-amber-200" },
+  waiting_currency_delivery: { label: "Waiting Currency Delivery", cls: "bg-orange-100 text-orange-900 border-orange-200" },
+  waiting_delivery_proof:    { label: "Waiting Delivery Proof",    cls: "bg-orange-100 text-orange-900 border-orange-200" },
   ready_to_close:  { label: "Ready to Close",      cls: "bg-emerald-100 text-emerald-800 border-emerald-200" },
   closed:          { label: "Closed",              cls: "bg-emerald-100 text-emerald-800 border-emerald-200" },
   cancelled:       { label: "Cancelled",           cls: "bg-muted text-muted-foreground border-border" },

@@ -14,7 +14,8 @@ import { DocumentsPanel } from "@/components/documents-panel";
 import { DealStatusBadge } from "@/components/deal-status-badge";
 import { fmt } from "@/lib/exchange";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowLeft, CheckCircle2, Plus, XCircle } from "lucide-react";
+import { AlertTriangle, ArrowLeft, CheckCircle2, Plus, XCircle, Truck } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/_authenticated/sells/$id")({
   component: DealPage,
@@ -54,7 +55,7 @@ function DealPage() {
 
   const docsQ = useQuery({
     queryKey: ["documents", "sell", id],
-    queryFn: async () => (await supabase.from("documents").select("id,created_at").eq("ref_type", "sell").eq("ref_id", id)).data ?? [],
+    queryFn: async () => (await supabase.from("documents").select("id,created_at,doc_type").eq("ref_type", "sell").eq("ref_id", id)).data ?? [],
   });
 
   const s = sellQ.data as any;
@@ -66,6 +67,8 @@ function DealPage() {
 
   const [pf, setPf] = useState({ entry_date: new Date().toISOString().slice(0, 10), amount: "", account_id: "", notes: "" });
   const [showPay, setShowPay] = useState(false);
+  const [showDeliver, setShowDeliver] = useState(false);
+  const [df, setDf] = useState({ method: "cash_handover", delivered_to: "", notes: "", account_id: "" });
 
   const addPayment = useMutation({
     mutationFn: async () => {
@@ -95,6 +98,26 @@ function DealPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const markDelivered = useMutation({
+    mutationFn: async () => {
+      if (!df.method) throw new Error("Delivery method required");
+      const { error } = await (supabase as any).rpc("mark_sell_delivered", {
+        _id: id,
+        _method: df.method,
+        _delivered_to: df.delivered_to || null,
+        _notes: df.notes || null,
+        _sold_from_account_id: df.account_id || null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Currency delivery recorded");
+      setShowDeliver(false);
+      qc.invalidateQueries();
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const closeDeal = useMutation({
     mutationFn: async () => {
       const { error } = await (supabase as any).rpc("close_sell_deal", {
@@ -119,27 +142,33 @@ function DealPage() {
   if (sellQ.isLoading) return <div className="p-6 text-sm text-muted-foreground">Loading…</div>;
   if (!s) return <div className="p-6 text-sm text-muted-foreground">Deal not found. <Link to="/sell" className="underline">Back to Sells</Link></div>;
 
-  const hasReceipt = (docsQ.data ?? []).length > 0 || (paymentsQ.data ?? []).some((p: any) => p.receipt_url);
+  const PAY_DOC_TYPES = new Set(["payment_receipt","bank_transfer_screenshot","cash_delivery_receipt","whatsapp_confirmation"]);
+  const DELIV_DOC_TYPES = new Set(["currency_handover_proof","cash_delivery_receipt","bank_transfer_screenshot"]);
+  const docs = docsQ.data ?? [];
+  const hasPaymentReceipt = docs.some((d: any) => PAY_DOC_TYPES.has(d.doc_type)) || (paymentsQ.data ?? []).some((p: any) => p.receipt_url);
+  const hasDeliveryProof = docs.some((d: any) => DELIV_DOC_TYPES.has(d.doc_type));
   const canClose = s.deal_status !== "closed" && s.deal_status !== "cancelled"
     && !!s.received_into_account_id
     && (paid + 0.0001 >= Number(s.received_amount) || overrideClose)
-    && (hasReceipt || overrideClose);
+    && (hasPaymentReceipt || overrideClose)
+    && (s.currency_delivered || overrideClose)
+    && (hasDeliveryProof || overrideClose);
 
-  const currencyDelivered = !!s.sold_from_account_id;
+  const currencyDelivered = !!s.currency_delivered;
   const paymentReceived = paid + 0.0001 >= Number(s.received_amount) && Number(s.received_amount) > 0;
-  const receiptUploaded = hasReceipt;
   const isClosed = s.deal_status === "closed";
   const steps = [
     { label: "Created", done: true },
-    { label: "Currency Delivered", done: currencyDelivered },
     { label: "Payment Received", done: paymentReceived },
-    { label: "Receipt Uploaded", done: receiptUploaded },
-    { label: "Ready to Close", done: currencyDelivered && paymentReceived && receiptUploaded },
+    { label: "Payment Receipt", done: hasPaymentReceipt },
+    { label: "Currency Delivered", done: currencyDelivered },
+    { label: "Delivery Proof", done: hasDeliveryProof },
+    { label: "Ready to Close", done: paymentReceived && hasPaymentReceipt && currencyDelivered && hasDeliveryProof },
     { label: "Closed", done: isClosed },
   ];
   const doneCount = steps.filter(s => s.done).length;
 
-  const events = buildTimeline(s, paymentsQ.data ?? [], (docsQ.data ?? []).length);
+  const events = buildTimeline(s, paymentsQ.data ?? [], hasPaymentReceipt, hasDeliveryProof);
 
   return (
     <>
@@ -179,6 +208,11 @@ function DealPage() {
                   <div className="text-xs text-muted-foreground">Sold</div>
                   <div className="font-mono text-lg">{fmt(s.sold_amount, s.sold_currency)} {s.sold_currency}</div>
                   <div className="text-xs text-muted-foreground mt-1">Source: {s.src?.name ?? "—"}</div>
+                  <div className="text-xs mt-1">
+                    {s.currency_delivered
+                      ? <span className="text-emerald-700">Delivered {s.delivery_method ? `· ${s.delivery_method}` : ""}{s.delivered_to ? ` · to ${s.delivered_to}` : ""}</span>
+                      : <span className="text-amber-700">Not yet delivered</span>}
+                  </div>
                 </div>
                 <div>
                   <div className="text-xs text-muted-foreground">Rate</div>
@@ -202,7 +236,66 @@ function DealPage() {
 
           <Card>
             <CardHeader className="pb-2 flex-row items-center justify-between">
-              <CardTitle className="text-sm">Payments</CardTitle>
+              <CardTitle className="text-sm">Currency Delivery</CardTitle>
+              {!s.currency_delivered && s.deal_status !== "closed" && s.deal_status !== "cancelled" && (
+                <Button size="sm" onClick={() => setShowDeliver((v) => !v)}>
+                  <Truck className="h-4 w-4 mr-1" /> Deliver {s.sold_currency}
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent className="pt-0 space-y-3">
+              {showDeliver && (
+                <div className="grid md:grid-cols-2 gap-2 p-3 rounded-md border bg-muted/30">
+                  <div>
+                    <Label className="text-xs">Delivery method</Label>
+                    <Select value={df.method} onValueChange={(v) => setDf({ ...df, method: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cash_handover">Cash handover</SelectItem>
+                        <SelectItem value="bank_transfer">Bank transfer</SelectItem>
+                        <SelectItem value="wallet_transfer">Wallet transfer</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Source {s.sold_currency} account (optional, defaults to current)</Label>
+                    <AccountSelect currency={s.sold_currency} value={df.account_id} onChange={(v) => setDf({ ...df, account_id: v })} placeholder={s.src?.name ?? "Pick account"} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Delivered to</Label>
+                    <Input value={df.delivered_to} onChange={(e) => setDf({ ...df, delivered_to: e.target.value })} placeholder="Customer / recipient name" />
+                  </div>
+                  <div className="md:col-span-2">
+                    <Label className="text-xs">Notes</Label>
+                    <Input value={df.notes} onChange={(e) => setDf({ ...df, notes: e.target.value })} />
+                  </div>
+                  <div className="md:col-span-2 text-xs text-muted-foreground">
+                    Upload the delivery proof (cash receipt / transfer screenshot / handover photo) in the Documents section below — pick doc type <b>Currency handover proof</b>.
+                  </div>
+                  <div className="md:col-span-2 flex justify-end gap-2">
+                    <Button variant="ghost" onClick={() => setShowDeliver(false)}>Cancel</Button>
+                    <Button onClick={() => markDelivered.mutate()} disabled={markDelivered.isPending}>Record delivery</Button>
+                  </div>
+                </div>
+              )}
+              {s.currency_delivered && (
+                <div className="text-xs text-muted-foreground">
+                  Delivered {s.delivered_at ? new Date(s.delivered_at).toLocaleString() : ""} · {s.delivery_method ?? "—"}
+                  {s.delivered_to ? ` · to ${s.delivered_to}` : ""}
+                  {s.delivery_notes ? ` · ${s.delivery_notes}` : ""}
+                  {" · "}
+                  <span className={hasDeliveryProof ? "text-emerald-700" : "text-amber-700"}>
+                    {hasDeliveryProof ? "Delivery proof uploaded" : "Delivery proof still missing"}
+                  </span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2 flex-row items-center justify-between">
+              <CardTitle className="text-sm">Customer Payment</CardTitle>
               {s.deal_status !== "closed" && s.deal_status !== "cancelled" && (
                 <Button size="sm" onClick={() => setShowPay((v) => !v)}><Plus className="h-4 w-4 mr-1" /> Record payment</Button>
               )}
@@ -297,15 +390,16 @@ function DealPage() {
   );
 }
 
-function buildTimeline(s: any, payments: any[], docCount: number) {
+function buildTimeline(s: any, payments: any[], hasPaymentReceipt: boolean, hasDeliveryProof: boolean) {
   const arr: { label: string; done: boolean; at?: string }[] = [];
   arr.push({ label: "Deal created", done: true, at: s.created_at?.slice(0, 16).replace("T", " ") });
-  arr.push({ label: `${s.sold_currency} delivered to customer`, done: !!s.sold_from_account_id, at: s.entry_date });
-  arr.push({ label: "Waiting for payment", done: payments.length > 0 || s.deal_status !== "open", at: undefined });
+  arr.push({ label: "Customer payment received", done: payments.length > 0, at: payments[0]?.entry_date });
   if (payments.length > 0) {
     arr.push({ label: `Payment${payments.length > 1 ? "s" : ""} received (${payments.length})`, done: true, at: payments[payments.length - 1].entry_date });
   }
-  arr.push({ label: "Receipt uploaded", done: docCount > 0, at: undefined });
+  arr.push({ label: "Payment receipt uploaded", done: hasPaymentReceipt, at: undefined });
+  arr.push({ label: `${s.sold_currency} delivered to customer`, done: !!s.currency_delivered, at: s.delivered_at ? new Date(s.delivered_at).toLocaleString() : undefined });
+  arr.push({ label: "Delivery proof uploaded", done: hasDeliveryProof, at: undefined });
   arr.push({ label: "Deal closed · profit realized", done: s.deal_status === "closed", at: s.closed_at?.slice(0, 16).replace("T", " ") });
   if (s.deal_status === "cancelled") arr.push({ label: `Cancelled — ${s.cancel_reason ?? ""}`, done: true });
   return arr;
