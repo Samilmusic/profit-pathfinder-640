@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AccountSelect, useCustomers } from "@/components/account-select";
+import { CustomerBankAccountPicker, touchBankAccount } from "@/components/customer-bank-account-picker";
 import { CURRENCIES, OWNERS, fmt } from "@/lib/exchange";
 import { toast } from "sonner";
 import { Plus, FileText } from "lucide-react";
@@ -31,7 +32,7 @@ function Page() {
   const [f, setF] = useState({
     entry_date: today, bought_currency: "AED", bought_amount: "", buy_rate: "",
     paid_currency: "IRR", paid_from_account_id: "", received_into_account_id: "",
-    customer_id: "", owner: "shared", notes: "",
+    customer_id: "", owner: "shared", notes: "", customer_bank_account_id: "",
     trade_cycle_id: "",
   });
 
@@ -81,6 +82,7 @@ function Page() {
       };
       const { error } = await supabase.from("buy_transactions").insert(payload);
       if (error) throw error;
+      await touchBankAccount(f.customer_bank_account_id);
     },
     onSuccess: () => { toast.success("Buy recorded"); qc.invalidateQueries(); setOpen(false); setF({ ...f, bought_amount: "", buy_rate: "", notes: "" }); },
     onError: (e: any) => toast.error(e.message),
@@ -127,6 +129,14 @@ function Page() {
                     <SelectContent>{(customers.data ?? []).map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                   </Select>
                 </F>
+                <div className="md:col-span-2">
+                  <CustomerBankAccountPicker
+                    customerId={f.customer_id || null}
+                    currency={f.paid_currency}
+                    value={f.customer_bank_account_id || null}
+                    onChange={(id) => setF((p) => ({ ...p, customer_bank_account_id: id ?? "" }))}
+                  />
+                </div>
                 <div className="md:col-span-2">
                   <F label={`Link to open Trade Cycle (buyback ${f.paid_currency} → ${f.bought_currency})`}>
                     <Select value={f.trade_cycle_id || "none"} onValueChange={(v) => setF({ ...f, trade_cycle_id: v === "none" ? "" : v })}>
