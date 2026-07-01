@@ -65,25 +65,64 @@ function DealPage() {
   );
   const remaining = s ? Number(s.received_amount) - paid : 0;
 
-  const [pf, setPf] = useState({ entry_date: new Date().toISOString().slice(0, 10), amount: "", account_id: "", notes: "" });
+  const [pf, setPf] = useState({
+    entry_date: new Date().toISOString().slice(0, 10),
+    method: "cash_box" as "cash_box" | "bank_account" | "cash_with_person" | "customer_wallet",
+    currency: "",
+    amount: "",
+    account_id: "",
+    notes: "",
+  });
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [showPay, setShowPay] = useState(false);
   const [showDeliver, setShowDeliver] = useState(false);
   const [df, setDf] = useState({ method: "cash_handover", delivered_to: "", notes: "", account_id: "" });
 
   const addPayment = useMutation({
     mutationFn: async () => {
-      if (!pf.amount || !pf.account_id) throw new Error("Amount and account required");
+      if (!pf.amount || Number(pf.amount) <= 0) throw new Error("Amount is required");
+      if (!pf.account_id) throw new Error("Receiving account is required");
+      if (!receiptFile) throw new Error("Receipt upload is required");
+      const currency = pf.currency || s.received_currency;
       const { data: u } = await supabase.auth.getUser();
-      const { error } = await supabase.from("sell_payments").insert({
-        sell_id: id, entry_date: pf.entry_date, currency: s.received_currency,
+
+      // 1. Upload receipt to storage
+      const ext = receiptFile.name.split(".").pop() ?? "bin";
+      const path = `sell/${id}/${crypto.randomUUID()}.${ext}`;
+      const up = await supabase.storage.from("documents").upload(path, receiptFile, {
+        contentType: receiptFile.type || "application/octet-stream",
+      });
+      if (up.error) throw up.error;
+      const publicUrl = supabase.storage.from("documents").getPublicUrl(path).data.publicUrl;
+
+      // 2. Insert the payment (triggers post ledger + inventory lot via sync_sell_received_lot)
+      const { error: pErr } = await supabase.from("sell_payments").insert({
+        sell_id: id, entry_date: pf.entry_date, currency,
         amount: Number(pf.amount), received_into_account_id: pf.account_id,
+        receipt_url: publicUrl,
         notes: pf.notes || null, created_by: u.user?.id,
       });
-      if (error) throw error;
+      if (pErr) throw pErr;
+
+      // 3. Register the receipt in documents so status gates recognise it
+      await supabase.from("documents").insert({
+        doc_type: "payment_receipt", storage_path: path, file_name: receiptFile.name,
+        mime_type: receiptFile.type || null, size_bytes: receiptFile.size,
+        ref_type: "sell", ref_id: id, uploaded_by: u.user?.id,
+        notes: pf.notes || null,
+      });
+
+      // 4. Point the deal's receiving account at the one the user just paid into
+      //    so the inventory lot lands in the right place.
+      await supabase.from("sell_transactions")
+        .update({ received_into_account_id: pf.account_id })
+        .eq("id", id);
     },
     onSuccess: () => {
-      toast.success("Payment recorded");
-      setPf({ ...pf, amount: "", notes: "" }); setShowPay(false);
+      toast.success("Payment received · inventory updated");
+      setPf({ ...pf, amount: "", notes: "" });
+      setReceiptFile(null);
+      setShowPay(false);
       qc.invalidateQueries();
     },
     onError: (e: any) => toast.error(e.message),
