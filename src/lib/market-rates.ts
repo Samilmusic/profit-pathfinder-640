@@ -28,6 +28,57 @@ export type MarketRateFetchRow = {
   triggered_by: string | null;
 };
 
+export type MarketRateDelta = {
+  currency: string;
+  current_buy: number | null;
+  current_sell: number | null;
+  current_mid: number | null;
+  fetched_at: string;
+  mid_5m: number | null;
+  mid_15m: number | null;
+  mid_1h: number | null;
+  mid_24h: number | null;
+  pct_5m: number | null;
+  pct_15m: number | null;
+  pct_1h: number | null;
+  pct_24h: number | null;
+};
+
+export type InventoryExposureRow = {
+  currency: string;
+  available: number;
+  avg_cost: number;
+  cost_ccy: string | null;
+  market_buy: number | null;
+  market_sell: number | null;
+  market_mid: number | null;
+  market_fetched_at: string | null;
+  unrealized_pl: number | null;
+  unrealized_pl_pct: number | null;
+};
+
+export type MarketNotificationRow = {
+  id: string;
+  kind: string;
+  severity: "info" | "warn" | "danger" | string;
+  currency: string | null;
+  title: string;
+  body: string | null;
+  metadata: any;
+  ref_type: string | null;
+  ref_id: string | null;
+  read_at: string | null;
+  created_at: string;
+};
+
+export type AlertThresholds = {
+  alert_drop_pct_15min: number;
+  alert_rise_pct_15min: number;
+  alert_volatility_pct_1h: number;
+  alert_stale_minutes: number;
+  alert_near_cost_pct: number;
+};
+
 export function useLatestMarketRates() {
   return useQuery({
     queryKey: ["market_rates_latest"],
@@ -134,4 +185,90 @@ export async function triggerMarketRateRefresh() {
   });
   if (!res.ok) throw new Error(`Refresh failed (HTTP ${res.status})`);
   return res.json().catch(() => ({}));
+}
+
+// ============= Market intelligence hooks =============
+
+export function useMarketRateDeltas() {
+  return useQuery({
+    queryKey: ["market_rate_deltas"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("market_rate_deltas" as any).select("*");
+      if (error) throw error;
+      return (data ?? []) as unknown as MarketRateDelta[];
+    },
+    refetchInterval: 60_000,
+  });
+}
+
+export function useInventoryExposure() {
+  return useQuery({
+    queryKey: ["inventory_exposure"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("inventory_exposure" as any).select("*");
+      if (error) throw error;
+      return (data ?? []) as unknown as InventoryExposureRow[];
+    },
+    refetchInterval: 60_000,
+  });
+}
+
+export function useMarketNotifications(limit = 50) {
+  return useQuery({
+    queryKey: ["market_notifications", limit],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("market_notifications" as any)
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      if (error) throw error;
+      return (data ?? []) as unknown as MarketNotificationRow[];
+    },
+    refetchInterval: 45_000,
+  });
+}
+
+export function useAlertThresholds() {
+  return useQuery({
+    queryKey: ["alert_thresholds"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("app_settings")
+        .select("alert_drop_pct_15min,alert_rise_pct_15min,alert_volatility_pct_1h,alert_stale_minutes,alert_near_cost_pct")
+        .eq("id", true)
+        .maybeSingle();
+      if (error) throw error;
+      return (data ?? {
+        alert_drop_pct_15min: 0.5,
+        alert_rise_pct_15min: 0.5,
+        alert_volatility_pct_1h: 1,
+        alert_stale_minutes: 15,
+        alert_near_cost_pct: 0.3,
+      }) as unknown as AlertThresholds;
+    },
+  });
+}
+
+/** Compute rate margin between a user-entered rate and the current market mid. */
+export function computeRateMargin(txnRate: number | null | undefined, marketMid: number | null | undefined) {
+  if (!txnRate || !marketMid || marketMid <= 0) return null;
+  const diff = Number(txnRate) - Number(marketMid);
+  const pct = (diff / Number(marketMid)) * 100;
+  return { diff, pct };
+}
+
+/**
+ * Interpret rate margin quality for a given side.
+ *   - "sell" from our perspective: higher than market = favourable (green)
+ *   - "buy" from our perspective: lower than market = favourable (green)
+ */
+export function rateMarginTone(
+  side: "sell" | "buy",
+  margin: { diff: number; pct: number } | null,
+): "ok" | "warn" | "danger" | "neutral" {
+  if (!margin) return "neutral";
+  const favourable = side === "sell" ? margin.diff > 0 : margin.diff < 0;
+  if (Math.abs(margin.pct) < 0.05) return "neutral";
+  return favourable ? "ok" : "danger";
 }
