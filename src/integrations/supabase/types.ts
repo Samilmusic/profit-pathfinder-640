@@ -508,6 +508,7 @@ export type Database = {
       customer_bank_accounts: {
         Row: {
           account_number: string | null
+          account_type: string | null
           bank_name: string
           cancel_reason: string | null
           card_number: string | null
@@ -532,6 +533,7 @@ export type Database = {
         }
         Insert: {
           account_number?: string | null
+          account_type?: string | null
           bank_name: string
           cancel_reason?: string | null
           card_number?: string | null
@@ -556,6 +558,7 @@ export type Database = {
         }
         Update: {
           account_number?: string | null
+          account_type?: string | null
           bank_name?: string
           cancel_reason?: string | null
           card_number?: string | null

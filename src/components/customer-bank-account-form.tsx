@@ -13,6 +13,25 @@ import { toast } from "sonner";
 
 type Row = any;
 
+export const ACCOUNT_TYPES = [
+  "AED Bank Account",
+  "IRR/Toman Bank Account",
+  "GBP Bank Account",
+  "USD Bank Account",
+  "EUR Bank Account",
+  "USDT Wallet",
+  "Cash",
+  "Crypto Wallet",
+  "Other",
+];
+
+export const BANK_SUGGESTIONS = [
+  "ENBD", "ADCB", "RAKBANK", "Emirates NBD", "Mashreq", "FAB",
+  "Barclays", "HSBC", "Lloyds", "NatWest",
+  "Mellat", "Melli", "Tejarat", "Saderat", "Pasargad", "Parsian",
+  "Wise", "Revolut", "Binance", "Bybit", "OKX", "Other",
+];
+
 export function CustomerBankAccountForm({
   open, onOpenChange, customerId, initial, onSaved,
 }: {
@@ -35,6 +54,7 @@ export function CustomerBankAccountForm({
       const payload: any = {
         customer_id: customerId,
         nickname: f.nickname || null,
+        account_type: f.account_type || null,
         bank_name: f.bank_name,
         currency: f.currency,
         country: f.country || null,
@@ -74,8 +94,17 @@ export function CustomerBankAccountForm({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>{initial?.id ? "Edit bank account" : "Add bank account"}</DialogTitle></DialogHeader>
         <form onSubmit={(e) => { e.preventDefault(); if (!f.bank_name || !f.currency) return toast.error("Bank name and currency are required"); save.mutate(); }} className="grid md:grid-cols-2 gap-3">
+          <Field label="Account type *">
+            <Select value={f.account_type ?? ""} onValueChange={(v) => setF({ ...f, account_type: v })}>
+              <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+              <SelectContent>{ACCOUNT_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+            </Select>
+          </Field>
           <Field label="Nickname"><Input value={f.nickname ?? ""} placeholder="e.g. ENBD Salary" onChange={(e) => setF({ ...f, nickname: e.target.value })} /></Field>
-          <Field label="Bank / Provider *"><Input value={f.bank_name ?? ""} placeholder="ENBD, Mellat, Barclays, Wise…" onChange={(e) => setF({ ...f, bank_name: e.target.value })} required /></Field>
+          <Field label="Bank / Provider *">
+            <Input list="cba-bank-suggestions" value={f.bank_name ?? ""} placeholder="ENBD, Mellat, Barclays, Wise…" onChange={(e) => setF({ ...f, bank_name: e.target.value })} required />
+            <datalist id="cba-bank-suggestions">{BANK_SUGGESTIONS.map((b) => <option key={b} value={b} />)}</datalist>
+          </Field>
           <Field label="Currency *">
             <Select value={f.currency} onValueChange={(v) => setF({ ...f, currency: v })}>
               <SelectTrigger><SelectValue placeholder="Currency" /></SelectTrigger>
@@ -108,7 +137,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function defaults(): Row {
-  return { nickname: "", bank_name: "", currency: "AED", country: "", holder_name: "", iban: "", account_number: "", card_number: "", swift_bic: "", sort_code: "", phone: "", notes: "", is_active: true, is_default: false };
+  return { account_type: "", nickname: "", bank_name: "", currency: "AED", country: "", holder_name: "", iban: "", account_number: "", card_number: "", swift_bic: "", sort_code: "", phone: "", notes: "", is_active: true, is_default: false };
 }
 
 export function maskAccount(v?: string | null) {
