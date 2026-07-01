@@ -14,13 +14,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { AccountSelect } from "@/components/account-select";
 import { CURRENCIES, fmt } from "@/lib/exchange";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Plus, FileText } from "lucide-react";
+import { SettlementStatusBadge } from "@/components/settlement-status-badge";
+import { TxnDetailDialog } from "@/components/txn-detail-dialog";
 
 export const Route = createFileRoute("/_authenticated/transfers")({ component: Page });
 
 function Page() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [detailRow, setDetailRow] = useState<any | null>(null);
   const today = new Date().toISOString().slice(0, 10);
   const [f, setF] = useState({
     entry_date: today, from_account_id: "", to_account_id: "", amount: "", currency: "AED",
@@ -85,7 +88,7 @@ function Page() {
       />
       <Card><CardContent className="p-0 overflow-x-auto">
         <Table>
-          <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>By</TableHead><TableHead>Reason</TableHead><TableHead className="text-right">Amount</TableHead></TableRow></TableHeader>
+          <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>By</TableHead><TableHead>Reason</TableHead><TableHead className="text-right">Amount</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow></TableHeader>
           <TableBody>
             {(q.data ?? []).map((r: any) => (
               <TableRow key={r.id}>
@@ -93,12 +96,24 @@ function Page() {
                 <TableCell className="capitalize">{r.requested_by}</TableCell>
                 <TableCell>{r.reason || "—"}</TableCell>
                 <TableCell className="text-right font-mono">{fmt(r.amount, r.currency)}</TableCell>
+                <TableCell><SettlementStatusBadge value={r.settlement_status} /></TableCell>
+                <TableCell className="text-right">
+                  <Button variant="ghost" size="sm" onClick={() => setDetailRow(r)}>
+                    <FileText className="h-4 w-4 mr-1" /> Manage
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
-            {q.data && q.data.length === 0 && <TableRow><TableCell colSpan={4} className="text-center py-10 text-muted-foreground">No transfers yet.</TableCell></TableRow>}
+            {q.data && q.data.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">No transfers yet.</TableCell></TableRow>}
           </TableBody>
         </Table>
       </CardContent></Card>
+      <TxnDetailDialog
+        open={!!detailRow}
+        onOpenChange={(v) => !v && setDetailRow(null)}
+        table="transfers"
+        row={detailRow}
+      />
     </>
   );
 }

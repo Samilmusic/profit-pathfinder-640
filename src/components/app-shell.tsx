@@ -16,6 +16,8 @@ import {
   Menu,
   X,
   Shield,
+  ClipboardList,
+  HandCoins,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -28,6 +30,8 @@ const nav = [
   { to: "/sell", label: "Sell", icon: TrendingUp },
   { to: "/expenses", label: "Expenses", icon: Receipt },
   { to: "/transfers", label: "Transfers", icon: ArrowLeftRight },
+  { to: "/pending-settlements", label: "Pending Settlements", icon: ClipboardList },
+  { to: "/held-by-person", label: "Held by Person", icon: HandCoins },
   { to: "/accounts", label: "Accounts", icon: Wallet },
   { to: "/customers", label: "Customers", icon: Users },
   { to: "/inventory", label: "Inventory", icon: Coins },
