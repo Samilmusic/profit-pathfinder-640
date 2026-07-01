@@ -94,6 +94,42 @@ export type Database = {
           },
         ]
       }
+      audit_events: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          new_value: Json | null
+          old_value: Json | null
+          reason: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          reason?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          reason?: string | null
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
@@ -225,6 +261,7 @@ export type Database = {
           entry_date: string
           id: string
           money_holder_type: Database["public"]["Enums"]["holder_type"] | null
+          money_location: Database["public"]["Enums"]["money_location"] | null
           notes: string | null
           paid_amount: number
           paid_currency: string
@@ -252,6 +289,7 @@ export type Database = {
           entry_date?: string
           id?: string
           money_holder_type?: Database["public"]["Enums"]["holder_type"] | null
+          money_location?: Database["public"]["Enums"]["money_location"] | null
           notes?: string | null
           paid_amount: number
           paid_currency: string
@@ -279,6 +317,7 @@ export type Database = {
           entry_date?: string
           id?: string
           money_holder_type?: Database["public"]["Enums"]["holder_type"] | null
+          money_location?: Database["public"]["Enums"]["money_location"] | null
           notes?: string | null
           paid_amount?: number
           paid_currency?: string
@@ -387,6 +426,7 @@ export type Database = {
           deposit_account_id: string
           entry_date: string
           id: string
+          money_location: Database["public"]["Enums"]["money_location"] | null
           notes: string | null
           settlement_status: Database["public"]["Enums"]["settlement_status"]
           updated_at: string
@@ -403,6 +443,7 @@ export type Database = {
           deposit_account_id: string
           entry_date?: string
           id?: string
+          money_location?: Database["public"]["Enums"]["money_location"] | null
           notes?: string | null
           settlement_status?: Database["public"]["Enums"]["settlement_status"]
           updated_at?: string
@@ -419,6 +460,7 @@ export type Database = {
           deposit_account_id?: string
           entry_date?: string
           id?: string
+          money_location?: Database["public"]["Enums"]["money_location"] | null
           notes?: string | null
           settlement_status?: Database["public"]["Enums"]["settlement_status"]
           updated_at?: string
@@ -598,14 +640,19 @@ export type Database = {
           currency: string
           deleted_at: string | null
           entry_date: string
+          expense_kind: Database["public"]["Enums"]["expense_kind"] | null
           id: string
           is_business: boolean
+          money_location: Database["public"]["Enums"]["money_location"] | null
           notes: string | null
           paid_by: Database["public"]["Enums"]["paid_by"]
           paid_from_account_id: string
+          receipt_required: boolean
           reduces_profit: boolean
           related_buy_id: string | null
           related_person: string | null
+          related_ref_id: string | null
+          related_ref_type: string | null
           related_sell_id: string | null
           settlement_status: Database["public"]["Enums"]["settlement_status"]
           updated_at: string
@@ -620,14 +667,19 @@ export type Database = {
           currency: string
           deleted_at?: string | null
           entry_date?: string
+          expense_kind?: Database["public"]["Enums"]["expense_kind"] | null
           id?: string
           is_business?: boolean
+          money_location?: Database["public"]["Enums"]["money_location"] | null
           notes?: string | null
           paid_by: Database["public"]["Enums"]["paid_by"]
           paid_from_account_id: string
+          receipt_required?: boolean
           reduces_profit?: boolean
           related_buy_id?: string | null
           related_person?: string | null
+          related_ref_id?: string | null
+          related_ref_type?: string | null
           related_sell_id?: string | null
           settlement_status?: Database["public"]["Enums"]["settlement_status"]
           updated_at?: string
@@ -642,14 +694,19 @@ export type Database = {
           currency?: string
           deleted_at?: string | null
           entry_date?: string
+          expense_kind?: Database["public"]["Enums"]["expense_kind"] | null
           id?: string
           is_business?: boolean
+          money_location?: Database["public"]["Enums"]["money_location"] | null
           notes?: string | null
           paid_by?: Database["public"]["Enums"]["paid_by"]
           paid_from_account_id?: string
+          receipt_required?: boolean
           reduces_profit?: boolean
           related_buy_id?: string | null
           related_person?: string | null
+          related_ref_id?: string | null
+          related_ref_type?: string | null
           related_sell_id?: string | null
           settlement_status?: Database["public"]["Enums"]["settlement_status"]
           updated_at?: string
@@ -761,15 +818,19 @@ export type Database = {
           customer_id: string
           deleted_at: string | null
           destination_bank: string | null
+          destination_bank_name: string | null
           entry_date: string
           fee_input: number | null
           fee_kind: Database["public"]["Enums"]["fee_kind"]
           iban_card: string | null
           id: string
+          is_free_service: boolean
           method: Database["public"]["Enums"]["payment_method"]
+          money_location: Database["public"]["Enums"]["money_location"] | null
           notes: string | null
           paid_from_account_id: string | null
           receiver_account: string | null
+          receiver_iban: string | null
           receiver_name: string | null
           service_charge_amount: number
           service_charge_currency: string | null
@@ -787,15 +848,19 @@ export type Database = {
           customer_id: string
           deleted_at?: string | null
           destination_bank?: string | null
+          destination_bank_name?: string | null
           entry_date?: string
           fee_input?: number | null
           fee_kind?: Database["public"]["Enums"]["fee_kind"]
           iban_card?: string | null
           id?: string
+          is_free_service?: boolean
           method: Database["public"]["Enums"]["payment_method"]
+          money_location?: Database["public"]["Enums"]["money_location"] | null
           notes?: string | null
           paid_from_account_id?: string | null
           receiver_account?: string | null
+          receiver_iban?: string | null
           receiver_name?: string | null
           service_charge_amount?: number
           service_charge_currency?: string | null
@@ -813,15 +878,19 @@ export type Database = {
           customer_id?: string
           deleted_at?: string | null
           destination_bank?: string | null
+          destination_bank_name?: string | null
           entry_date?: string
           fee_input?: number | null
           fee_kind?: Database["public"]["Enums"]["fee_kind"]
           iban_card?: string | null
           id?: string
+          is_free_service?: boolean
           method?: Database["public"]["Enums"]["payment_method"]
+          money_location?: Database["public"]["Enums"]["money_location"] | null
           notes?: string | null
           paid_from_account_id?: string | null
           receiver_account?: string | null
+          receiver_iban?: string | null
           receiver_name?: string | null
           service_charge_amount?: number
           service_charge_currency?: string | null
@@ -930,6 +999,7 @@ export type Database = {
           milad_profit: number | null
           milad_share_pct: number
           money_holder_type: Database["public"]["Enums"]["holder_type"] | null
+          money_location: Database["public"]["Enums"]["money_location"] | null
           notes: string | null
           received_amount: number
           received_currency: string
@@ -965,6 +1035,7 @@ export type Database = {
           milad_profit?: number | null
           milad_share_pct?: number
           money_holder_type?: Database["public"]["Enums"]["holder_type"] | null
+          money_location?: Database["public"]["Enums"]["money_location"] | null
           notes?: string | null
           received_amount: number
           received_currency: string
@@ -1000,6 +1071,7 @@ export type Database = {
           milad_profit?: number | null
           milad_share_pct?: number
           money_holder_type?: Database["public"]["Enums"]["holder_type"] | null
+          money_location?: Database["public"]["Enums"]["money_location"] | null
           notes?: string | null
           received_amount?: number
           received_currency?: string
@@ -1122,6 +1194,7 @@ export type Database = {
           entry_date: string
           from_account_id: string
           id: string
+          money_location: Database["public"]["Enums"]["money_location"] | null
           notes: string | null
           reason: string | null
           requested_by: Database["public"]["Enums"]["brought_in_by"] | null
@@ -1140,6 +1213,7 @@ export type Database = {
           entry_date?: string
           from_account_id: string
           id?: string
+          money_location?: Database["public"]["Enums"]["money_location"] | null
           notes?: string | null
           reason?: string | null
           requested_by?: Database["public"]["Enums"]["brought_in_by"] | null
@@ -1158,6 +1232,7 @@ export type Database = {
           entry_date?: string
           from_account_id?: string
           id?: string
+          money_location?: Database["public"]["Enums"]["money_location"] | null
           notes?: string | null
           reason?: string | null
           requested_by?: Database["public"]["Enums"]["brought_in_by"] | null
@@ -1286,6 +1361,63 @@ export type Database = {
         }
         Relationships: []
       }
+      v_ali_capital_summary: {
+        Row: {
+          currently_holding: number | null
+          total_brought_in: number | null
+          total_paid_expenses: number | null
+          total_profit_share: number | null
+        }
+        Relationships: []
+      }
+      v_cash_available: {
+        Row: {
+          balance: number | null
+          currency: string | null
+        }
+        Relationships: []
+      }
+      v_daily_profit_series: {
+        Row: {
+          ali_profit: number | null
+          day: string | null
+          gross_profit: number | null
+          milad_profit: number | null
+        }
+        Relationships: []
+      }
+      v_money_in_circulation: {
+        Row: {
+          balance: number | null
+          currency: string | null
+        }
+        Relationships: []
+      }
+      v_month_profit: {
+        Row: {
+          ali_profit: number | null
+          gross_profit: number | null
+          milad_profit: number | null
+          sell_count: number | null
+        }
+        Relationships: []
+      }
+      v_today_profit: {
+        Row: {
+          ali_profit: number | null
+          gross_profit: number | null
+          milad_profit: number | null
+          sell_count: number | null
+        }
+        Relationships: []
+      }
+      v_total_assets_by_currency: {
+        Row: {
+          balance: number | null
+          currency: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       avg_buy_rate: {
@@ -1332,6 +1464,15 @@ export type Database = {
         | "other"
         | "deposit_receipt"
         | "payment_order_proof"
+      expense_kind:
+        | "petrol"
+        | "parking"
+        | "delivery"
+        | "transfer_fee"
+        | "bank_charge"
+        | "personal_ali"
+        | "business"
+        | "other"
       fee_kind: "fixed" | "percent" | "manual"
       holder_type: "milad" | "ali" | "customer" | "other"
       ledger_ref_type:
@@ -1345,6 +1486,16 @@ export type Database = {
         | "deposit"
         | "payment_order"
         | "service_charge"
+      money_location:
+        | "cash_box"
+        | "aed_bank"
+        | "toman_bank"
+        | "foreign_bank"
+        | "held_milad"
+        | "held_ali"
+        | "held_customer"
+        | "pending_delivery"
+        | "pending_deposit"
       paid_by: "milad" | "ali"
       payment_method:
         | "bank_transfer"
@@ -1522,6 +1673,16 @@ export const Constants = {
         "deposit_receipt",
         "payment_order_proof",
       ],
+      expense_kind: [
+        "petrol",
+        "parking",
+        "delivery",
+        "transfer_fee",
+        "bank_charge",
+        "personal_ali",
+        "business",
+        "other",
+      ],
       fee_kind: ["fixed", "percent", "manual"],
       holder_type: ["milad", "ali", "customer", "other"],
       ledger_ref_type: [
@@ -1535,6 +1696,17 @@ export const Constants = {
         "deposit",
         "payment_order",
         "service_charge",
+      ],
+      money_location: [
+        "cash_box",
+        "aed_bank",
+        "toman_bank",
+        "foreign_bank",
+        "held_milad",
+        "held_ali",
+        "held_customer",
+        "pending_delivery",
+        "pending_deposit",
       ],
       paid_by: ["milad", "ali"],
       payment_method: [
