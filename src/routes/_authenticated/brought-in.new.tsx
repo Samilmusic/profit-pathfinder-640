@@ -196,7 +196,7 @@ function NewBroughtInPage() {
             <Card className="mt-6 w-full">
               <CardContent className="p-4">
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">Updated account balance</div>
-                <div className="mt-1 font-mono text-2xl font-bold tabular-nums">{fmt(success.balance, currency)}</div>
+                <div className="mt-1 font-mono text-2xl font-bold tabular-nums">{fmt(success.balance, convertEnabled ? convertedCurrency : currency)}</div>
               </CardContent>
             </Card>
           )}
