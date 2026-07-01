@@ -280,6 +280,7 @@ function DashboardPage() {
       />
 
       <MarketRatesWidget />
+      <AskBusinessButton />
 
       {/* SECTION 1 — INVENTORY BY CURRENCY */}
       <SectionTitle icon={<Boxes className="h-4 w-4" />} title="Inventory by currency" hint="Never merged. Each currency stands alone." />
