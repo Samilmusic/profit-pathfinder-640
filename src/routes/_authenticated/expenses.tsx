@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { Plus, FileText } from "lucide-react";
 import { SettlementStatusBadge } from "@/components/settlement-status-badge";
 import { TxnDetailDialog } from "@/components/txn-detail-dialog";
+import { RecordActions } from "@/components/record-actions";
 
 export const Route = createFileRoute("/_authenticated/expenses")({ component: Page });
 
@@ -124,9 +125,24 @@ function Page() {
                 <TableCell className="text-right font-mono">{fmt(r.amount, r.currency)}</TableCell>
                 <TableCell><SettlementStatusBadge value={r.settlement_status} /></TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="sm" onClick={() => setDetailRow(r)}>
-                    <FileText className="h-4 w-4 mr-1" /> Manage
-                  </Button>
+                  <div className="flex items-center justify-end gap-1">
+                    <Button variant="ghost" size="sm" onClick={() => setDetailRow(r)}>
+                      <FileText className="h-4 w-4 mr-1" /> Manage
+                    </Button>
+                    <RecordActions
+                      table="expenses"
+                      row={r}
+                      onView={() => setDetailRow(r)}
+                      invalidateKeys={["expenses"]}
+                      fields={[
+                        { key: "entry_date", label: "Date", type: "date" },
+                        { key: "amount", label: "Amount", type: "number", step: "0.01" },
+                        { key: "currency", label: "Currency", type: "select", options: CURRENCIES.map((c: string) => ({ value: c, label: c })) },
+                        { key: "category", label: "Category" },
+                        { key: "description", label: "Description", type: "textarea" },
+                      ]}
+                    />
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

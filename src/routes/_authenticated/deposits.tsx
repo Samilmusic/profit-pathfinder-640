@@ -14,6 +14,8 @@ import { SmartLabels } from "@/components/settlement-status-badge";
 import { DocumentsPanel } from "@/components/documents-panel";
 import { toast } from "sonner";
 import { Plus, CheckCircle2 } from "lucide-react";
+import { RecordActions } from "@/components/record-actions";
+import { CURRENCIES } from "@/lib/exchange";
 
 export const Route = createFileRoute("/_authenticated/deposits")({ component: Page });
 
@@ -50,7 +52,23 @@ function Page() {
                 <TableCell>{r.deposit_account?.name}</TableCell>
                 <TableCell className="text-right font-mono">{fmt(r.amount, r.currency)}</TableCell>
                 <TableCell><SmartLabels row={r} /></TableCell>
-                <TableCell className="text-right"><Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setDetailId(r.id); }}>Open</Button></TableCell>
+                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center justify-end gap-1">
+                    <Button size="sm" variant="ghost" onClick={() => setDetailId(r.id)}>Open</Button>
+                    <RecordActions
+                      table="customer_deposits"
+                      row={r}
+                      onView={() => setDetailId(r.id)}
+                      invalidateKeys={["customer_deposits"]}
+                      fields={[
+                        { key: "entry_date", label: "Date", type: "date" },
+                        { key: "amount", label: "Amount", type: "number", step: "0.01" },
+                        { key: "currency", label: "Currency", type: "select", options: CURRENCIES.map((c: string) => ({ value: c, label: c })) },
+                        { key: "notes", label: "Notes", type: "textarea" },
+                      ]}
+                    />
+                  </div>
+                </TableCell>
               </TableRow>
             ))}
             {q.data && q.data.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">No deposits yet.</TableCell></TableRow>}

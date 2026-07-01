@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
+import { RecordActions } from "@/components/record-actions";
 
 export const Route = createFileRoute("/_authenticated/customers")({ component: CustomersPage });
 
@@ -61,7 +62,7 @@ function CustomersPage() {
       />
       <Card><CardContent className="p-0 overflow-x-auto">
         <Table>
-          <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Phone</TableHead><TableHead>Accounts</TableHead><TableHead>Notes</TableHead></TableRow></TableHeader>
+          <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Phone</TableHead><TableHead>Accounts</TableHead><TableHead>Notes</TableHead><TableHead></TableHead></TableRow></TableHeader>
           <TableBody>
             {(q.data ?? []).map((c: any) => (
               <TableRow key={c.id}>
@@ -69,9 +70,22 @@ function CustomersPage() {
                 <TableCell>{c.phone || "—"}</TableCell>
                 <TableCell className="text-sm text-muted-foreground max-w-xs truncate">{c.account_details || "—"}</TableCell>
                 <TableCell className="text-sm text-muted-foreground max-w-xs truncate">{c.notes || "—"}</TableCell>
+                <TableCell className="text-right">
+                  <RecordActions
+                    table="customers"
+                    row={c}
+                    invalidateKeys={["customers"]}
+                    fields={[
+                      { key: "name", label: "Name" },
+                      { key: "phone", label: "Phone" },
+                      { key: "account_details", label: "Accounts", type: "textarea" },
+                      { key: "notes", label: "Notes", type: "textarea" },
+                    ]}
+                  />
+                </TableCell>
               </TableRow>
             ))}
-            {q.data && q.data.length === 0 && <TableRow><TableCell colSpan={4} className="text-center py-10 text-muted-foreground">No customers yet.</TableCell></TableRow>}
+            {q.data && q.data.length === 0 && <TableRow><TableCell colSpan={5} className="text-center py-10 text-muted-foreground">No customers yet.</TableCell></TableRow>}
           </TableBody>
         </Table>
       </CardContent></Card>

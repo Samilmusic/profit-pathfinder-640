@@ -16,6 +16,7 @@ import { NumberInput } from "@/components/number-input";
 import { CURRENCIES, fmtProfit } from "@/lib/exchange";
 import { toast } from "sonner";
 import { Plus, ArrowRight } from "lucide-react";
+import { RecordActions } from "@/components/record-actions";
 
 export const Route = createFileRoute("/_authenticated/trades")({ component: Page });
 
@@ -193,7 +194,21 @@ function Page() {
                   {fmtProfit(t.realized_profit, t.realized_profit_currency ?? t.initial_currency)}
                 </TableCell>
                 <TableCell><span className={`px-2 py-0.5 rounded-full text-xs ${STATUS_COLORS[t.status] ?? ""}`}>{t.status}</span></TableCell>
-                <TableCell><Link to="/trades/$id" params={{ id: t.id }} className="text-primary text-sm inline-flex items-center gap-1">Open <ArrowRight className="h-3 w-3" /></Link></TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1 justify-end">
+                    <Link to="/trades/$id" params={{ id: t.id }} className="text-primary text-sm inline-flex items-center gap-1">Open <ArrowRight className="h-3 w-3" /></Link>
+                    <RecordActions
+                      table="trade_cycles"
+                      row={t}
+                      invalidateKeys={["trades"]}
+                      fields={[
+                        { key: "entry_date", label: "Date", type: "date" },
+                        { key: "code", label: "Code" },
+                        { key: "notes", label: "Notes", type: "textarea" },
+                      ]}
+                    />
+                  </div>
+                </TableCell>
               </TableRow>
             ))}
             {q.data && q.data.length === 0 && <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">No cycles yet. Sell AED with "Create Trade Cycle" on to auto-open one.</TableCell></TableRow>}
