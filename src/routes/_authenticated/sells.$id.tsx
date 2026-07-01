@@ -125,6 +125,20 @@ function DealPage() {
     && (paid + 0.0001 >= Number(s.received_amount) || overrideClose)
     && (hasReceipt || overrideClose);
 
+  const currencyDelivered = !!s.sold_from_account_id;
+  const paymentReceived = paid + 0.0001 >= Number(s.received_amount) && Number(s.received_amount) > 0;
+  const receiptUploaded = hasReceipt;
+  const isClosed = s.deal_status === "closed";
+  const steps = [
+    { label: "Created", done: true },
+    { label: "Currency Delivered", done: currencyDelivered },
+    { label: "Payment Received", done: paymentReceived },
+    { label: "Receipt Uploaded", done: receiptUploaded },
+    { label: "Ready to Close", done: currencyDelivered && paymentReceived && receiptUploaded },
+    { label: "Closed", done: isClosed },
+  ];
+  const doneCount = steps.filter(s => s.done).length;
+
   const events = buildTimeline(s, paymentsQ.data ?? [], (docsQ.data ?? []).length);
 
   return (
@@ -139,6 +153,25 @@ function DealPage() {
 
       <div className="grid lg:grid-cols-[1fr_360px] gap-4 pb-32 lg:pb-8">
         <div className="space-y-3">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+                <span>Deal progress</span>
+                <span>{doneCount} / {steps.length}</span>
+              </div>
+              <div className="h-2 rounded-full bg-muted overflow-hidden">
+                <div className={isClosed ? "h-full bg-emerald-500" : "h-full bg-primary"} style={{ width: `${(doneCount / steps.length) * 100}%` }} />
+              </div>
+              <ol className="mt-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 text-xs">
+                {steps.map((st, i) => (
+                  <li key={i} className="flex items-center gap-2">
+                    <span className={`h-2 w-2 rounded-full shrink-0 ${st.done ? (isClosed && i === steps.length - 1 ? "bg-emerald-500" : "bg-primary") : "bg-muted-foreground/30"}`} />
+                    <span className={st.done ? "text-foreground" : "text-muted-foreground"}>{st.label}</span>
+                  </li>
+                ))}
+              </ol>
+            </CardContent>
+          </Card>
           <Card>
             <CardContent className="p-4">
               <div className="flex items-start justify-between gap-4 flex-wrap">
