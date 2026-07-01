@@ -35,7 +35,7 @@ function Page() {
   const [f, setF] = useState({
     entry_date: today, sold_currency: "AED", sold_amount: "", sell_rate: "",
     received_currency: "IRR", sold_from_account_id: "", received_into_account_id: "",
-    customer_id: "", customer_phone: "", customer_account_ref: "", customer_bank_account_id: "",
+    customer_id: "", customer_phone: "", customer_account: "", customer_bank_account_id: "",
     milad_pct: "50", ali_pct: "50", notes: "", expected_payment_date: "",
     creates_cycle: true,
   });
@@ -117,7 +117,7 @@ function Page() {
         received_into_account_id: f.received_into_account_id || null,
         customer_id: f.customer_id || null,
         customer_phone: f.customer_phone || null,
-        customer_account_ref: f.customer_account_ref || null,
+        customer_account: f.customer_account || null,
         milad_share_pct: milad, ali_share_pct: ali,
         notes: f.notes || null,
         created_by: u.user?.id,
@@ -169,7 +169,7 @@ function Page() {
                     onChange={(id, row) => setF((prev) => ({
                       ...prev,
                       customer_bank_account_id: id ?? "",
-                      customer_account_ref: row ? `${row.bank_name} ${row.currency} ${maskAccount(row.card_number || row.account_number || row.iban) || ""}`.trim() : prev.customer_account_ref,
+                      customer_account: row ? `${row.bank_name} ${row.currency} ${maskAccount(row.card_number || row.account_number || row.iban) || ""}`.trim() : prev.customer_account,
                     }))}
                   />
                 </div>
