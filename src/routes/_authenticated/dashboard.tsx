@@ -207,6 +207,21 @@ function DashboardPage() {
   const dealBucket = (s: string) => openSells.filter(d => d.derived_status === s).length;
   const openCount = openSells.length;
 
+  // Expected receivables — unpaid customer money on open deals (NOT inventory)
+  const receivablesByCurrency = useMemo(() => {
+    const m = new Map<string, { currency: string; expected: number; deals: number }>();
+    for (const d of openSells) {
+      const owed = Math.max(0, Number(d.received_amount || 0) - Number(d.paid || 0));
+      if (owed < 0.0001) continue;
+      const cur = String(d.received_currency);
+      const e = m.get(cur) ?? { currency: cur, expected: 0, deals: 0 };
+      e.expected += owed;
+      e.deals += 1;
+      m.set(cur, e);
+    }
+    return Array.from(m.values()).sort((a, b) => a.currency.localeCompare(b.currency));
+  }, [openSells]);
+
   // Customer balances
   const wallets = (walletsQ.data ?? []) as any[];
   const owedByCustomers = wallets.filter(w => Number(w.balance) < -0.0001);
