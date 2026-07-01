@@ -79,13 +79,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Exchange Portal — Milad & Ali" },
+      { title: "Loptopchi" },
       { name: "description", content: "Private accounting portal for Milad & Ali: track capital, buy/sell trades, expenses, and profit sharing." },
       { name: "author", content: "Milad & Ali" },
-      { property: "og:title", content: "Exchange Portal — Milad & Ali" },
-      { property: "og:description", content: "Private accounting portal for Milad & Ali." },
+      { property: "og:title", content: "Loptopchi" },
+      { property: "og:description", content: "Private accounting portal for Milad & Ali: track capital, buy/sell trades, expenses, and profit sharing." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Loptopchi" },
+      { name: "twitter:description", content: "Private accounting portal for Milad & Ali: track capital, buy/sell trades, expenses, and profit sharing." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/dcaeb7ae-82f4-4da0-beca-4ed55482b72b/id-preview-81d5574f--e34fdc65-c713-4587-aedc-e90fc61f2fc8.lovable.app-1782911524324.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/dcaeb7ae-82f4-4da0-beca-4ed55482b72b/id-preview-81d5574f--e34fdc65-c713-4587-aedc-e90fc61f2fc8.lovable.app-1782911524324.png" },
     ],
     links: [
       {
