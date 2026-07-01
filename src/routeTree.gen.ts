@@ -16,6 +16,7 @@ import { Route as AuthenticatedTransfersRouteImport } from './routes/_authentica
 import { Route as AuthenticatedStatementsRouteImport } from './routes/_authenticated/statements'
 import { Route as AuthenticatedSellRouteImport } from './routes/_authenticated/sell'
 import { Route as AuthenticatedRolesRouteImport } from './routes/_authenticated/roles'
+import { Route as AuthenticatedQuickSellRouteImport } from './routes/_authenticated/quick-sell'
 import { Route as AuthenticatedPendingSettlementsRouteImport } from './routes/_authenticated/pending-settlements'
 import { Route as AuthenticatedInventoryRouteImport } from './routes/_authenticated/inventory'
 import { Route as AuthenticatedHeldByPersonRouteImport } from './routes/_authenticated/held-by-person'
@@ -59,6 +60,11 @@ const AuthenticatedSellRoute = AuthenticatedSellRouteImport.update({
 const AuthenticatedRolesRoute = AuthenticatedRolesRouteImport.update({
   id: '/roles',
   path: '/roles',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedQuickSellRoute = AuthenticatedQuickSellRouteImport.update({
+  id: '/quick-sell',
+  path: '/quick-sell',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedPendingSettlementsRoute =
@@ -128,6 +134,7 @@ export interface FileRoutesByFullPath {
   '/held-by-person': typeof AuthenticatedHeldByPersonRoute
   '/inventory': typeof AuthenticatedInventoryRoute
   '/pending-settlements': typeof AuthenticatedPendingSettlementsRoute
+  '/quick-sell': typeof AuthenticatedQuickSellRoute
   '/roles': typeof AuthenticatedRolesRoute
   '/sell': typeof AuthenticatedSellRoute
   '/statements': typeof AuthenticatedStatementsRoute
@@ -146,6 +153,7 @@ export interface FileRoutesByTo {
   '/held-by-person': typeof AuthenticatedHeldByPersonRoute
   '/inventory': typeof AuthenticatedInventoryRoute
   '/pending-settlements': typeof AuthenticatedPendingSettlementsRoute
+  '/quick-sell': typeof AuthenticatedQuickSellRoute
   '/roles': typeof AuthenticatedRolesRoute
   '/sell': typeof AuthenticatedSellRoute
   '/statements': typeof AuthenticatedStatementsRoute
@@ -166,6 +174,7 @@ export interface FileRoutesById {
   '/_authenticated/held-by-person': typeof AuthenticatedHeldByPersonRoute
   '/_authenticated/inventory': typeof AuthenticatedInventoryRoute
   '/_authenticated/pending-settlements': typeof AuthenticatedPendingSettlementsRoute
+  '/_authenticated/quick-sell': typeof AuthenticatedQuickSellRoute
   '/_authenticated/roles': typeof AuthenticatedRolesRoute
   '/_authenticated/sell': typeof AuthenticatedSellRoute
   '/_authenticated/statements': typeof AuthenticatedStatementsRoute
@@ -186,6 +195,7 @@ export interface FileRouteTypes {
     | '/held-by-person'
     | '/inventory'
     | '/pending-settlements'
+    | '/quick-sell'
     | '/roles'
     | '/sell'
     | '/statements'
@@ -204,6 +214,7 @@ export interface FileRouteTypes {
     | '/held-by-person'
     | '/inventory'
     | '/pending-settlements'
+    | '/quick-sell'
     | '/roles'
     | '/sell'
     | '/statements'
@@ -223,6 +234,7 @@ export interface FileRouteTypes {
     | '/_authenticated/held-by-person'
     | '/_authenticated/inventory'
     | '/_authenticated/pending-settlements'
+    | '/_authenticated/quick-sell'
     | '/_authenticated/roles'
     | '/_authenticated/sell'
     | '/_authenticated/statements'
@@ -284,6 +296,13 @@ declare module '@tanstack/react-router' {
       path: '/roles'
       fullPath: '/roles'
       preLoaderRoute: typeof AuthenticatedRolesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/quick-sell': {
+      id: '/_authenticated/quick-sell'
+      path: '/quick-sell'
+      fullPath: '/quick-sell'
+      preLoaderRoute: typeof AuthenticatedQuickSellRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/pending-settlements': {
@@ -370,6 +389,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedHeldByPersonRoute: typeof AuthenticatedHeldByPersonRoute
   AuthenticatedInventoryRoute: typeof AuthenticatedInventoryRoute
   AuthenticatedPendingSettlementsRoute: typeof AuthenticatedPendingSettlementsRoute
+  AuthenticatedQuickSellRoute: typeof AuthenticatedQuickSellRoute
   AuthenticatedRolesRoute: typeof AuthenticatedRolesRoute
   AuthenticatedSellRoute: typeof AuthenticatedSellRoute
   AuthenticatedStatementsRoute: typeof AuthenticatedStatementsRoute
@@ -387,6 +407,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedHeldByPersonRoute: AuthenticatedHeldByPersonRoute,
   AuthenticatedInventoryRoute: AuthenticatedInventoryRoute,
   AuthenticatedPendingSettlementsRoute: AuthenticatedPendingSettlementsRoute,
+  AuthenticatedQuickSellRoute: AuthenticatedQuickSellRoute,
   AuthenticatedRolesRoute: AuthenticatedRolesRoute,
   AuthenticatedSellRoute: AuthenticatedSellRoute,
   AuthenticatedStatementsRoute: AuthenticatedStatementsRoute,
