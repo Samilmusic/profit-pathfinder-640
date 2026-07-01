@@ -100,16 +100,25 @@ export type Database = {
       app_settings: {
         Row: {
           id: boolean
+          market_rate_manual_fallback: boolean
+          market_rate_refresh_minutes: number
+          market_rate_source: string
           profit_recognition_method: string
           updated_at: string
         }
         Insert: {
           id?: boolean
+          market_rate_manual_fallback?: boolean
+          market_rate_refresh_minutes?: number
+          market_rate_source?: string
           profit_recognition_method?: string
           updated_at?: string
         }
         Update: {
           id?: boolean
+          market_rate_manual_fallback?: boolean
+          market_rate_refresh_minutes?: number
+          market_rate_source?: string
           profit_recognition_method?: string
           updated_at?: string
         }
@@ -1235,6 +1244,48 @@ export type Database = {
             referencedColumns: ["lot_id"]
           },
         ]
+      }
+      market_rates: {
+        Row: {
+          buy_rate: number | null
+          created_at: string
+          currency: string
+          error_message: string | null
+          fetched_at: string
+          id: string
+          mid_rate: number | null
+          raw_response: Json | null
+          sell_rate: number | null
+          source: string
+          status: string
+        }
+        Insert: {
+          buy_rate?: number | null
+          created_at?: string
+          currency: string
+          error_message?: string | null
+          fetched_at?: string
+          id?: string
+          mid_rate?: number | null
+          raw_response?: Json | null
+          sell_rate?: number | null
+          source?: string
+          status?: string
+        }
+        Update: {
+          buy_rate?: number | null
+          created_at?: string
+          currency?: string
+          error_message?: string | null
+          fetched_at?: string
+          id?: string
+          mid_rate?: number | null
+          raw_response?: Json | null
+          sell_rate?: number | null
+          source?: string
+          status?: string
+        }
+        Relationships: []
       }
       payment_orders: {
         Row: {
@@ -2555,6 +2606,20 @@ export type Database = {
             referencedColumns: ["account_id"]
           },
         ]
+      }
+      market_rates_latest: {
+        Row: {
+          buy_rate: number | null
+          currency: string | null
+          error_message: string | null
+          fetched_at: string | null
+          id: string | null
+          mid_rate: number | null
+          sell_rate: number | null
+          source: string | null
+          status: string | null
+        }
+        Relationships: []
       }
       profit_by_account: {
         Row: {
