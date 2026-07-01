@@ -7,7 +7,7 @@ import {
   useLatestMarketRates,
   useMarketRateHistory,
   rateFreshness,
-  findRate,
+  pickDisplayRate,
   triggerMarketRateRefresh,
   type MarketRateRow,
 } from "@/lib/market-rates";
@@ -55,8 +55,19 @@ function Sparkline({ currency }: { currency: string }) {
   );
 }
 
-function RateBlock({ row, currency }: { row?: MarketRateRow; currency: string }) {
+function RateBlock({
+  row,
+  currency,
+  usedFallback,
+  manualAvailable,
+}: {
+  row?: MarketRateRow;
+  currency: string;
+  usedFallback: boolean;
+  manualAvailable: boolean;
+}) {
   const fresh = rateFreshness(row?.fetched_at);
+  const sourceLabel = row?.source === "manual" ? "Manual" : row?.source === "bonbast" ? "Bonbast" : "—";
   const toneCls =
     fresh.tone === "ok"
       ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"
@@ -69,6 +80,7 @@ function RateBlock({ row, currency }: { row?: MarketRateRow; currency: string })
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold tracking-wider text-muted-foreground">{currency} / IRR</span>
           <Badge variant="outline" className={toneCls}>{fresh.label}</Badge>
+          <Badge variant="outline" className="text-[10px]">{sourceLabel}</Badge>
         </div>
         <div className="text-[10px] text-muted-foreground">Updated {fmtTime(row?.fetched_at)}</div>
       </div>
@@ -82,7 +94,17 @@ function RateBlock({ row, currency }: { row?: MarketRateRow; currency: string })
           <div className="font-mono font-semibold">{row?.sell_rate != null ? fmt(row.sell_rate) : "—"}</div>
         </div>
       </div>
-      {fresh.tone === "danger" && (
+      {usedFallback && (
+        <div className="mt-2 flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+          <AlertTriangle className="h-3 w-3" /> Bonbast unavailable — showing manual fallback.
+        </div>
+      )}
+      {!row && (
+        <div className="mt-2 flex items-center gap-1 text-[11px] text-red-600 dark:text-red-400">
+          <AlertTriangle className="h-3 w-3" /> No rate yet. Set a manual rate in Settings.
+        </div>
+      )}
+      {row && !usedFallback && fresh.tone === "danger" && (
         <div className="mt-2 flex items-center gap-1 text-[11px] text-red-600 dark:text-red-400">
           <AlertTriangle className="h-3 w-3" /> Market rate is stale. Enter rate manually.
         </div>
@@ -107,8 +129,8 @@ export function MarketRatesWidget() {
     onError: (e: any) => toast.error(e?.message ?? "Refresh failed"),
   });
   const rates = q.data ?? [];
-  const aed = findRate(rates, "AED");
-  const usd = findRate(rates, "USD");
+  const aed = pickDisplayRate(rates, "AED");
+  const usd = pickDisplayRate(rates, "USD");
 
   return (
     <Card className="mb-6">
@@ -129,8 +151,8 @@ export function MarketRatesWidget() {
         </Button>
       </CardHeader>
       <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <RateBlock row={aed} currency="AED" />
-        <RateBlock row={usd} currency="USD" />
+        <RateBlock row={aed.row} currency="AED" usedFallback={aed.usedFallback} manualAvailable={aed.manualAvailable} />
+        <RateBlock row={usd.row} currency="USD" usedFallback={usd.usedFallback} manualAvailable={usd.manualAvailable} />
       </CardContent>
     </Card>
   );

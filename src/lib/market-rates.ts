@@ -56,7 +56,27 @@ export function rateFreshness(fetchedAt?: string | null) {
 }
 
 export function findRate(rates: MarketRateRow[] | undefined, currency: string) {
+  // Legacy helper — returns the first row for the currency (bonbast if present).
   return rates?.find((r) => r.currency === currency);
+}
+
+/**
+ * Pick the rate to display for a currency:
+ *  - bonbast if fresh (≤15 minutes),
+ *  - else manual if it exists and is newer or bonbast is stale,
+ *  - else stale bonbast (last known).
+ */
+export function pickDisplayRate(
+  rates: MarketRateRow[] | undefined,
+  currency: string,
+): { row?: MarketRateRow; usedFallback: boolean; manualAvailable: boolean } {
+  const rows = (rates ?? []).filter((r) => r.currency === currency);
+  const bonbast = rows.find((r) => r.source === "bonbast");
+  const manual = rows.find((r) => r.source === "manual");
+  const bonbastFresh = bonbast && rateFreshness(bonbast.fetched_at).tone === "ok";
+  if (bonbastFresh) return { row: bonbast, usedFallback: false, manualAvailable: !!manual };
+  if (manual) return { row: manual, usedFallback: !!bonbast, manualAvailable: true };
+  return { row: bonbast, usedFallback: false, manualAvailable: false };
 }
 
 export async function triggerMarketRateRefresh() {
