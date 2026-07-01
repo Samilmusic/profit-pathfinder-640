@@ -42,10 +42,11 @@ function Page() {
   const create = useMutation({
     mutationFn: async () => {
       const { data: u } = await supabase.auth.getUser();
-      const { error } = await supabase.from("expenses").insert({
+      const payload: any = {
         ...f, amount: Number(f.amount), paid_by: f.paid_by as any, category: f.category as any,
         paid_from_account_id: f.paid_from_account_id || null, created_by: u.user?.id,
-      });
+      };
+      const { error } = await supabase.from("expenses").insert(payload);
       if (error) throw error;
     },
     onSuccess: () => { toast.success("Expense recorded"); qc.invalidateQueries(); setOpen(false); setF({ ...f, amount: "", notes: "" }); },
