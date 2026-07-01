@@ -74,14 +74,12 @@ function QuickSellPage() {
 
   // Cost rate for profit preview
   const costRateQ = useQuery({
-    queryKey: ["avg_buy_rate", soldCurrency, receivedCurrency, today],
+    queryKey: ["inv_cost", soldCurrency, receivedCurrency],
     enabled: !!soldCurrency && !!receivedCurrency,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("avg_buy_rate", {
-        _currency: soldCurrency, _quote_currency: receivedCurrency, _as_of: today,
-      });
-      if (error) throw error;
-      return Number(data ?? 0);
+      const { data } = await supabase.from("currency_inventory").select("*")
+        .eq("currency", soldCurrency).eq("quote_currency", receivedCurrency).maybeSingle();
+      return Number((data as any)?.avg_buy_rate ?? 0);
     },
   });
 
