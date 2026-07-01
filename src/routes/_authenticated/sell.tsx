@@ -20,7 +20,7 @@ import { Plus, FileText } from "lucide-react";
 import { DealStatusBadge } from "@/components/deal-status-badge";
 import { EmptyState } from "@/components/empty-state";
 import { Copyable } from "@/components/copyable";
-import { FileText as FileTextEmpty, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { TxnDetailDialog } from "@/components/txn-detail-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
