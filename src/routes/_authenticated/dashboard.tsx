@@ -76,6 +76,15 @@ function DashboardPage() {
     },
   });
 
+  const balByTypeQ = useQuery({
+    queryKey: ["v_balances_by_currency_type"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("v_balances_by_currency_type").select("*");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const inventoryQ = useQuery({
     queryKey: ["currency_inventory"],
     queryFn: async () => {
