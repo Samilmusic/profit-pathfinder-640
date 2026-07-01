@@ -18,6 +18,7 @@ import { Plus, FileText } from "lucide-react";
 import { SettlementStatusBadge } from "@/components/settlement-status-badge";
 import { TxnDetailDialog } from "@/components/txn-detail-dialog";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 
 export const Route = createFileRoute("/_authenticated/sell")({ component: Page });
 
@@ -33,6 +34,7 @@ function Page() {
     received_currency: "IRR", sold_from_account_id: "", received_into_account_id: "",
     customer_id: "", customer_phone: "", customer_account_ref: "",
     milad_pct: "50", ali_pct: "50", notes: "",
+    creates_cycle: true,
   });
 
   const received_amount = useMemo(() => {
@@ -116,6 +118,7 @@ function Page() {
         milad_pct: milad, ali_pct: ali,
         notes: f.notes || null,
         created_by: u.user?.id,
+        creates_cycle: f.creates_cycle,
       };
       const { error } = await supabase.from("sell_transactions").insert(payload);
       if (error) throw error;
