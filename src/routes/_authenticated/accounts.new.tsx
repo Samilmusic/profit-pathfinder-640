@@ -163,7 +163,7 @@ function NewAccountPage() {
           </Button>
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-lg font-semibold">New Account</h1>
-            <p className="truncate text-xs text-muted-foreground">Cash box, bank account, crypto wallet, or person holding</p>
+            <p className="truncate text-xs text-muted-foreground">Cash box, bank account, crypto wallet, or cash with a person</p>
           </div>
         </div>
       </div>
