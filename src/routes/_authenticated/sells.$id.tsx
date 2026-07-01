@@ -340,18 +340,79 @@ function DealPage() {
               )}
             </CardHeader>
             <CardContent className="pt-0">
-              {showPay && (
-                <div className="grid md:grid-cols-4 gap-2 mb-3 p-3 rounded-md border bg-muted/30">
-                  <div><Label className="text-xs">Date</Label><Input type="date" value={pf.entry_date} onChange={(e) => setPf({ ...pf, entry_date: e.target.value })} /></div>
-                  <div><Label className="text-xs">Amount ({s.received_currency})</Label><Input inputMode="decimal" value={pf.amount} onChange={(e) => setPf({ ...pf, amount: e.target.value })} placeholder={fmt(remaining, s.received_currency)} /></div>
-                  <div><Label className="text-xs">Into account</Label><AccountSelect currency={s.received_currency} value={pf.account_id} onChange={(v) => setPf({ ...pf, account_id: v })} /></div>
-                  <div className="md:col-span-4"><Label className="text-xs">Notes</Label><Input value={pf.notes} onChange={(e) => setPf({ ...pf, notes: e.target.value })} /></div>
-                  <div className="md:col-span-4 flex justify-end gap-2">
-                    <Button variant="ghost" onClick={() => setShowPay(false)}>Cancel</Button>
-                    <Button onClick={() => addPayment.mutate()} disabled={addPayment.isPending}>Save payment</Button>
+              {showPay && (() => {
+                const methodToTypes: Record<string, string[]> = {
+                  cash_box: ["cash"],
+                  bank_account: ["aed_bank", "toman_bank", "foreign_currency"],
+                  cash_with_person: ["person_holding"],
+                  customer_wallet: ["customer_wallet"],
+                };
+                const activeCurrency = pf.currency || s.received_currency;
+                return (
+                  <div className="grid md:grid-cols-4 gap-2 mb-3 p-3 rounded-md border bg-muted/30">
+                    <div className="md:col-span-4 text-xs text-muted-foreground flex items-center gap-1">
+                      <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+                      Money enters inventory ONLY after this payment is saved with a receipt.
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label className="text-xs">Payment method</Label>
+                      <Select value={pf.method} onValueChange={(v: any) => setPf({ ...pf, method: v, account_id: "" })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="cash_box">Cash Box</SelectItem>
+                          <SelectItem value="bank_account">Bank Account</SelectItem>
+                          <SelectItem value="cash_with_person">Cash With Person</SelectItem>
+                          <SelectItem value="customer_wallet">Customer Wallet</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Receive currency</Label>
+                      <Select value={activeCurrency} onValueChange={(v) => setPf({ ...pf, currency: v, account_id: "" })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {[s.received_currency, "AED", "IRR", "USD", "EUR", "GBP", "USDT"].filter((v, i, a) => v && a.indexOf(v) === i).map(c => (
+                            <SelectItem key={c} value={c}>{c}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Date</Label>
+                      <Input type="date" value={pf.entry_date} onChange={(e) => setPf({ ...pf, entry_date: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Amount ({activeCurrency})</Label>
+                      <Input inputMode="decimal" value={pf.amount} onChange={(e) => setPf({ ...pf, amount: e.target.value })} placeholder={fmt(remaining, s.received_currency)} />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label className="text-xs">Receiving account · {activeCurrency}</Label>
+                      <AccountSelect
+                        currency={activeCurrency}
+                        onlyTypes={methodToTypes[pf.method]}
+                        value={pf.account_id}
+                        onChange={(v) => setPf({ ...pf, account_id: v })}
+                        placeholder={`Pick a ${activeCurrency} ${pf.method.replace("_", " ")} account`}
+                      />
+                    </div>
+                    <div className="md:col-span-4">
+                      <Label className="text-xs">Receipt upload <span className="text-red-600">*</span></Label>
+                      <Input type="file" accept="image/*,application/pdf" onChange={(e) => setReceiptFile(e.target.files?.[0] ?? null)} />
+                      {receiptFile && <div className="text-[11px] text-muted-foreground mt-1">{receiptFile.name}</div>}
+                    </div>
+                    <div className="md:col-span-4">
+                      <Label className="text-xs">Notes</Label>
+                      <Textarea rows={2} value={pf.notes} onChange={(e) => setPf({ ...pf, notes: e.target.value })} />
+                    </div>
+                    <div className="md:col-span-4 flex justify-end gap-2">
+                      <Button variant="ghost" onClick={() => { setShowPay(false); setReceiptFile(null); }}>Cancel</Button>
+                      <Button onClick={() => addPayment.mutate()} disabled={addPayment.isPending || !receiptFile || !pf.account_id || !pf.amount}>
+                        Receive payment
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
               <Table>
                 <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Amount</TableHead><TableHead>Into</TableHead><TableHead>Notes</TableHead></TableRow></TableHeader>
                 <TableBody>
