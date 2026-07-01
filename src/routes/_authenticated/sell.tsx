@@ -61,16 +61,20 @@ function Page() {
 
   const preview = useMemo(() => {
     const want = Number(f.sold_amount) || 0;
-    const rows: Array<{ lot: any; take: number }> = [];
+    const rate = Number(f.sell_rate) || 0;
+    const rows: Array<{ lot: any; take: number; cost: number; received: number; profit: number | null }> = [];
     let remaining = want;
     let totalCost = 0;
     let costCcy: string | null = null;
     for (const l of lots.data ?? []) {
       if (remaining <= 0) break;
       const take = Math.min(remaining, Number(l.remaining_amount));
-      rows.push({ lot: l, take });
-      totalCost += take * Number(l.cost_basis_rate);
       if (!costCcy) costCcy = l.cost_basis_currency;
+      const cost = take * Number(l.cost_basis_rate);
+      const received = take * rate;
+      const receivedMatches = l.cost_basis_currency === f.received_currency;
+      rows.push({ lot: l, take, cost, received, profit: receivedMatches ? received - cost : null });
+      totalCost += cost;
       remaining -= take;
     }
     const covered = want - remaining;
@@ -81,7 +85,7 @@ function Page() {
     const ali = gross * Number(f.ali_pct || 0) / 100;
     const available = (lots.data ?? []).reduce((s, l) => s + Number(l.remaining_amount), 0);
     return { rows, covered, shortfall: Math.max(0, remaining), totalCost, blended, costCcy, gross, milad, ali, available, receivedCcyMatchesCost };
-  }, [lots.data, f.sold_amount, f.received_currency, f.milad_pct, f.ali_pct, received_amount]);
+  }, [lots.data, f.sold_amount, f.sell_rate, f.received_currency, f.milad_pct, f.ali_pct, received_amount]);
 
   const q = useQuery({
     queryKey: ["sells"],
@@ -175,6 +179,21 @@ function Page() {
                               <span>{fmt(take, f.sold_currency)} × {fmt(lot.cost_basis_rate)} {lot.cost_basis_currency}/{f.sold_currency}</span>
                             </div>
                           ))}
+                          {preview.rows.some(r => r.profit !== null) && (
+                            <div className="mt-2 rounded border bg-background/60 p-2 space-y-1">
+                              <div className="text-[11px] font-medium text-muted-foreground">Per-lot profit</div>
+                              {preview.rows.map(({ lot, take, cost, received, profit }) => (
+                                <div key={"p-" + lot.id} className="grid grid-cols-4 gap-2 font-mono text-[11px]">
+                                  <span className="truncate">{lot.lot_code}</span>
+                                  <span className="text-right">{fmt(take, f.sold_currency)}</span>
+                                  <span className="text-right text-muted-foreground">c {fmt(cost)} / r {fmt(received)}</span>
+                                  <span className={"text-right " + (profit === null ? "text-muted-foreground" : profit >= 0 ? "text-accent" : "text-destructive")}>
+                                    {profit === null ? "—" : fmt(profit)} {lot.cost_basis_currency}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                           <div className="border-t pt-1 grid grid-cols-2 gap-2 text-xs">
                             <div>Blended cost rate</div><div className="text-right font-mono">{fmt(preview.blended)} {preview.costCcy}/{f.sold_currency}</div>
                             <div>Sell rate</div><div className="text-right font-mono">{fmt(Number(f.sell_rate) || 0)}</div>
@@ -202,7 +221,19 @@ function Page() {
                 <F label="Milad %"><Input type="number" value={f.milad_pct} onChange={(e) => setF({ ...f, milad_pct: e.target.value, ali_pct: String(100 - Number(e.target.value)) })} /></F>
                 <F label="Ali %"><Input type="number" value={f.ali_pct} onChange={(e) => setF({ ...f, ali_pct: e.target.value, milad_pct: String(100 - Number(e.target.value)) })} /></F>
                 <div className="md:col-span-2"><F label="Notes"><Textarea value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} /></F></div>
-                <div className="md:col-span-2 flex justify-end gap-2"><Button variant="ghost" type="button" onClick={() => setOpen(false)}>Cancel</Button><Button type="submit" disabled={create.isPending}>Save</Button></div>
+                <div className="md:col-span-2 flex justify-end gap-2">
+                  <Button variant="ghost" type="button" onClick={() => setOpen(false)}>Cancel</Button>
+                  <Button
+                    type="submit"
+                    disabled={
+                      create.isPending ||
+                      !f.sold_amount ||
+                      !f.sell_rate ||
+                      preview.shortfall > 0
+                    }
+                    title={preview.shortfall > 0 ? `Not enough inventory (short ${fmt(preview.shortfall, f.sold_currency)})` : undefined}
+                  >Save</Button>
+                </div>
               </form>
             </DialogContent>
           </Dialog>

@@ -271,6 +271,13 @@ export type Database = {
             referencedColumns: ["account_id"]
           },
           {
+            foreignKeyName: "brought_in_money_deposit_account_id_fkey"
+            columns: ["deposit_account_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
+          },
+          {
             foreignKeyName: "brought_in_money_final_deposit_account_id_fkey"
             columns: ["final_deposit_account_id"]
             isOneToOne: false
@@ -289,6 +296,13 @@ export type Database = {
             columns: ["final_deposit_account_id"]
             isOneToOne: false
             referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "brought_in_money_final_deposit_account_id_fkey"
+            columns: ["final_deposit_account_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
             referencedColumns: ["account_id"]
           },
         ]
@@ -408,6 +422,13 @@ export type Database = {
             referencedColumns: ["account_id"]
           },
           {
+            foreignKeyName: "buy_transactions_paid_from_account_id_fkey"
+            columns: ["paid_from_account_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
+          },
+          {
             foreignKeyName: "buy_transactions_received_into_account_id_fkey"
             columns: ["received_into_account_id"]
             isOneToOne: false
@@ -426,6 +447,13 @@ export type Database = {
             columns: ["received_into_account_id"]
             isOneToOne: false
             referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "buy_transactions_received_into_account_id_fkey"
+            columns: ["received_into_account_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
             referencedColumns: ["account_id"]
           },
         ]
@@ -547,6 +575,13 @@ export type Database = {
             referencedColumns: ["account_id"]
           },
           {
+            foreignKeyName: "customer_deposits_deposit_account_id_fkey"
+            columns: ["deposit_account_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
+          },
+          {
             foreignKeyName: "customer_deposits_wallet_account_id_fkey"
             columns: ["wallet_account_id"]
             isOneToOne: false
@@ -565,6 +600,13 @@ export type Database = {
             columns: ["wallet_account_id"]
             isOneToOne: false
             referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "customer_deposits_wallet_account_id_fkey"
+            columns: ["wallet_account_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
             referencedColumns: ["account_id"]
           },
         ]
@@ -785,11 +827,25 @@ export type Database = {
             referencedColumns: ["account_id"]
           },
           {
+            foreignKeyName: "expenses_paid_from_account_id_fkey"
+            columns: ["paid_from_account_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
+          },
+          {
             foreignKeyName: "expenses_related_buy_id_fkey"
             columns: ["related_buy_id"]
             isOneToOne: false
             referencedRelation: "buy_transactions"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_related_sell_id_fkey"
+            columns: ["related_sell_id"]
+            isOneToOne: false
+            referencedRelation: "sale_allocations_view"
+            referencedColumns: ["sell_id"]
           },
           {
             foreignKeyName: "expenses_related_sell_id_fkey"
@@ -880,6 +936,13 @@ export type Database = {
             referencedRelation: "customer_wallet_balances"
             referencedColumns: ["account_id"]
           },
+          {
+            foreignKeyName: "inventory_lots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
+          },
         ]
       }
       ledger_entries: {
@@ -936,6 +999,13 @@ export type Database = {
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "ledger_entries_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
             referencedColumns: ["account_id"]
           },
         ]
@@ -1125,6 +1195,13 @@ export type Database = {
             referencedColumns: ["account_id"]
           },
           {
+            foreignKeyName: "payment_orders_paid_from_account_id_fkey"
+            columns: ["paid_from_account_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
+          },
+          {
             foreignKeyName: "payment_orders_source_wallet_account_id_fkey"
             columns: ["source_wallet_account_id"]
             isOneToOne: false
@@ -1143,6 +1220,13 @@ export type Database = {
             columns: ["source_wallet_account_id"]
             isOneToOne: false
             referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "payment_orders_source_wallet_account_id_fkey"
+            columns: ["source_wallet_account_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
             referencedColumns: ["account_id"]
           },
         ]
@@ -1310,6 +1394,13 @@ export type Database = {
             referencedColumns: ["account_id"]
           },
           {
+            foreignKeyName: "sell_transactions_received_into_account_id_fkey"
+            columns: ["received_into_account_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
+          },
+          {
             foreignKeyName: "sell_transactions_sold_from_account_id_fkey"
             columns: ["sold_from_account_id"]
             isOneToOne: false
@@ -1328,6 +1419,13 @@ export type Database = {
             columns: ["sold_from_account_id"]
             isOneToOne: false
             referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "sell_transactions_sold_from_account_id_fkey"
+            columns: ["sold_from_account_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
             referencedColumns: ["account_id"]
           },
         ]
@@ -1608,6 +1706,13 @@ export type Database = {
             referencedColumns: ["account_id"]
           },
           {
+            foreignKeyName: "trade_movements_from_account_id_fkey"
+            columns: ["from_account_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
+          },
+          {
             foreignKeyName: "trade_movements_from_customer_id_fkey"
             columns: ["from_customer_id"]
             isOneToOne: false
@@ -1640,6 +1745,13 @@ export type Database = {
             columns: ["to_account_id"]
             isOneToOne: false
             referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "trade_movements_to_account_id_fkey"
+            columns: ["to_account_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
             referencedColumns: ["account_id"]
           },
           {
@@ -1721,6 +1833,13 @@ export type Database = {
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "trade_profit_collections_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
             referencedColumns: ["account_id"]
           },
           {
@@ -1813,6 +1932,13 @@ export type Database = {
             referencedColumns: ["account_id"]
           },
           {
+            foreignKeyName: "transfers_from_account_id_fkey"
+            columns: ["from_account_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
+          },
+          {
             foreignKeyName: "transfers_to_account_id_fkey"
             columns: ["to_account_id"]
             isOneToOne: false
@@ -1831,6 +1957,13 @@ export type Database = {
             columns: ["to_account_id"]
             isOneToOne: false
             referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "transfers_to_account_id_fkey"
+            columns: ["to_account_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
             referencedColumns: ["account_id"]
           },
         ]
@@ -1947,7 +2080,31 @@ export type Database = {
             referencedRelation: "customer_wallet_balances"
             referencedColumns: ["account_id"]
           },
+          {
+            foreignKeyName: "inventory_lots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
+          },
         ]
+      }
+      profit_by_account: {
+        Row: {
+          account_currency: string | null
+          account_id: string | null
+          account_name: string | null
+          ali_profit: number | null
+          gross_profit: number | null
+          milad_profit: number | null
+          received_amount: number | null
+          received_currency: string | null
+          sell_count: number | null
+          sold_amount: number | null
+          sold_currency: string | null
+          total_cost: number | null
+        }
+        Relationships: []
       }
       profit_by_lot: {
         Row: {
@@ -1965,6 +2122,115 @@ export type Database = {
           total_received: number | null
         }
         Relationships: []
+      }
+      profit_by_source: {
+        Row: {
+          cost_basis_currency: string | null
+          currency: string | null
+          gross_profit: number | null
+          sold_amount: number | null
+          source_name: string | null
+          source_person: string | null
+          source_ref_id: string | null
+          source_ref_type: string | null
+          total_cost: number | null
+          total_received: number | null
+        }
+        Relationships: []
+      }
+      remaining_by_cost_rate: {
+        Row: {
+          account_id: string | null
+          account_name: string | null
+          cost_basis_currency: string | null
+          cost_basis_rate: number | null
+          currency: string | null
+          lot_count: number | null
+          remaining_amount: number | null
+          remaining_cost: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_lots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "inventory_lots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_lots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "inventory_lots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
+          },
+        ]
+      }
+      sale_allocations_view: {
+        Row: {
+          account_id: string | null
+          account_name: string | null
+          amount_consumed: number | null
+          cost_amount: number | null
+          cost_basis_currency: string | null
+          cost_rate: number | null
+          currency: string | null
+          entry_date: string | null
+          gross_profit: number | null
+          id: string | null
+          lot_code: string | null
+          received_amount: number | null
+          received_currency: string | null
+          sell_id: string | null
+          sell_rate: number | null
+          source_description: string | null
+          source_ref_id: string | null
+          source_ref_type: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_lots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "inventory_lots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_lots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "inventory_lots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
+          },
+        ]
       }
       service_charge_daily: {
         Row: {
