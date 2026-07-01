@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { Plus, FileText } from "lucide-react";
 import { SettlementStatusBadge } from "@/components/settlement-status-badge";
 import { TxnDetailDialog } from "@/components/txn-detail-dialog";
+import { UseMarketRateButton } from "@/components/use-market-rate-button";
 import { Badge } from "@/components/ui/badge";
 import { RecordActions } from "@/components/record-actions";
 import { EDIT_FIELDS } from "@/lib/edit-fields";
@@ -114,7 +115,19 @@ function Page() {
                   </Select>
                 </F>
                 <F label="Bought amount"><Input type="number" step="0.0001" value={f.bought_amount} onChange={(e) => setF({ ...f, bought_amount: e.target.value })} required /></F>
-                <F label="Buy rate (paid per 1 bought)"><Input type="number" step="0.00000001" value={f.buy_rate} onChange={(e) => setF({ ...f, buy_rate: e.target.value })} required /></F>
+                <F label="Buy rate (paid per 1 bought)">
+                  <div className="flex flex-col gap-1">
+                    <Input type="number" step="0.00000001" value={f.buy_rate} onChange={(e) => setF({ ...f, buy_rate: e.target.value })} required />
+                    {(f.bought_currency === "AED" || f.bought_currency === "USD") && (
+                      <UseMarketRateButton
+                        currency={f.bought_currency}
+                        which="buy"
+                        onApply={(r: number) => setF({ ...f, buy_rate: String(r) })}
+                        className="self-start"
+                      />
+                    )}
+                  </div>
+                </F>
                 <F label="Paid currency">
                   <Select value={f.paid_currency} onValueChange={(v) => setF({ ...f, paid_currency: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>

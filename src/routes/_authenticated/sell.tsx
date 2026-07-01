@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { RecordActions } from "@/components/record-actions";
 import { EDIT_FIELDS } from "@/lib/edit-fields";
+import { UseMarketRateButton } from "@/components/use-market-rate-button";
 
 export const Route = createFileRoute("/_authenticated/sell")({ component: Page });
 
@@ -181,7 +182,19 @@ function Page() {
                   </Select>
                 </F>
                 <F label="Sold amount"><Input type="number" step="0.0001" value={f.sold_amount} onChange={(e) => setF({ ...f, sold_amount: e.target.value })} required /></F>
-                <F label="Sell rate (received per 1 sold)"><Input type="number" step="0.00000001" value={f.sell_rate} onChange={(e) => setF({ ...f, sell_rate: e.target.value })} required /></F>
+                <F label="Sell rate (received per 1 sold)">
+                  <div className="flex flex-col gap-1">
+                    <Input type="number" step="0.00000001" value={f.sell_rate} onChange={(e) => setF({ ...f, sell_rate: e.target.value })} required />
+                    {(f.sold_currency === "AED" || f.sold_currency === "USD") && (
+                      <UseMarketRateButton
+                        currency={f.sold_currency}
+                        which="sell"
+                        onApply={(r: number) => setF({ ...f, sell_rate: String(r) })}
+                        className="self-start"
+                      />
+                    )}
+                  </div>
+                </F>
                 <F label="Received currency">
                   <Select value={f.received_currency} onValueChange={(v) => setF({ ...f, received_currency: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>

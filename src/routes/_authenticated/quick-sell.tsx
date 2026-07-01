@@ -1,3 +1,4 @@
+import { UseMarketRateButton } from "@/components/use-market-rate-button";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -240,6 +241,15 @@ function QuickSellPage() {
               </Select>
               <NumberInput currency="" value={sellRate} onChange={(e) => setSellRate(e.target.value)} placeholder={`${receivedCurrency} per 1 ${soldCurrency}`} />
             </div>
+            {(soldCurrency === "AED" || soldCurrency === "USD") && (
+              <div className="mt-2">
+                <UseMarketRateButton
+                  currency={soldCurrency}
+                  which="sell"
+                  onApply={(r: number) => setSellRate(String(r))}
+                />
+              </div>
+            )}
             <p className="text-xs text-muted-foreground mt-2">
               Money-in currency = <span className="font-semibold">{receivedCurrency}</span>. Customer pays you in {receivedCurrency}. Receiving account below is filtered to {receivedCurrency} only.
             </p>
