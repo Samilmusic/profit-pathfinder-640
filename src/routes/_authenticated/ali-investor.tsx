@@ -64,6 +64,15 @@ function AliInvestor() {
     },
   });
 
+  const cyclesQ = useQuery({
+    queryKey: ["ali_trade_cycles"],
+    queryFn: async () =>
+      (await supabase
+        .from("trade_cycles")
+        .select("id,status,initial_currency,intermediate_received,intermediate_used,realized_profit,realized_profit_currency,estimated_profit,ali_share_pct,ali_profit")
+        .is("deleted_at", null)).data ?? [],
+  });
+
   const allLots = (lotsQ.data ?? []) as any[];
   const activeLots = allLots.filter((l) => Number(l.remaining_amount) > 0 && l.status !== "depleted");
   const depletedLots = allLots.filter((l) => Number(l.remaining_amount) <= 0 || l.status === "depleted");
@@ -93,6 +102,25 @@ function AliInvestor() {
     byLocation.set(key, cur);
   }
   const inventoryByLocation = Array.from(byLocation.values());
+
+  // Money-in-transit + profit KPIs derived from trade cycles (Ali's share).
+  const cycles = (cyclesQ.data ?? []) as any[];
+  const openCycles = cycles.filter((c) => c.status === "open" || c.status === "partially_closed" || c.status === "profit_pending");
+  const moneyInTransitByCcy = new Map<string, number>();
+  for (const c of openCycles) {
+    const outstanding = Number(c.intermediate_received || 0) - Number(c.intermediate_used || 0);
+    if (outstanding > 0 && c.initial_currency) {
+      const key = c.initial_currency;
+      moneyInTransitByCcy.set(key, (moneyInTransitByCcy.get(key) ?? 0) + outstanding);
+    }
+  }
+  const realizedProfitAli = cycles
+    .filter((c) => c.status === "completed" || c.status === "loss")
+    .reduce((s, c) => s + Number(c.ali_profit || 0), 0);
+  const pendingProfitAli = openCycles.reduce(
+    (s, c) => s + Number(c.estimated_profit || 0) * (Number(c.ali_share_pct ?? 50) / 100),
+    0,
+  );
 
   const c = capQ.data as any;
   const profit = Number(c?.total_profit_share ?? 0);
@@ -142,6 +170,40 @@ function AliInvestor() {
         <Kpi label="Fully used lots" value={String(depletedLots.length)} />
         <Kpi label="Profit share (all-time)" value={fmtProfit(profit)} tone="success" />
       </div>
+
+      <Card className="backdrop-blur bg-card/80 mb-6" style={{ boxShadow: "var(--shadow-soft)" }}>
+        <CardHeader><CardTitle className="text-base">Capital state</CardTitle></CardHeader>
+        <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="rounded-lg border p-4 bg-background/60">
+            <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Money in transit</div>
+            {moneyInTransitByCcy.size === 0 ? (
+              <div className="text-sm text-muted-foreground mt-2">None</div>
+            ) : (
+              <div className="mt-1 space-y-0.5">
+                {Array.from(moneyInTransitByCcy.entries()).map(([ccy, amt]) => (
+                  <div key={ccy} className="font-mono text-sm">{fmt(amt, ccy)} {ccy}</div>
+                ))}
+              </div>
+            )}
+            <div className="text-[10px] text-muted-foreground mt-1">Sold but not yet bought back</div>
+          </div>
+          <div className="rounded-lg border p-4 bg-background/60">
+            <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Locked capital</div>
+            <div className="text-2xl font-semibold tracking-tight font-mono mt-1">{openCycles.length}</div>
+            <div className="text-[10px] text-muted-foreground mt-1">Open cycles holding capital</div>
+          </div>
+          <div className="rounded-lg border p-4 bg-background/60">
+            <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Realized profit (Ali)</div>
+            <div className="text-2xl font-semibold tracking-tight font-mono mt-1 text-emerald-600">{fmtProfit(realizedProfitAli)}</div>
+            <div className="text-[10px] text-muted-foreground mt-1">Closed cycles only</div>
+          </div>
+          <div className="rounded-lg border p-4 bg-background/60">
+            <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Pending profit (Ali)</div>
+            <div className="text-2xl font-semibold tracking-tight font-mono mt-1">{fmtProfit(pendingProfitAli)}</div>
+            <div className="text-[10px] text-muted-foreground mt-1">Estimated from open cycles</div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <Kpi label="Personal expenses (paid)" value={fmtProfit(paidExpenses)} />
