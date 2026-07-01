@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AccountSelect, useCustomers } from "@/components/account-select";
+import { CustomerBankAccountPicker, touchBankAccount } from "@/components/customer-bank-account-picker";
+import { maskAccount } from "@/components/customer-bank-account-form";
 import { CURRENCIES, fmt } from "@/lib/exchange";
 import { toast } from "sonner";
 import { Plus, FileText } from "lucide-react";
@@ -33,7 +35,7 @@ function Page() {
   const [f, setF] = useState({
     entry_date: today, sold_currency: "AED", sold_amount: "", sell_rate: "",
     received_currency: "IRR", sold_from_account_id: "", received_into_account_id: "",
-    customer_id: "", customer_phone: "", customer_account_ref: "",
+    customer_id: "", customer_phone: "", customer_account_ref: "", customer_bank_account_id: "",
     milad_pct: "50", ali_pct: "50", notes: "",
     creates_cycle: true,
   });
@@ -123,6 +125,7 @@ function Page() {
       };
       const { error } = await supabase.from("sell_transactions").insert(payload);
       if (error) throw error;
+      await touchBankAccount(f.customer_bank_account_id);
     },
     onSuccess: () => { toast.success("Sell recorded"); qc.invalidateQueries(); setOpen(false); setF({ ...f, sold_amount: "", sell_rate: "", notes: "" }); },
     onError: (e: any) => toast.error(e.message),
@@ -146,6 +149,18 @@ function Page() {
                     <SelectContent>{(customers.data ?? []).map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                   </Select>
                 </F>
+                <div className="md:col-span-2">
+                  <CustomerBankAccountPicker
+                    customerId={f.customer_id || null}
+                    currency={f.received_currency}
+                    value={f.customer_bank_account_id || null}
+                    onChange={(id, row) => setF((prev) => ({
+                      ...prev,
+                      customer_bank_account_id: id ?? "",
+                      customer_account_ref: row ? `${row.bank_name} ${row.currency} ${maskAccount(row.card_number || row.account_number || row.iban) || ""}`.trim() : prev.customer_account_ref,
+                    }))}
+                  />
+                </div>
                 <F label="Sold currency">
                   <Select value={f.sold_currency} onValueChange={(v) => setF({ ...f, sold_currency: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>

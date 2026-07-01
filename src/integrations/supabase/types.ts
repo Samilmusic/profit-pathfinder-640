@@ -505,6 +505,89 @@ export type Database = {
           },
         ]
       }
+      customer_bank_accounts: {
+        Row: {
+          account_number: string | null
+          bank_name: string
+          cancel_reason: string | null
+          card_number: string | null
+          country: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          customer_id: string
+          deleted_at: string | null
+          holder_name: string | null
+          iban: string | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          last_used_at: string | null
+          nickname: string | null
+          notes: string | null
+          phone: string | null
+          sort_code: string | null
+          swift_bic: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_number?: string | null
+          bank_name: string
+          cancel_reason?: string | null
+          card_number?: string | null
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency: string
+          customer_id: string
+          deleted_at?: string | null
+          holder_name?: string | null
+          iban?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          last_used_at?: string | null
+          nickname?: string | null
+          notes?: string | null
+          phone?: string | null
+          sort_code?: string | null
+          swift_bic?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_number?: string | null
+          bank_name?: string
+          cancel_reason?: string | null
+          card_number?: string | null
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          customer_id?: string
+          deleted_at?: string | null
+          holder_name?: string | null
+          iban?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          last_used_at?: string | null
+          nickname?: string | null
+          notes?: string | null
+          phone?: string | null
+          sort_code?: string | null
+          swift_bic?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_bank_accounts_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_credit: {
         Row: {
           base_currency: string

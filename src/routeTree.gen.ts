@@ -38,6 +38,7 @@ import { Route as AuthenticatedAccountsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedBroughtInIndexRouteImport } from './routes/_authenticated/brought-in.index'
 import { Route as AuthenticatedTradesIdRouteImport } from './routes/_authenticated/trades.$id'
 import { Route as AuthenticatedDepositsNewRouteImport } from './routes/_authenticated/deposits.new'
+import { Route as AuthenticatedCustomersIdRouteImport } from './routes/_authenticated/customers.$id'
 import { Route as AuthenticatedBroughtInNewRouteImport } from './routes/_authenticated/brought-in.new'
 
 const AuthRoute = AuthRouteImport.update({
@@ -192,6 +193,12 @@ const AuthenticatedDepositsNewRoute =
     path: '/new',
     getParentRoute: () => AuthenticatedDepositsRoute,
   } as any)
+const AuthenticatedCustomersIdRoute =
+  AuthenticatedCustomersIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => AuthenticatedCustomersRoute,
+  } as any)
 const AuthenticatedBroughtInNewRoute =
   AuthenticatedBroughtInNewRouteImport.update({
     id: '/brought-in/new',
@@ -207,7 +214,7 @@ export interface FileRoutesByFullPath {
   '/audit': typeof AuthenticatedAuditRoute
   '/buy': typeof AuthenticatedBuyRoute
   '/command-center': typeof AuthenticatedCommandCenterRoute
-  '/customers': typeof AuthenticatedCustomersRoute
+  '/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/daily-closing': typeof AuthenticatedDailyClosingRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deposits': typeof AuthenticatedDepositsRouteWithChildren
@@ -226,6 +233,7 @@ export interface FileRoutesByFullPath {
   '/trust': typeof AuthenticatedTrustRoute
   '/wallets': typeof AuthenticatedWalletsRoute
   '/brought-in/new': typeof AuthenticatedBroughtInNewRoute
+  '/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/deposits/new': typeof AuthenticatedDepositsNewRoute
   '/trades/$id': typeof AuthenticatedTradesIdRoute
   '/brought-in/': typeof AuthenticatedBroughtInIndexRoute
@@ -238,7 +246,7 @@ export interface FileRoutesByTo {
   '/audit': typeof AuthenticatedAuditRoute
   '/buy': typeof AuthenticatedBuyRoute
   '/command-center': typeof AuthenticatedCommandCenterRoute
-  '/customers': typeof AuthenticatedCustomersRoute
+  '/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/daily-closing': typeof AuthenticatedDailyClosingRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deposits': typeof AuthenticatedDepositsRouteWithChildren
@@ -257,6 +265,7 @@ export interface FileRoutesByTo {
   '/trust': typeof AuthenticatedTrustRoute
   '/wallets': typeof AuthenticatedWalletsRoute
   '/brought-in/new': typeof AuthenticatedBroughtInNewRoute
+  '/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/deposits/new': typeof AuthenticatedDepositsNewRoute
   '/trades/$id': typeof AuthenticatedTradesIdRoute
   '/brought-in': typeof AuthenticatedBroughtInIndexRoute
@@ -271,7 +280,7 @@ export interface FileRoutesById {
   '/_authenticated/audit': typeof AuthenticatedAuditRoute
   '/_authenticated/buy': typeof AuthenticatedBuyRoute
   '/_authenticated/command-center': typeof AuthenticatedCommandCenterRoute
-  '/_authenticated/customers': typeof AuthenticatedCustomersRoute
+  '/_authenticated/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/_authenticated/daily-closing': typeof AuthenticatedDailyClosingRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/deposits': typeof AuthenticatedDepositsRouteWithChildren
@@ -290,6 +299,7 @@ export interface FileRoutesById {
   '/_authenticated/trust': typeof AuthenticatedTrustRoute
   '/_authenticated/wallets': typeof AuthenticatedWalletsRoute
   '/_authenticated/brought-in/new': typeof AuthenticatedBroughtInNewRoute
+  '/_authenticated/customers/$id': typeof AuthenticatedCustomersIdRoute
   '/_authenticated/deposits/new': typeof AuthenticatedDepositsNewRoute
   '/_authenticated/trades/$id': typeof AuthenticatedTradesIdRoute
   '/_authenticated/brought-in/': typeof AuthenticatedBroughtInIndexRoute
@@ -323,6 +333,7 @@ export interface FileRouteTypes {
     | '/trust'
     | '/wallets'
     | '/brought-in/new'
+    | '/customers/$id'
     | '/deposits/new'
     | '/trades/$id'
     | '/brought-in/'
@@ -354,6 +365,7 @@ export interface FileRouteTypes {
     | '/trust'
     | '/wallets'
     | '/brought-in/new'
+    | '/customers/$id'
     | '/deposits/new'
     | '/trades/$id'
     | '/brought-in'
@@ -386,6 +398,7 @@ export interface FileRouteTypes {
     | '/_authenticated/trust'
     | '/_authenticated/wallets'
     | '/_authenticated/brought-in/new'
+    | '/_authenticated/customers/$id'
     | '/_authenticated/deposits/new'
     | '/_authenticated/trades/$id'
     | '/_authenticated/brought-in/'
@@ -602,6 +615,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDepositsNewRouteImport
       parentRoute: typeof AuthenticatedDepositsRoute
     }
+    '/_authenticated/customers/$id': {
+      id: '/_authenticated/customers/$id'
+      path: '/$id'
+      fullPath: '/customers/$id'
+      preLoaderRoute: typeof AuthenticatedCustomersIdRouteImport
+      parentRoute: typeof AuthenticatedCustomersRoute
+    }
     '/_authenticated/brought-in/new': {
       id: '/_authenticated/brought-in/new'
       path: '/brought-in/new'
@@ -611,6 +631,20 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AuthenticatedCustomersRouteChildren {
+  AuthenticatedCustomersIdRoute: typeof AuthenticatedCustomersIdRoute
+}
+
+const AuthenticatedCustomersRouteChildren: AuthenticatedCustomersRouteChildren =
+  {
+    AuthenticatedCustomersIdRoute: AuthenticatedCustomersIdRoute,
+  }
+
+const AuthenticatedCustomersRouteWithChildren =
+  AuthenticatedCustomersRoute._addFileChildren(
+    AuthenticatedCustomersRouteChildren,
+  )
 
 interface AuthenticatedDepositsRouteChildren {
   AuthenticatedDepositsNewRoute: typeof AuthenticatedDepositsNewRoute
@@ -642,7 +676,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAuditRoute: typeof AuthenticatedAuditRoute
   AuthenticatedBuyRoute: typeof AuthenticatedBuyRoute
   AuthenticatedCommandCenterRoute: typeof AuthenticatedCommandCenterRoute
-  AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRoute
+  AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRouteWithChildren
   AuthenticatedDailyClosingRoute: typeof AuthenticatedDailyClosingRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDepositsRoute: typeof AuthenticatedDepositsRouteWithChildren
@@ -670,7 +704,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAuditRoute: AuthenticatedAuditRoute,
   AuthenticatedBuyRoute: AuthenticatedBuyRoute,
   AuthenticatedCommandCenterRoute: AuthenticatedCommandCenterRoute,
-  AuthenticatedCustomersRoute: AuthenticatedCustomersRoute,
+  AuthenticatedCustomersRoute: AuthenticatedCustomersRouteWithChildren,
   AuthenticatedDailyClosingRoute: AuthenticatedDailyClosingRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDepositsRoute: AuthenticatedDepositsRouteWithChildren,
