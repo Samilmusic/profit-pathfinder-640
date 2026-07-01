@@ -231,6 +231,15 @@ function Page() {
                 <F label="Milad %"><Input type="number" value={f.milad_pct} onChange={(e) => setF({ ...f, milad_pct: e.target.value, ali_pct: String(100 - Number(e.target.value)) })} /></F>
                 <F label="Ali %"><Input type="number" value={f.ali_pct} onChange={(e) => setF({ ...f, ali_pct: e.target.value, milad_pct: String(100 - Number(e.target.value)) })} /></F>
                 <div className="md:col-span-2"><F label="Notes"><Textarea value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} /></F></div>
+                <div className="md:col-span-2 flex items-center justify-between rounded-md border border-dashed p-3 bg-muted/30">
+                  <div>
+                    <div className="text-sm font-medium">Create Trade Cycle (Cycle Profit)</div>
+                    <div className="text-xs text-muted-foreground">
+                      Track profit only when {f.received_currency} is later converted back to {f.sold_currency}. Off = instant profit.
+                    </div>
+                  </div>
+                  <Switch checked={f.creates_cycle} onCheckedChange={(v) => setF({ ...f, creates_cycle: v })} />
+                </div>
                 <div className="md:col-span-2 flex justify-end gap-2">
                   <Button variant="ghost" type="button" onClick={() => setOpen(false)}>Cancel</Button>
                   <Button
