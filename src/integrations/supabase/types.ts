@@ -1182,6 +1182,359 @@ export type Database = {
           },
         ]
       }
+      trade_cycles: {
+        Row: {
+          ali_profit: number | null
+          ali_share_pct: number | null
+          base_currency: string
+          capital_amount: number | null
+          capital_currency: string | null
+          closed_at: string | null
+          closed_by: string | null
+          code: string | null
+          counterparty_id: string | null
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          deleted_at: string | null
+          entry_date: string
+          expected_profit: number | null
+          expected_profit_currency: string | null
+          final_profit_confirmed: boolean
+          id: string
+          milad_profit: number | null
+          milad_share_pct: number | null
+          net_profit: number | null
+          notes: string | null
+          pending_profit: number | null
+          quote_currency: string | null
+          received_profit: number | null
+          related_expenses: number | null
+          status: Database["public"]["Enums"]["trade_status"]
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          ali_profit?: number | null
+          ali_share_pct?: number | null
+          base_currency?: string
+          capital_amount?: number | null
+          capital_currency?: string | null
+          closed_at?: string | null
+          closed_by?: string | null
+          code?: string | null
+          counterparty_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          deleted_at?: string | null
+          entry_date?: string
+          expected_profit?: number | null
+          expected_profit_currency?: string | null
+          final_profit_confirmed?: boolean
+          id?: string
+          milad_profit?: number | null
+          milad_share_pct?: number | null
+          net_profit?: number | null
+          notes?: string | null
+          pending_profit?: number | null
+          quote_currency?: string | null
+          received_profit?: number | null
+          related_expenses?: number | null
+          status?: Database["public"]["Enums"]["trade_status"]
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ali_profit?: number | null
+          ali_share_pct?: number | null
+          base_currency?: string
+          capital_amount?: number | null
+          capital_currency?: string | null
+          closed_at?: string | null
+          closed_by?: string | null
+          code?: string | null
+          counterparty_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          deleted_at?: string | null
+          entry_date?: string
+          expected_profit?: number | null
+          expected_profit_currency?: string | null
+          final_profit_confirmed?: boolean
+          id?: string
+          milad_profit?: number | null
+          milad_share_pct?: number | null
+          net_profit?: number | null
+          notes?: string | null
+          pending_profit?: number | null
+          quote_currency?: string | null
+          received_profit?: number | null
+          related_expenses?: number | null
+          status?: Database["public"]["Enums"]["trade_status"]
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_cycles_counterparty_id_fkey"
+            columns: ["counterparty_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_cycles_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trade_movements: {
+        Row: {
+          amount: number
+          completion_note: string | null
+          counterparty_id: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          deleted_at: string | null
+          doc_required: boolean
+          entry_date: string
+          from_account_id: string | null
+          from_customer_id: string | null
+          from_kind: Database["public"]["Enums"]["party_kind"] | null
+          from_label: string | null
+          id: string
+          movement_type: Database["public"]["Enums"]["movement_type"]
+          notes: string | null
+          purpose: string | null
+          rate: number | null
+          related_customer_id: string | null
+          seq: number
+          status: Database["public"]["Enums"]["movement_status"]
+          to_account_id: string | null
+          to_customer_id: string | null
+          to_kind: Database["public"]["Enums"]["party_kind"] | null
+          to_label: string | null
+          trade_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          completion_note?: string | null
+          counterparty_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency: string
+          deleted_at?: string | null
+          doc_required?: boolean
+          entry_date?: string
+          from_account_id?: string | null
+          from_customer_id?: string | null
+          from_kind?: Database["public"]["Enums"]["party_kind"] | null
+          from_label?: string | null
+          id?: string
+          movement_type: Database["public"]["Enums"]["movement_type"]
+          notes?: string | null
+          purpose?: string | null
+          rate?: number | null
+          related_customer_id?: string | null
+          seq?: number
+          status?: Database["public"]["Enums"]["movement_status"]
+          to_account_id?: string | null
+          to_customer_id?: string | null
+          to_kind?: Database["public"]["Enums"]["party_kind"] | null
+          to_label?: string | null
+          trade_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          completion_note?: string | null
+          counterparty_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          deleted_at?: string | null
+          doc_required?: boolean
+          entry_date?: string
+          from_account_id?: string | null
+          from_customer_id?: string | null
+          from_kind?: Database["public"]["Enums"]["party_kind"] | null
+          from_label?: string | null
+          id?: string
+          movement_type?: Database["public"]["Enums"]["movement_type"]
+          notes?: string | null
+          purpose?: string | null
+          rate?: number | null
+          related_customer_id?: string | null
+          seq?: number
+          status?: Database["public"]["Enums"]["movement_status"]
+          to_account_id?: string | null
+          to_customer_id?: string | null
+          to_kind?: Database["public"]["Enums"]["party_kind"] | null
+          to_label?: string | null
+          trade_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_movements_counterparty_id_fkey"
+            columns: ["counterparty_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_movements_from_account_id_fkey"
+            columns: ["from_account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "trade_movements_from_account_id_fkey"
+            columns: ["from_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_movements_from_account_id_fkey"
+            columns: ["from_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "trade_movements_from_customer_id_fkey"
+            columns: ["from_customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_movements_related_customer_id_fkey"
+            columns: ["related_customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_movements_to_account_id_fkey"
+            columns: ["to_account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "trade_movements_to_account_id_fkey"
+            columns: ["to_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_movements_to_account_id_fkey"
+            columns: ["to_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "trade_movements_to_customer_id_fkey"
+            columns: ["to_customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_movements_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "trade_cycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trade_profit_collections: {
+        Row: {
+          account_id: string | null
+          amount: number
+          created_at: string
+          created_by: string | null
+          currency: string
+          entry_date: string
+          id: string
+          notes: string | null
+          received_by: string | null
+          status: Database["public"]["Enums"]["profit_status"]
+          trade_id: string
+          updated_at: string
+        }
+        Insert: {
+          account_id?: string | null
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          currency: string
+          entry_date?: string
+          id?: string
+          notes?: string | null
+          received_by?: string | null
+          status?: Database["public"]["Enums"]["profit_status"]
+          trade_id: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string | null
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          entry_date?: string
+          id?: string
+          notes?: string | null
+          received_by?: string | null
+          status?: Database["public"]["Enums"]["profit_status"]
+          trade_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_profit_collections_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "trade_profit_collections_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_profit_collections_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "trade_profit_collections_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "trade_cycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transfers: {
         Row: {
           amount: number
@@ -1433,6 +1786,10 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      recompute_trade_totals: {
+        Args: { _trade_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       account_owner: "milad" | "ali" | "shared" | "other"
@@ -1496,7 +1853,32 @@ export type Database = {
         | "held_customer"
         | "pending_delivery"
         | "pending_deposit"
+      movement_status:
+        | "pending"
+        | "in_transit"
+        | "completed"
+        | "failed"
+        | "waived"
+      movement_type:
+        | "send_money"
+        | "receive_money"
+        | "pay_third_party"
+        | "receive_third_party"
+        | "profit_collection"
+        | "expense"
+        | "service_charge"
+        | "internal_transfer"
+        | "settlement"
       paid_by: "milad" | "ali"
+      party_kind:
+        | "our_account"
+        | "customer_account"
+        | "customer"
+        | "ali"
+        | "milad"
+        | "external_person"
+        | "cash"
+        | "other"
       payment_method:
         | "bank_transfer"
         | "cash_delivery"
@@ -1504,6 +1886,7 @@ export type Database = {
         | "internal"
         | "international"
         | "other"
+      profit_status: "pending" | "received" | "waived" | "kept_in_wallet"
       settlement_status:
         | "draft"
         | "awaiting_payment"
@@ -1511,6 +1894,13 @@ export type Database = {
         | "awaiting_delivery"
         | "currency_delivered"
         | "awaiting_receipt"
+        | "completed"
+        | "cancelled"
+      trade_status:
+        | "draft"
+        | "in_progress"
+        | "awaiting_profit"
+        | "awaiting_docs"
         | "completed"
         | "cancelled"
       txn_owner: "milad" | "ali" | "shared"
@@ -1708,7 +2098,35 @@ export const Constants = {
         "pending_delivery",
         "pending_deposit",
       ],
+      movement_status: [
+        "pending",
+        "in_transit",
+        "completed",
+        "failed",
+        "waived",
+      ],
+      movement_type: [
+        "send_money",
+        "receive_money",
+        "pay_third_party",
+        "receive_third_party",
+        "profit_collection",
+        "expense",
+        "service_charge",
+        "internal_transfer",
+        "settlement",
+      ],
       paid_by: ["milad", "ali"],
+      party_kind: [
+        "our_account",
+        "customer_account",
+        "customer",
+        "ali",
+        "milad",
+        "external_person",
+        "cash",
+        "other",
+      ],
       payment_method: [
         "bank_transfer",
         "cash_delivery",
@@ -1717,6 +2135,7 @@ export const Constants = {
         "international",
         "other",
       ],
+      profit_status: ["pending", "received", "waived", "kept_in_wallet"],
       settlement_status: [
         "draft",
         "awaiting_payment",
@@ -1724,6 +2143,14 @@ export const Constants = {
         "awaiting_delivery",
         "currency_delivered",
         "awaiting_receipt",
+        "completed",
+        "cancelled",
+      ],
+      trade_status: [
+        "draft",
+        "in_progress",
+        "awaiting_profit",
+        "awaiting_docs",
         "completed",
         "cancelled",
       ],

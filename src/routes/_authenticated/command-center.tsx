@@ -10,6 +10,7 @@ import {
   AlertTriangle, HandCoins, Users, FileWarning, Truck, Wallet,
   ClipboardList, TrendingDown, CalendarClock, Send, ArrowUpFromLine,
 } from "lucide-react";
+import { Repeat } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/command-center")({
   component: CommandCenter,
@@ -47,6 +48,20 @@ function CommandCenter() {
     queryFn: async () => (await supabase.from("daily_closings").select("*").eq("closing_date", today)).data ?? [],
   });
 
+  const tradesQ = useQuery({
+    queryKey: ["cc_trades"],
+    queryFn: async () => (await supabase.from("trade_cycles" as any)
+      .select("*, customer:customers!trade_cycles_customer_id_fkey(name)")
+      .is("deleted_at", null)
+      .not("status", "in", "(completed,cancelled)")).data ?? [],
+  });
+  const openMovementsQ = useQuery({
+    queryKey: ["cc_open_movs"],
+    queryFn: async () => (await supabase.from("trade_movements" as any)
+      .select("*").is("deleted_at", null)
+      .not("status", "in", "(completed,waived,failed)")).data ?? [],
+  });
+
   const balances = balancesQ.data ?? [];
   const heldMilad = balances.filter((b: any) => b.account_type === "person_holding" && b.holder_type === "milad" && Math.abs(Number(b.current_balance || 0)) > 0.0001);
   const heldAli = balances.filter((b: any) => b.account_type === "person_holding" && b.holder_type === "ali" && Math.abs(Number(b.current_balance || 0)) > 0.0001);
@@ -69,6 +84,14 @@ function CommandCenter() {
   const walletDebt = (walletsQ.data ?? []).filter((w: any) => Number(w.balance) < -0.0001);
   const openTxns = (buysQ.data?.length ?? 0) + (sellsQ.data?.length ?? 0);
   const closingMissing = (closingQ.data ?? []).length === 0;
+
+  const trades: any[] = tradesQ.data ?? [];
+  const openMovs: any[] = openMovementsQ.data ?? [];
+  const tradesAwaitingProfit = trades.filter((t) => Number(t.received_profit || 0) < Number(t.expected_profit || 0));
+  const tradesWithOpenLegs = trades.filter((t) => openMovs.some((m) => m.trade_id === t.id));
+  const thirdPartyPending = openMovs.filter((m) =>
+    m.movement_type === "pay_third_party" || m.movement_type === "receive_third_party"
+  );
 
   return (
     <>
@@ -175,6 +198,33 @@ function CommandCenter() {
           empty="Closed for today" to="/daily-closing"
         >
           <Line label={today} value={closingMissing ? "Not closed" : "Closed"} />
+        </ActionCard>
+
+        <ActionCard
+          icon={Repeat} tone="warn" title="Trades — profit pending" count={tradesAwaitingProfit.length}
+          empty="All trade profits collected" to="/trades"
+        >
+          {tradesAwaitingProfit.slice(0, 5).map((t: any) => (
+            <Line key={t.id} label={`${t.code} · ${t.customer?.name ?? "—"}`} value={fmt((Number(t.expected_profit || 0) - Number(t.received_profit || 0)), t.expected_profit_currency)} />
+          ))}
+        </ActionCard>
+
+        <ActionCard
+          icon={Repeat} tone="warn" title="Trades — open legs" count={tradesWithOpenLegs.length}
+          empty="All trade movements settled" to="/trades"
+        >
+          {tradesWithOpenLegs.slice(0, 5).map((t: any) => (
+            <Line key={t.id} label={`${t.code} · ${t.customer?.name ?? "—"}`} value={`${openMovs.filter((m) => m.trade_id === t.id).length} open`} />
+          ))}
+        </ActionCard>
+
+        <ActionCard
+          icon={Send} tone="warn" title="Third-party payments pending" count={thirdPartyPending.length}
+          empty="No third-party payments pending" to="/trades"
+        >
+          {thirdPartyPending.slice(0, 5).map((m: any) => (
+            <Line key={m.id} label={m.to_label || m.from_label || m.movement_type} value={fmt(m.amount, m.currency)} />
+          ))}
         </ActionCard>
       </div>
     </>

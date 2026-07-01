@@ -27,6 +27,7 @@ import {
   History,
   Target,
 } from "lucide-react";
+import { Repeat } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -36,6 +37,7 @@ const nav = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/command-center", label: "Command Center", icon: Target },
   { to: "/quick-sell", label: "Quick Sell", icon: Zap },
+  { to: "/trades", label: "Trade Cycles", icon: Repeat },
   { to: "/brought-in", label: "Brought In", icon: ArrowDownToLine },
   { to: "/buy", label: "Buy", icon: ShoppingCart },
   { to: "/sell", label: "Sell", icon: TrendingUp },
