@@ -18,13 +18,16 @@ import {
   Shield,
   ClipboardList,
   HandCoins,
+  Zap,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { GlobalSearchTrigger } from "@/components/global-search";
 
 const nav = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/quick-sell", label: "Quick Sell", icon: Zap },
   { to: "/brought-in", label: "Brought In", icon: ArrowDownToLine },
   { to: "/buy", label: "Buy", icon: ShoppingCart },
   { to: "/sell", label: "Sell", icon: TrendingUp },
@@ -38,6 +41,14 @@ const nav = [
   { to: "/statements", label: "Statements", icon: BookOpen },
   { to: "/daily-closing", label: "Daily Closing", icon: CalendarCheck },
   { to: "/roles", label: "Roles", icon: Shield },
+] as const;
+
+const mobileNav = [
+  { to: "/dashboard", label: "Home", icon: LayoutDashboard },
+  { to: "/quick-sell", label: "Sell", icon: Zap },
+  { to: "/buy", label: "Buy", icon: ShoppingCart },
+  { to: "/expenses", label: "Expense", icon: Receipt },
+  { to: "/pending-settlements", label: "Pending", icon: ClipboardList },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -113,13 +124,33 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-14 border-b bg-card px-4 flex items-center gap-3 md:hidden sticky top-0 z-20">
-          <button onClick={() => setOpen(true)} className="text-foreground">
+        <header className="h-14 border-b bg-card px-4 flex items-center gap-3 sticky top-0 z-20">
+          <button onClick={() => setOpen(true)} className="text-foreground md:hidden">
             <Menu className="h-5 w-5" />
           </button>
-          <div className="font-semibold">Exchange Portal</div>
+          <div className="font-semibold md:hidden">Exchange Portal</div>
+          <div className="flex-1" />
+          <GlobalSearchTrigger />
         </header>
-        <main className="flex-1 p-4 md:p-6 lg:p-8 max-w-[1600px] w-full mx-auto">{children}</main>
+        <main className="flex-1 p-4 md:p-6 lg:p-8 max-w-[1600px] w-full mx-auto pb-24 md:pb-8">{children}</main>
+
+        {/* Mobile bottom nav */}
+        <nav className="fixed bottom-0 inset-x-0 z-30 bg-card border-t md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+          <div className="grid grid-cols-5">
+            {mobileNav.map((item) => {
+              const active = pathname === item.to || (item.to !== "/dashboard" && pathname.startsWith(item.to));
+              const Icon = item.icon;
+              return (
+                <Link key={item.to} to={item.to}
+                  className={cn("flex flex-col items-center gap-0.5 py-2 text-[10px]",
+                    active ? "text-primary font-semibold" : "text-muted-foreground")}>
+                  <Icon className="h-5 w-5" />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
       </div>
     </div>
   );
