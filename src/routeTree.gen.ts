@@ -33,6 +33,7 @@ import { Route as AuthenticatedCustomersRouteImport } from './routes/_authentica
 import { Route as AuthenticatedCommandCenterRouteImport } from './routes/_authenticated/command-center'
 import { Route as AuthenticatedBuyRouteImport } from './routes/_authenticated/buy'
 import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
+import { Route as AuthenticatedAliInvestorRouteImport } from './routes/_authenticated/ali-investor'
 import { Route as AuthenticatedAccountsRouteImport } from './routes/_authenticated/accounts'
 import { Route as AuthenticatedTradesIndexRouteImport } from './routes/_authenticated/trades.index'
 import { Route as AuthenticatedDepositsIndexRouteImport } from './routes/_authenticated/deposits.index'
@@ -169,6 +170,12 @@ const AuthenticatedAuditRoute = AuthenticatedAuditRouteImport.update({
   path: '/audit',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAliInvestorRoute =
+  AuthenticatedAliInvestorRouteImport.update({
+    id: '/ali-investor',
+    path: '/ali-investor',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAccountsRoute = AuthenticatedAccountsRouteImport.update({
   id: '/accounts',
   path: '/accounts',
@@ -238,6 +245,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/accounts': typeof AuthenticatedAccountsRouteWithChildren
+  '/ali-investor': typeof AuthenticatedAliInvestorRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/buy': typeof AuthenticatedBuyRoute
   '/command-center': typeof AuthenticatedCommandCenterRoute
@@ -273,6 +281,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/ali-investor': typeof AuthenticatedAliInvestorRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/buy': typeof AuthenticatedBuyRoute
   '/command-center': typeof AuthenticatedCommandCenterRoute
@@ -308,6 +317,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/accounts': typeof AuthenticatedAccountsRouteWithChildren
+  '/_authenticated/ali-investor': typeof AuthenticatedAliInvestorRoute
   '/_authenticated/audit': typeof AuthenticatedAuditRoute
   '/_authenticated/buy': typeof AuthenticatedBuyRoute
   '/_authenticated/command-center': typeof AuthenticatedCommandCenterRoute
@@ -346,6 +356,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/accounts'
+    | '/ali-investor'
     | '/audit'
     | '/buy'
     | '/command-center'
@@ -381,6 +392,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/ali-investor'
     | '/audit'
     | '/buy'
     | '/command-center'
@@ -415,6 +427,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/accounts'
+    | '/_authenticated/ali-investor'
     | '/_authenticated/audit'
     | '/_authenticated/buy'
     | '/_authenticated/command-center'
@@ -624,6 +637,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAuditRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/ali-investor': {
+      id: '/_authenticated/ali-investor'
+      path: '/ali-investor'
+      fullPath: '/ali-investor'
+      preLoaderRoute: typeof AuthenticatedAliInvestorRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/accounts': {
       id: '/_authenticated/accounts'
       path: '/accounts'
@@ -765,6 +785,7 @@ const AuthenticatedTradesRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccountsRoute: typeof AuthenticatedAccountsRouteWithChildren
+  AuthenticatedAliInvestorRoute: typeof AuthenticatedAliInvestorRoute
   AuthenticatedAuditRoute: typeof AuthenticatedAuditRoute
   AuthenticatedBuyRoute: typeof AuthenticatedBuyRoute
   AuthenticatedCommandCenterRoute: typeof AuthenticatedCommandCenterRoute
@@ -792,6 +813,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAccountsRoute: AuthenticatedAccountsRouteWithChildren,
+  AuthenticatedAliInvestorRoute: AuthenticatedAliInvestorRoute,
   AuthenticatedAuditRoute: AuthenticatedAuditRoute,
   AuthenticatedBuyRoute: AuthenticatedBuyRoute,
   AuthenticatedCommandCenterRoute: AuthenticatedCommandCenterRoute,
