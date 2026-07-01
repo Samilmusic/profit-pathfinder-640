@@ -10,7 +10,7 @@ import { fmt } from "@/lib/exchange";
 import {
   ArrowDownToLine, ShoppingCart, TrendingUp, Receipt, ArrowLeftRight,
   Landmark, ChevronDown, ChevronRight, Layers, Users2, Activity,
-  Wallet as WalletIcon, PackageCheck, Timer, Boxes, Clock,
+  PackageCheck, Timer, Boxes, Clock,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
