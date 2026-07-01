@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
 import { fmt } from "@/lib/exchange";
-import { holderLabel } from "@/lib/settlement";
+import { holderLabel, holderShort } from "@/lib/settlement";
 import {
   ArrowDownToLine, ShoppingCart, TrendingUp, Receipt, ArrowLeftRight,
   Users, Wallet as WalletIcon, AlertTriangle, ClipboardList, HandCoins,
@@ -203,10 +203,10 @@ function DashboardPage() {
   const alerts: { text: string; tone: "warn" | "info" }[] = [];
   (pendingBuysQ.data ?? []).forEach((r: any) => {
     if (r.money_holder_type && r.money_holder_type !== "customer") {
-      alerts.push({ text: `${fmt(r.paid_amount, r.paid_currency)} sitting with ${holderLabel(r.money_holder_type)} — buy from ${r.entry_date}`, tone: "warn" });
+      alerts.push({ text: `${fmt(r.paid_amount, r.paid_currency)} is with ${holderShort(r.money_holder_type)} and must be deposited or settled — buy from ${r.entry_date}.`, tone: "warn" });
     }
     if (r.currency_holder_type && r.currency_holder_type !== "customer") {
-      alerts.push({ text: `${fmt(r.bought_amount, r.bought_currency)} currency with ${holderLabel(r.currency_holder_type)} — must be delivered`, tone: "warn" });
+      alerts.push({ text: `${fmt(r.bought_amount, r.bought_currency)} is with ${holderShort(r.currency_holder_type)} and must be delivered — buy from ${r.entry_date}.`, tone: "warn" });
     }
   });
   (pendingSellsQ.data ?? []).forEach((r: any) => {
