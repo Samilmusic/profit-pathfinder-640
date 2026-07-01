@@ -285,15 +285,33 @@ function QuickSellPage() {
           <Card>
             <CardContent className="p-4 space-y-2 text-sm">
               <div className="text-xs uppercase tracking-wide text-muted-foreground">Live P&amp;L</div>
-              <PL label="Cost rate (avg buy)" value={fmt(costRate)} />
-              <PL label="Sell rate" value={fmt(rateN)} />
+              <PL label="Sell rate" value={`${fmt(rateN)} ${receivedCurrency}/${soldCurrency}`} />
               <PL label="Received" value={fmt(receivedAmount, receivedCurrency)} />
-              <PL label="Cost basis" value={fmt(costBasis, receivedCurrency)} />
-              <div className="border-t pt-2">
-                <PL label="Gross profit" value={fmtProfit(grossProfit, receivedCurrency)} accent={grossProfit >= 0 ? "success" : "danger"} />
-                <PL label="Milad share (50%)" value={fmtProfit(miladShare, receivedCurrency)} />
-                <PL label="Ali share (50%)" value={fmtProfit(aliShare, receivedCurrency)} />
-              </div>
+              <PL label={`${soldCurrency} inventory used (FIFO)`} value={fmt(preview.covered, soldCurrency)} />
+              {isCycleSell ? (
+                <div className="border-t pt-2 space-y-1.5">
+                  <PL label="Profit status" value="Pending cycle profit" accent="warn" />
+                  <PL label="Realized profit" value={`0 ${soldCurrency}`} />
+                  <PL label="Milad share" value={`0 ${soldCurrency}`} />
+                  <PL label="Ali share" value={`0 ${soldCurrency}`} />
+                  <div className="mt-2 rounded-md border border-amber-400/40 bg-amber-50 dark:bg-amber-500/10 p-2 text-[11px] leading-snug text-amber-800 dark:text-amber-200">
+                    This is an asset conversion, not profit. {soldCurrency} inventory goes out, {receivedCurrency} inventory comes in.
+                    Profit will be realized only when the {receivedCurrency} is converted back to {soldCurrency} or this cycle is closed.
+                  </div>
+                </div>
+              ) : (
+                <div className="border-t pt-2">
+                  <PL label="Cost basis" value={fmt(preview.totalCost, preview.costCcy)} />
+                  <PL label="Realized profit" value={fmtProfit(preview.realized, receivedCurrency)} accent={preview.realized >= 0 ? "success" : "danger"} />
+                  <PL label="Milad share (50%)" value={fmtProfit(preview.miladShare, receivedCurrency)} />
+                  <PL label="Ali share (50%)" value={fmtProfit(preview.aliShare, receivedCurrency)} />
+                </div>
+              )}
+              {inventoryShort && (
+                <div className="mt-2 rounded-md border border-destructive/40 bg-destructive/5 p-2 text-[11px] text-destructive">
+                  Not enough {soldCurrency} inventory. Available: {fmt(preview.available, soldCurrency)} · Short: {fmt(preview.shortfall, soldCurrency)}
+                </div>
+              )}
             </CardContent>
           </Card>
 
