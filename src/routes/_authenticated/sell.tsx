@@ -19,6 +19,8 @@ import { SettlementStatusBadge } from "@/components/settlement-status-badge";
 import { TxnDetailDialog } from "@/components/txn-detail-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { RecordActions } from "@/components/record-actions";
+import { CURRENCIES as CCY_LIST } from "@/lib/exchange";
 
 export const Route = createFileRoute("/_authenticated/sell")({ component: Page });
 
@@ -283,9 +285,26 @@ function Page() {
                 <TableCell className="text-right font-mono">{fmt(r.ali_profit)}</TableCell>
                 <TableCell><SettlementStatusBadge value={r.settlement_status} /></TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="sm" onClick={() => setDetailRow(r)}>
-                    <FileText className="h-4 w-4 mr-1" /> Manage
-                  </Button>
+                  <div className="flex items-center justify-end gap-1">
+                    <Button variant="ghost" size="sm" onClick={() => setDetailRow(r)}>
+                      <FileText className="h-4 w-4 mr-1" /> Manage
+                    </Button>
+                    <RecordActions
+                      table="sell_transactions"
+                      row={r}
+                      onView={() => setDetailRow(r)}
+                      invalidateKeys={["sells"]}
+                      fields={[
+                        { key: "entry_date", label: "Date", type: "date" },
+                        { key: "sold_amount", label: "Sold amount", type: "number", step: "0.0001" },
+                        { key: "sell_rate", label: "Sell rate", type: "number", step: "0.00000001" },
+                        { key: "sold_currency", label: "Sold currency", type: "select", options: CCY_LIST.map(c => ({ value: c, label: c })) },
+                        { key: "received_currency", label: "Received currency", type: "select", options: CCY_LIST.map(c => ({ value: c, label: c })) },
+                        { key: "received_amount", label: "Received amount", type: "number", step: "0.0001" },
+                        { key: "notes", label: "Notes", type: "textarea" },
+                      ]}
+                    />
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
