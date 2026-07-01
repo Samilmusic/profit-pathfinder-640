@@ -312,6 +312,82 @@ function NewBroughtInPage() {
           )}
         </section>
 
+        {/* Conversion toggle */}
+        <section className="rounded-lg border bg-card p-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-sm font-semibold">Convert this brought-in money?</div>
+              <div className="text-xs text-muted-foreground">e.g. IRR received then converted to AED</div>
+            </div>
+            <Switch checked={convertEnabled} onCheckedChange={setConvertEnabled} />
+          </div>
+
+          {convertEnabled && (
+            <div className="mt-3 space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <F label={`Rate (${currency} per 1 ${convertedCurrency})`}>
+                  <NumberInput value={conversionRate} onChange={(e) => setConversionRate((e.target as HTMLInputElement).value)} placeholder="e.g. 46600" />
+                </F>
+                <F label="Converted currency">
+                  <Select value={convertedCurrency} onValueChange={(v) => { setConvertedCurrency(v); setFinalAccountId(""); }}>
+                    <SelectTrigger className="h-11 text-base"><SelectValue /></SelectTrigger>
+                    <SelectContent>{CURRENCIES.filter((c) => c !== currency).map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                  </Select>
+                </F>
+              </div>
+              <F label="Converted amount">
+                <NumberInput
+                  currency={convertedCurrency}
+                  value={convertedAmount}
+                  onChange={(e) => { setConvertedAmountManual(true); setConvertedAmount((e.target as HTMLInputElement).value); }}
+                  placeholder="Auto"
+                  className="h-11 text-lg font-semibold"
+                />
+              </F>
+              <F label={`Final ${convertedCurrency} account`}>
+                <Select value={finalAccountId} onValueChange={setFinalAccountId}>
+                  <SelectTrigger className="h-11 text-base"><SelectValue placeholder={`Pick a ${convertedCurrency} account`} /></SelectTrigger>
+                  <SelectContent>
+                    {finalAccounts.map((a: any) => (<SelectItem key={a.id} value={a.id}>{a.name} · {a.currency}</SelectItem>))}
+                    {finalAccounts.length === 0 && <div className="px-2 py-4 text-xs text-muted-foreground text-center">No {convertedCurrency} accounts</div>}
+                  </SelectContent>
+                </Select>
+              </F>
+              <div className="grid grid-cols-[1fr_140px] gap-2">
+                <F label="Conversion fee (optional)">
+                  <NumberInput currency={convertedCurrency} value={feeAmount} onChange={(e) => setFeeAmount((e.target as HTMLInputElement).value)} placeholder="0" />
+                </F>
+                <F label="Fee kind">
+                  <Select value={feeKind} onValueChange={setFeeKind}>
+                    <SelectTrigger className="h-11 text-base"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {["fee","petrol","bank_charge","delivery","other"].map((k) => <SelectItem key={k} value={k}>{k.replace("_"," ")}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </F>
+              </div>
+
+              {/* Live preview */}
+              {amount && conversionRate && convertedAmount && (
+                <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
+                  <div className="flex flex-wrap items-center gap-2 text-sm">
+                    <span className="font-mono font-semibold">{fmt(Number(amount), currency)}</span>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-mono font-semibold text-primary">{fmt(Number(convertedAmount), convertedCurrency)}</span>
+                    {feeAmount && Number(feeAmount) > 0 && (
+                      <span className="text-xs text-muted-foreground">· fee {fmt(Number(feeAmount), convertedCurrency)}</span>
+                    )}
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    From <b>{balQ.data?.name || "source"}</b> → into <b>{finalAccounts.find((a: any) => a.id === finalAccountId)?.name || `final ${convertedCurrency} account`}</b>
+                  </div>
+                  <div className="mt-1 text-[11px] text-muted-foreground">Not profit — capital changing form.</div>
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+
         {/* Notes */}
         <section className="space-y-2">
           <Label className="text-xs uppercase tracking-wide text-muted-foreground">Notes</Label>
