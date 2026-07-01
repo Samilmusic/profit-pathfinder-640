@@ -3108,6 +3108,7 @@ export type Database = {
         | "awaiting_receipt"
         | "completed"
         | "cancelled"
+        | "pending_delivery"
       trade_status:
         | "draft"
         | "in_progress"
@@ -3376,6 +3377,7 @@ export const Constants = {
         "awaiting_receipt",
         "completed",
         "cancelled",
+        "pending_delivery",
       ],
       trade_status: [
         "draft",
