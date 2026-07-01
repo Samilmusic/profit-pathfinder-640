@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
 import { fmt } from "@/lib/exchange";
+import { holderLabel } from "@/lib/settlement";
 import {
   ArrowDownToLine, ShoppingCart, TrendingUp, Receipt, ArrowLeftRight,
-  Users, Wallet as WalletIcon, AlertTriangle,
+  Users, Wallet as WalletIcon, AlertTriangle, ClipboardList, HandCoins,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -86,6 +87,55 @@ function DashboardPage() {
 
   const lowBalance = balances.filter((b: any) => Number(b.current_balance) < 0);
 
+  const pendingBuysQ = useQuery({
+    queryKey: ["action_center", "buys"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("buy_transactions").select("*").is("deleted_at", null).not("settlement_status", "in", "(completed,cancelled)").order("entry_date");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const pendingSellsQ = useQuery({
+    queryKey: ["action_center", "sells"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("sell_transactions").select("*").is("deleted_at", null).not("settlement_status", "in", "(completed,cancelled)").order("entry_date");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const holdingQ = useQuery({
+    queryKey: ["action_center", "holdings"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("account_balances").select("*").eq("account_type", "person_holding");
+      if (error) throw error;
+      return (data ?? []).filter((b: any) => Math.abs(Number(b.current_balance || 0)) > 0.0001);
+    },
+  });
+
+  const alerts: { text: string; tone: "warn" | "info" }[] = [];
+  (pendingBuysQ.data ?? []).forEach((r: any) => {
+    if (r.money_holder_type && r.money_holder_type !== "customer") {
+      alerts.push({ text: `${fmt(r.paid_amount, r.paid_currency)} sitting with ${holderLabel(r.money_holder_type)} — buy from ${r.entry_date}`, tone: "warn" });
+    }
+    if (r.currency_holder_type && r.currency_holder_type !== "customer") {
+      alerts.push({ text: `${fmt(r.bought_amount, r.bought_currency)} currency with ${holderLabel(r.currency_holder_type)} — must be delivered`, tone: "warn" });
+    }
+  });
+  (pendingSellsQ.data ?? []).forEach((r: any) => {
+    if (r.settlement_status === "payment_received") {
+      alerts.push({ text: `Payment received for sell on ${r.entry_date} — currency delivery pending`, tone: "warn" });
+    }
+    if (r.settlement_status === "currency_delivered") {
+      alerts.push({ text: `Currency delivered on ${r.entry_date} — payment / receipt still pending`, tone: "warn" });
+    }
+    if (r.settlement_status === "awaiting_receipt") {
+      alerts.push({ text: `Sell on ${r.entry_date} — receipt / final proof missing`, tone: "warn" });
+    }
+  });
+  (holdingQ.data ?? []).forEach((b: any) => {
+    alerts.push({ text: `${fmt(b.current_balance, b.currency)} held in ${b.name}`, tone: "info" });
+  });
+
   return (
     <>
       <PageHeader
@@ -93,12 +143,33 @@ function DashboardPage() {
         description="Live view of balances, today's activity, and profit sharing."
       />
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
         <StatCard label="AED balance" value={fmt(totalByCurrency("AED"), "AED")} />
         <StatCard label="Toman balance" value={fmt(totalByCurrency("IRR"), "IRR")} />
         <StatCard label="USD balance" value={fmt(totalByCurrency("USD"), "USD")} />
         <StatCard label="Cash total (mixed)" value={fmt(cashTotal)} />
+        <StatCard label="Held by people" value={String((holdingQ.data ?? []).length) + " lines"} />
       </div>
+
+      <Card className="mb-6 border-warning/40" style={{ boxShadow: "var(--shadow-soft)" }}>
+        <CardHeader className="flex-row items-center justify-between space-y-0">
+          <CardTitle className="text-base flex items-center gap-2"><ClipboardList className="h-4 w-4" /> Action Center</CardTitle>
+          <Button size="sm" variant="outline" asChild><Link to="/pending-settlements">View all</Link></Button>
+        </CardHeader>
+        <CardContent className="space-y-1 text-sm max-h-72 overflow-y-auto">
+          {alerts.length === 0 ? (
+            <p className="text-muted-foreground">Nothing pending. All transactions are settled.</p>
+          ) : alerts.slice(0, 12).map((a, i) => (
+            <div key={i} className="flex items-start gap-2 py-1 border-b last:border-0">
+              <span className={a.tone === "warn" ? "text-warning" : "text-sky-600"}>●</span>
+              <span className="flex-1">{a.text}</span>
+            </div>
+          ))}
+          {alerts.length > 12 && (
+            <div className="text-xs text-muted-foreground pt-2">+ {alerts.length - 12} more…</div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card className="mb-6" style={{ boxShadow: "var(--shadow-soft)" }}>
         <CardHeader>
@@ -114,6 +185,12 @@ function DashboardPage() {
                 </Link>
               </Button>
             ))}
+            <Button asChild variant="outline" className="h-20 flex-col gap-1">
+              <Link to="/pending-settlements"><ClipboardList className="h-5 w-5" /><span className="text-xs">Pending</span></Link>
+            </Button>
+            <Button asChild variant="outline" className="h-20 flex-col gap-1">
+              <Link to="/held-by-person"><HandCoins className="h-5 w-5" /><span className="text-xs">Held by Person</span></Link>
+            </Button>
           </div>
         </CardContent>
       </Card>

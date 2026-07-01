@@ -18,6 +18,7 @@ import { Route as AuthenticatedSellRouteImport } from './routes/_authenticated/s
 import { Route as AuthenticatedRolesRouteImport } from './routes/_authenticated/roles'
 import { Route as AuthenticatedPendingSettlementsRouteImport } from './routes/_authenticated/pending-settlements'
 import { Route as AuthenticatedInventoryRouteImport } from './routes/_authenticated/inventory'
+import { Route as AuthenticatedHeldByPersonRouteImport } from './routes/_authenticated/held-by-person'
 import { Route as AuthenticatedExpensesRouteImport } from './routes/_authenticated/expenses'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedDailyClosingRouteImport } from './routes/_authenticated/daily-closing'
@@ -71,6 +72,12 @@ const AuthenticatedInventoryRoute = AuthenticatedInventoryRouteImport.update({
   path: '/inventory',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedHeldByPersonRoute =
+  AuthenticatedHeldByPersonRouteImport.update({
+    id: '/held-by-person',
+    path: '/held-by-person',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedExpensesRoute = AuthenticatedExpensesRouteImport.update({
   id: '/expenses',
   path: '/expenses',
@@ -118,6 +125,7 @@ export interface FileRoutesByFullPath {
   '/daily-closing': typeof AuthenticatedDailyClosingRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/expenses': typeof AuthenticatedExpensesRoute
+  '/held-by-person': typeof AuthenticatedHeldByPersonRoute
   '/inventory': typeof AuthenticatedInventoryRoute
   '/pending-settlements': typeof AuthenticatedPendingSettlementsRoute
   '/roles': typeof AuthenticatedRolesRoute
@@ -135,6 +143,7 @@ export interface FileRoutesByTo {
   '/daily-closing': typeof AuthenticatedDailyClosingRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/expenses': typeof AuthenticatedExpensesRoute
+  '/held-by-person': typeof AuthenticatedHeldByPersonRoute
   '/inventory': typeof AuthenticatedInventoryRoute
   '/pending-settlements': typeof AuthenticatedPendingSettlementsRoute
   '/roles': typeof AuthenticatedRolesRoute
@@ -154,6 +163,7 @@ export interface FileRoutesById {
   '/_authenticated/daily-closing': typeof AuthenticatedDailyClosingRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/expenses': typeof AuthenticatedExpensesRoute
+  '/_authenticated/held-by-person': typeof AuthenticatedHeldByPersonRoute
   '/_authenticated/inventory': typeof AuthenticatedInventoryRoute
   '/_authenticated/pending-settlements': typeof AuthenticatedPendingSettlementsRoute
   '/_authenticated/roles': typeof AuthenticatedRolesRoute
@@ -173,6 +183,7 @@ export interface FileRouteTypes {
     | '/daily-closing'
     | '/dashboard'
     | '/expenses'
+    | '/held-by-person'
     | '/inventory'
     | '/pending-settlements'
     | '/roles'
@@ -190,6 +201,7 @@ export interface FileRouteTypes {
     | '/daily-closing'
     | '/dashboard'
     | '/expenses'
+    | '/held-by-person'
     | '/inventory'
     | '/pending-settlements'
     | '/roles'
@@ -208,6 +220,7 @@ export interface FileRouteTypes {
     | '/_authenticated/daily-closing'
     | '/_authenticated/dashboard'
     | '/_authenticated/expenses'
+    | '/_authenticated/held-by-person'
     | '/_authenticated/inventory'
     | '/_authenticated/pending-settlements'
     | '/_authenticated/roles'
@@ -287,6 +300,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedInventoryRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/held-by-person': {
+      id: '/_authenticated/held-by-person'
+      path: '/held-by-person'
+      fullPath: '/held-by-person'
+      preLoaderRoute: typeof AuthenticatedHeldByPersonRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/expenses': {
       id: '/_authenticated/expenses'
       path: '/expenses'
@@ -347,6 +367,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDailyClosingRoute: typeof AuthenticatedDailyClosingRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedExpensesRoute: typeof AuthenticatedExpensesRoute
+  AuthenticatedHeldByPersonRoute: typeof AuthenticatedHeldByPersonRoute
   AuthenticatedInventoryRoute: typeof AuthenticatedInventoryRoute
   AuthenticatedPendingSettlementsRoute: typeof AuthenticatedPendingSettlementsRoute
   AuthenticatedRolesRoute: typeof AuthenticatedRolesRoute
@@ -363,6 +384,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDailyClosingRoute: AuthenticatedDailyClosingRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedExpensesRoute: AuthenticatedExpensesRoute,
+  AuthenticatedHeldByPersonRoute: AuthenticatedHeldByPersonRoute,
   AuthenticatedInventoryRoute: AuthenticatedInventoryRoute,
   AuthenticatedPendingSettlementsRoute: AuthenticatedPendingSettlementsRoute,
   AuthenticatedRolesRoute: AuthenticatedRolesRoute,
