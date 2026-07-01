@@ -26,6 +26,11 @@ const STATUS_COLORS: Record<string, string> = {
   awaiting_docs: "bg-orange-500/15 text-orange-700 dark:text-orange-300",
   completed: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
   cancelled: "bg-red-500/15 text-red-700 dark:text-red-300",
+  open: "bg-sky-500/15 text-sky-700 dark:text-sky-300",
+  partially_closed: "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300",
+  profit_pending: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+  loss: "bg-rose-500/15 text-rose-700 dark:text-rose-300",
+  missing_receipt: "bg-orange-500/15 text-orange-700 dark:text-orange-300",
 };
 
 function Page() {
