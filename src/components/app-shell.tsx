@@ -26,16 +26,20 @@ import {
   Radar,
   History,
   Target,
+  BarChart3,
+  Bell,
 } from "lucide-react";
 import { Repeat } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { GlobalSearchTrigger } from "@/components/global-search";
+import { NotificationBell } from "@/components/notification-bell";
 
 const nav = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/command-center", label: "Command Center", icon: Target },
+  { to: "/market-intelligence", label: "Market Intel", icon: BarChart3 },
   { to: "/quick-sell", label: "Quick Sell", icon: Zap },
   { to: "/trades", label: "Trade Cycles", icon: Repeat },
   { to: "/brought-in", label: "Brought In", icon: ArrowDownToLine },
@@ -147,6 +151,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </button>
           <div className="font-semibold md:hidden">Exchange Portal</div>
           <div className="flex-1" />
+          <NotificationBell />
           <GlobalSearchTrigger />
         </header>
         <main className="flex-1 p-4 md:p-6 lg:p-8 max-w-[1600px] w-full mx-auto pb-24 md:pb-8">{children}</main>

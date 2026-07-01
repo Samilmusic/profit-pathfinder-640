@@ -24,6 +24,7 @@ import { Switch } from "@/components/ui/switch";
 import { RecordActions } from "@/components/record-actions";
 import { EDIT_FIELDS } from "@/lib/edit-fields";
 import { UseMarketRateButton } from "@/components/use-market-rate-button";
+import { RateComparison } from "@/components/rate-comparison";
 
 export const Route = createFileRoute("/_authenticated/sell")({ component: Page });
 
@@ -193,6 +194,12 @@ function Page() {
                         className="self-start"
                       />
                     )}
+                    <RateComparison
+                      currency={f.sold_currency}
+                      side="sell"
+                      txnRate={Number(f.sell_rate) || null}
+                      onApply={(r) => setF({ ...f, sell_rate: String(r) })}
+                    />
                   </div>
                 </F>
                 <F label="Received currency">

@@ -1,4 +1,5 @@
 import { UseMarketRateButton } from "@/components/use-market-rate-button";
+import { RateComparison } from "@/components/rate-comparison";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -250,6 +251,14 @@ function QuickSellPage() {
                 />
               </div>
             )}
+            <div className="mt-2">
+              <RateComparison
+                currency={soldCurrency}
+                side="sell"
+                txnRate={Number(sellRate) || null}
+                onApply={(r) => setSellRate(String(r))}
+              />
+            </div>
             <p className="text-xs text-muted-foreground mt-2">
               Money-in currency = <span className="font-semibold">{receivedCurrency}</span>. Customer pays you in {receivedCurrency}. Receiving account below is filtered to {receivedCurrency} only.
             </p>
