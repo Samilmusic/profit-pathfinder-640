@@ -45,7 +45,7 @@ function Page() {
       return data?.[0] ?? null;
     },
   });
-  useEffect(() => { if (walletQ.data?.id) setF((p: any) => ({ ...p, source_wallet_account_id: walletQ.data.id })); }, [walletQ.data]);
+  useEffect(() => { const id = walletQ.data?.id; if (id) setF((p: any) => ({ ...p, source_wallet_account_id: id })); }, [walletQ.data]);
 
   const walletBalanceQ = useQuery({
     queryKey: ["wallet_balance", f.source_wallet_account_id],
