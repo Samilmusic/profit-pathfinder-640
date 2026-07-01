@@ -42,12 +42,12 @@ function Page() {
   const close = useMutation({
     mutationFn: async () => {
       const { data: u } = await supabase.auth.getUser();
-      const account_snapshots = (bal.data ?? []).map((b: any) => ({
+      const snapshot = (bal.data ?? []).map((b: any) => ({
         account_id: b.account_id, name: b.name, currency: b.currency,
         expected: Number(b.current_balance), actual: Number(actuals[b.account_id] ?? b.current_balance),
       }));
       const { error } = await supabase.from("daily_closings").insert({
-        closing_date: date, account_snapshots, notes, closed_by: u.user?.id,
+        closing_date: date, snapshot, notes, closed_by: u.user?.id,
       });
       if (error) throw error;
     },
