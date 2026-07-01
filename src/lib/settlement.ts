@@ -49,7 +49,7 @@ export function holderLabel(h: string | null | undefined) {
 /** Short "with X" fragment for inline sentences (e.g. "…is with Ali"). */
 export function holderShort(h: string | null | undefined) {
   switch (h) {
-    case "milad": return "Ali";
+    case "milad": return "Milad";
     case "ali": return "Ali";
     case "customer": return "the customer";
     case "other": return "another person";
