@@ -23,6 +23,9 @@ import {
   ArrowUpFromLine,
   Send,
   ShieldCheck,
+  Radar,
+  History,
+  Target,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -31,6 +34,7 @@ import { GlobalSearchTrigger } from "@/components/global-search";
 
 const nav = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/command-center", label: "Command Center", icon: Target },
   { to: "/quick-sell", label: "Quick Sell", icon: Zap },
   { to: "/brought-in", label: "Brought In", icon: ArrowDownToLine },
   { to: "/buy", label: "Buy", icon: ShoppingCart },
@@ -43,19 +47,21 @@ const nav = [
   { to: "/deposits", label: "Deposits", icon: ArrowUpFromLine },
   { to: "/payment-orders", label: "Payment Orders", icon: Send },
   { to: "/trust", label: "Trust vs Company", icon: ShieldCheck },
+  { to: "/ali-investor", label: "Ali — Investor", icon: Radar },
   { to: "/accounts", label: "Accounts", icon: Wallet },
   { to: "/customers", label: "Customers", icon: Users },
   { to: "/inventory", label: "Inventory", icon: Coins },
   { to: "/statements", label: "Statements", icon: BookOpen },
   { to: "/daily-closing", label: "Daily Closing", icon: CalendarCheck },
+  { to: "/audit", label: "Audit Log", icon: History },
   { to: "/roles", label: "Roles", icon: Shield },
 ] as const;
 
 const mobileNav = [
   { to: "/dashboard", label: "Home", icon: LayoutDashboard },
+  { to: "/command-center", label: "Center", icon: Target },
   { to: "/quick-sell", label: "Sell", icon: Zap },
   { to: "/buy", label: "Buy", icon: ShoppingCart },
-  { to: "/expenses", label: "Expense", icon: Receipt },
   { to: "/pending-settlements", label: "Pending", icon: ClipboardList },
 ] as const;
 

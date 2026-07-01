@@ -10,8 +10,12 @@ import { holderLabel } from "@/lib/settlement";
 import {
   ArrowDownToLine, ShoppingCart, TrendingUp, Receipt, ArrowLeftRight,
   Users, Wallet as WalletIcon, AlertTriangle, ClipboardList, HandCoins,
-  ShieldCheck, Landmark, Send, ArrowUpFromLine,
+  ShieldCheck, Landmark, Send, ArrowUpFromLine, Radar, LineChart as LineChartIcon,
 } from "lucide-react";
+import { fmtProfit } from "@/lib/exchange";
+import {
+  LineChart, Line as RLine, XAxis, Tooltip, ResponsiveContainer,
+} from "recharts";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
@@ -33,6 +37,35 @@ const quickActions = [
 
 function DashboardPage() {
   const today = new Date().toISOString().slice(0, 10);
+
+  const kpiAssetsQ = useQuery({
+    queryKey: ["v_total_assets_by_currency"],
+    queryFn: async () => (await supabase.from("v_total_assets_by_currency").select("*")).data ?? [],
+  });
+  const kpiCashQ = useQuery({
+    queryKey: ["v_cash_available"],
+    queryFn: async () => (await supabase.from("v_cash_available").select("*")).data ?? [],
+  });
+  const kpiCircQ = useQuery({
+    queryKey: ["v_money_in_circulation"],
+    queryFn: async () => (await supabase.from("v_money_in_circulation").select("*")).data ?? [],
+  });
+  const kpiTodayQ = useQuery({
+    queryKey: ["v_today_profit"],
+    queryFn: async () => (await supabase.from("v_today_profit").select("*").maybeSingle()).data,
+  });
+  const kpiMonthQ = useQuery({
+    queryKey: ["v_month_profit"],
+    queryFn: async () => (await supabase.from("v_month_profit").select("*").maybeSingle()).data,
+  });
+  const kpiSeriesQ = useQuery({
+    queryKey: ["v_daily_profit_series"],
+    queryFn: async () => (await supabase.from("v_daily_profit_series").select("*")).data ?? [],
+  });
+  const kpiAliQ = useQuery({
+    queryKey: ["v_ali_capital_summary"],
+    queryFn: async () => (await supabase.from("v_ali_capital_summary").select("*").maybeSingle()).data,
+  });
 
   const balancesQ = useQuery({
     queryKey: ["account_balances"],
@@ -203,6 +236,74 @@ function DashboardPage() {
         description="Live view of balances, today's activity, and profit sharing."
       />
 
+      {/* Premium KPI hero row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <HeroKpi
+          label="Total assets"
+          value={fmtProfit((kpiAssetsQ.data ?? []).reduce((s: number, r: any) => s + Number(r.balance || 0), 0))}
+          hint={`${(kpiAssetsQ.data ?? []).length} currencies`}
+          tone="primary"
+        />
+        <HeroKpi
+          label="Today's profit"
+          value={fmtProfit(Number((kpiTodayQ.data as any)?.gross_profit ?? 0))}
+          hint={`${(kpiTodayQ.data as any)?.sell_count ?? 0} sells`}
+          tone="success"
+        />
+        <HeroKpi
+          label="This month"
+          value={fmtProfit(Number((kpiMonthQ.data as any)?.gross_profit ?? 0))}
+          hint={`${(kpiMonthQ.data as any)?.sell_count ?? 0} sells`}
+          tone="success"
+        />
+        <HeroKpi
+          label="Cash available"
+          value={fmtProfit((kpiCashQ.data ?? []).reduce((s: number, r: any) => s + Number(r.balance || 0), 0))}
+          hint="Cash + banks"
+          tone="info"
+        />
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <MiniKpi
+          label="Money in circulation"
+          value={fmtProfit((kpiCircQ.data ?? []).reduce((s: number, r: any) => s + Number(r.balance || 0), 0))}
+        />
+        <MiniKpi
+          label="Customer funds"
+          value={fmtProfit((trustQ.data ?? []).filter((r: any) => r.bucket === "customer").reduce((s: number, r: any) => s + Number(r.balance || 0), 0))}
+        />
+        <MiniKpi
+          label="Service fees (today)"
+          value={fmtProfit((scTodayQ.data ?? []).reduce((s: number, r: any) => s + Number(r.amount||0), 0))}
+        />
+        <MiniKpi
+          label="ROI (Ali)"
+          value={(() => {
+            const c = kpiAliQ.data as any;
+            const inb = Number(c?.total_brought_in ?? 0);
+            const p = Number(c?.total_profit_share ?? 0);
+            return inb > 0 ? ((p / inb) * 100).toFixed(1) + "%" : "—";
+          })()}
+        />
+      </div>
+
+      <Card className="mb-6 backdrop-blur bg-card/80" style={{ boxShadow: "var(--shadow-elevated)" }}>
+        <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-base flex items-center gap-2"><LineChartIcon className="h-4 w-4 text-primary" /> Profit trend (30 days)</CardTitle>
+          <Button asChild size="sm" variant="ghost"><Link to="/ali-investor"><Radar className="h-4 w-4 mr-1" /> Ali view</Link></Button>
+        </CardHeader>
+        <CardContent className="h-48">
+          <ResponsiveContainer>
+            <LineChart data={(kpiSeriesQ.data ?? []) as any[]}>
+              <XAxis dataKey="day" tickFormatter={(v) => String(v).slice(5)} fontSize={10} />
+              <Tooltip />
+              <RLine type="monotone" dataKey="gross_profit" stroke="var(--primary)" strokeWidth={2} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
         <Button asChild size="lg" className="h-16 text-base font-semibold col-span-2 md:col-span-1 shadow-md">
           <Link to="/quick-sell"><TrendingUp className="h-5 w-5 mr-2" /> New Sell</Link>
@@ -353,6 +454,33 @@ function StatCard({ label, value }: { label: string; value: string }) {
       <CardContent className="p-4">
         <div className="text-xs text-muted-foreground">{label}</div>
         <div className="text-xl font-semibold tracking-tight mt-1">{value}</div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function HeroKpi({ label, value, hint, tone }: { label: string; value: string; hint?: string; tone: "primary" | "success" | "info" }) {
+  const accent =
+    tone === "success" ? "from-emerald-500/10 to-transparent border-emerald-500/30" :
+    tone === "info" ? "from-sky-500/10 to-transparent border-sky-500/30" :
+    "from-primary/10 to-transparent border-primary/30";
+  return (
+    <Card className={"backdrop-blur bg-gradient-to-br " + accent} style={{ boxShadow: "var(--shadow-elevated)" }}>
+      <CardContent className="p-4">
+        <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{label}</div>
+        <div className="text-2xl md:text-3xl font-bold tracking-tight mt-1">{value}</div>
+        {hint && <div className="text-[11px] text-muted-foreground mt-1">{hint}</div>}
+      </CardContent>
+    </Card>
+  );
+}
+
+function MiniKpi({ label, value }: { label: string; value: string }) {
+  return (
+    <Card className="backdrop-blur bg-card/70" style={{ boxShadow: "var(--shadow-soft)" }}>
+      <CardContent className="p-3">
+        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+        <div className="text-lg font-semibold tracking-tight mt-0.5">{value}</div>
       </CardContent>
     </Card>
   );

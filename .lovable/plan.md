@@ -1,87 +1,87 @@
-# Customer Wallet & Trust Account System
+# Exchange OS Upgrade Plan
 
-Adds a full customer-funds subsystem on top of the existing exchange portal. Customer money is tracked separately from company money end-to-end.
+**Ground rules:** Keep every existing table, page, form, RLS policy, storage bucket, auth flow, and row of data. All work is additive — new columns, new tables, new pages, and visual polish on top of what's already shipped. Nothing gets renamed or dropped.
 
-## Scope (v1)
+## 1. Database (safe, additive migrations)
 
-1. **Wallets** — every customer gets a multi-currency wallet (AED, IRR, USD, GBP, EUR, USDT + custom). Balances split into Available / Reserved / Pending, plus lifetime aggregates.
-2. **Deposits** — record a customer bringing money in without any exchange; increases wallet only.
-3. **Payment Orders (Withdrawals)** — customer instructs us to send their money out (bank transfer, cash, currency handover, internal, international, other). Debits wallet on completion, requires docs, supports service charges.
-4. **Service Charges** — fixed / percentage / manual fee on payment orders and exchanges. Booked to a separate "Service Charge Income" ledger, reported apart from exchange profit.
-5. **Customer Debt / AR** — signed wallet balance (negative = customer owes us, positive = we owe customer). Credit-limit + overdue tracking with badges.
-6. **Trust separation** — dashboard cleanly shows Company vs Customer funds; customer wallet totals never roll into company cash/inventory.
-7. **Customer Statement** — one page per customer showing deposits, withdrawals, exchanges, transfers, service charges, docs and running wallet balance per currency.
-8. **Action Center** — new alerts for customer money awaiting transfer, debts, overdue, missing receipts, pending settlement.
-9. **Reports** — Wallet, Debt, Held-for-customers, Payment orders, Service charges, Exchange profit, Daily settlement, Ledger, Aging.
-10. **Mobile** — new one-page wizards for Deposit, Payment Order, Expense; extend existing Quick Sell/Buy shortcuts. Big buttons, numeric keypad, minimal typing.
+Inspect first, then run small migrations in this order — each one is idempotent (`IF NOT EXISTS` / `ADD COLUMN IF NOT EXISTS`):
 
-## Data model
+1. **Settlement status enum extension** — extend `settlement_status` with the missing values (`waiting_payment`, `payment_received`, `waiting_delivery`, `currency_delivered`, `waiting_receipt`, `cancelled`). Keep existing `draft` / `completed` untouched. Backfill: any legacy row with NULL stays where it is; no forced re-classification.
+2. **Money location** — add `money_location` enum (`cash_box`, `aed_bank`, `toman_bank`, `foreign_bank`, `held_milad`, `held_ali`, `held_customer`, `pending_delivery`, `pending_deposit`) and a nullable `money_location` column on `buy_transactions`, `sell_transactions`, `transfers`, `deposits`, `payment_orders`, `expenses`. Derive a default from existing `holder_type` / account type where possible; otherwise leave NULL.
+3. **Expense taxonomy** — add `expense_kind` enum (petrol, parking, delivery, transfer_fee, bank_charge, personal_ali, business, other) plus `reduces_profit boolean default true`, `related_txn_ref_type`, `related_txn_ref_id` on `expenses`.
+4. **Payment order polish** — ensure `receiver_name`, `receiver_bank`, `receiver_account`, `is_free_service`, `service_charge_currency` exist; add any missing ones.
+5. **Audit log** — new table `audit_events (id, actor_id, entity_type, entity_id, action, old_value jsonb, new_value jsonb, reason, created_at)` with RLS + GRANTs. Triggers on `buy_transactions`, `sell_transactions`, `transfers`, `expenses`, `deposits`, `payment_orders`, `brought_in_money` capture UPDATE/DELETE diffs. Deletes become soft-deletes (`deleted_at`) with a reversal ledger entry — never physically remove financial rows.
+6. **Ali capital view** — SQL view `ali_capital_summary` aggregating brought_in, withdrawals, share of realized profit, cash currently in company accounts. Read-only, `security_invoker=true`.
+7. **Dashboard rollups** — views: `today_profit`, `month_profit`, `total_assets_by_currency`, `cash_available`, `money_in_circulation`, `customer_funds_held`, `service_fees_mtd`, `roi_summary`. All `security_invoker=true`, respect existing RLS.
 
-New tables (in `public`, RLS + GRANTs):
+## 2. Command Center (new page)
 
-- `customer_wallets(id, customer_id, currency, available, reserved, pending, credit_limit, last_activity_at)` — one row per customer × currency, auto-created on first use.
-- `customer_deposits(id, customer_id, currency, amount, deposit_account_id, entry_date, notes, settlement_status, completion_note, created_by, deleted_at, ...)` — money in without exchange.
-- `payment_orders(id, customer_id, currency, amount, source_wallet_currency, method [enum: bank_transfer|cash_delivery|currency_delivery|internal|international|other], destination_bank, receiver_name, receiver_account, iban_card, country, service_charge_amount, service_charge_currency, service_fee_type [fixed|percent|manual], paid_from_account_id, entry_date, notes, settlement_status, completion_note, ...)`.
-- `service_charges(id, ref_type [payment_order|sell|buy|transfer], ref_id, customer_id, currency, amount, kind, notes, entry_date)` — normalized income ledger for charges.
-- Extend `documents.ref_type` enum with `deposit`, `payment_order`.
-- New account_type: `customer_wallet` (auto-created 1 per currency per customer, holder_type=customer).
+New route `src/routes/_authenticated/command-center.tsx`. Pure action-item board — grouped cards with counts + drill-down links:
+- Held by Milad / Ali / Customer (per currency)
+- Missing receipts, Pending delivery, Pending payment
+- Customer debt, Negative balances, Low cash warnings
+- Transactions not completed, Daily closing missing
 
-Triggers:
+Data comes from existing tables + the new rollup views. Each card links into the relevant filtered list.
 
-- `trg_deposit_ledger` — credit customer_wallet + debit the deposit-receiving company/cash account (no P&L).
-- `trg_payment_order_ledger` — on complete: debit customer_wallet, credit destination company account (or "Delivered Out"), plus a service-charge income entry.
-- `trg_wallet_recalc` — maintain `customer_wallets.available/reserved/pending/last_activity_at` from ledger + status.
-- `enforce_payment_order_completion` — requires proof-of-payment doc + completion note.
-- Auto-create `customer_wallet` accounts for existing + new customers (replaces / extends the current "Held by …" auto-creation for the 3-currency defaults, plus GBP/EUR/USDT).
+## 3. Dashboard upgrade
 
-Views:
+Rework `src/routes/_authenticated/dashboard.tsx` in place — same route, richer content:
+- Hero KPI row: Total assets, Today's profit, Monthly profit, Cash available
+- Second row: Money in circulation, Customer funds held, Service fees MTD, ROI
+- Ali capital summary card
+- Pending settlements + Open tasks + Expenses today
+- Sparkline charts (recharts, already installed) for profit + assets trend
 
-- `customer_wallet_balances` — per customer × currency with available / reserved / pending / debt / owed_to_us / owed_to_customer / credit_status.
-- `service_charge_income` — daily and per-customer aggregations.
-- `company_vs_customer_funds` — segregates existing accounts into company vs customer buckets for the dashboard.
+## 4. Transaction forms
 
-## UI
+Upgrade — not replace — the existing Deposit / Buy / Sell / Transfer / Expense forms:
+- Large mobile-first inputs (reuse `NumberInput`)
+- Live calculation panel + selected-account balance preview
+- Negative-balance warning banner
+- "Save as Draft" vs "Complete" with document gate (already enforced server-side)
+- Extended settlement status dropdown
+- Money location selector
 
-New routes under `_authenticated/`:
+Expenses form gains: expense kind, reduces-profit toggle, related transaction picker.
 
-- `/wallets` — grid of customers with wallet totals + status badge.
-- `/wallets/$customerId` — the wallet detail: per-currency balances, credit limit, deposit/withdraw buttons, timeline, statement.
-- `/deposits` — list + "New Deposit" wizard (customer → currency → amount → deposit-into account → note → done).
-- `/payment-orders` — list + "New Payment Order" wizard (customer → currency → amount → method → receiver → fee → source account → docs → complete).
-- `/service-charges` — read-only report grouped by day/customer.
-- `/reports` — one page with all report tabs (Wallet, Debt, Held, Payment orders, Service charges, Exchange profit, Daily settlement, Aging).
-- `/customer-statement/$customerId` — full statement page (also linked from wallet detail).
+## 5. Payment Orders
 
-Updates to existing pages:
+Extend existing `payment-orders.tsx` with receiver bank/account/IBAN fields, free-vs-paid service toggle, and receipt requirement gate.
 
-- Dashboard split into two clear panels: **Company Funds** vs **Customer Funds Held / Pending / Reserved**; add Service-charge income card next to Exchange profit and Total Net Income.
-- Action Center: extend alert query to include customer debts, overdue, wallet mismatches, pending payment orders, missing receipts on deposits/payment orders.
-- Customers table: show wallet status badge (Good / Small debt / High debt / Over limit) and `credit_limit` editor.
-- Mobile bottom nav: add `Deposit` and `Payout` shortcuts alongside Quick Sell.
+## 6. Ali Investor page
 
-Wizards share a common pattern from Quick Sell: numeric keypad input, recent customers, live wallet-balance-after preview, "Save as draft" vs "Complete" (with proof requirement), sticky footer.
+New route `src/routes/_authenticated/ali-investor.tsx`: initial capital, current capital, net profit, ROI, withdrawals, pending capital, money working, cash available, profit share, recharts line + donut.
 
-## Trust separation rules
+## 7. Profit sharing
 
-- Customer wallet accounts (`account_type = 'customer_wallet'`) are **excluded** from all company cash / inventory / balance rollups.
-- Dashboard queries filter `account_type <> 'customer_wallet'` for company totals and use the new view for customer totals.
-- Buy/Sell/Expense/Transfer forms disallow selecting a customer wallet as the company source unless the txn is explicitly a customer exchange (in which case wallet debits happen through the payment-order or sell flow).
+Existing sell trigger already computes Milad/Ali split. Surface it: dashboard card + per-transaction breakdown (gross, expense deduction, net, Milad share, Ali share). Per-transaction override already supported via `milad_share_pct`.
 
-## Non-goals (v1)
+## 8. Audit log page
 
-- No FX auto-revaluation of wallet balances into a reporting currency.
-- No customer login portal — everything is operator-facing.
-- Custom currencies are supported via the existing free-text currency column; no per-tenant currency admin UI beyond what already exists.
+New route `src/routes/_authenticated/audit.tsx` — searchable feed of `audit_events` with old/new diff viewer. Admin-only.
 
-## Rollout order
+## 9. UI polish
 
-1. Migration: enums, `customer_wallets`, `customer_deposits`, `payment_orders`, `service_charges`, doc-type extension, triggers, views, auto-create wallets for existing customers.
-2. Wallet + Deposit UI + wizard.
-3. Payment Order UI + wizard + service charges.
-4. Dashboard trust-separation panel + new Action Center alerts.
-5. Customer statement page + Reports hub.
-6. Mobile shortcut buttons + polish.
+Update `src/styles.css` design tokens for premium light-fintech look: refined neutrals, subtle glass surfaces (`backdrop-blur`, translucent cards), softer shadows, tighter type scale, motion tokens. Apply across shell, cards, tables, KPI tiles. No component API breakage.
 
-## Open question
+## 10. Auth
 
-Anything you want deferred (e.g. skip Reports hub for v1, or ship only Deposits + Payment Orders first)? Otherwise I'll build the full scope above in order.
+No changes. Sign-up already restricted in practice to Milad/Ali via role assignment. Leave `/auth` as-is.
+
+## Out of scope (explicit)
+
+- No public customer portal, no customer login
+- No table renames or drops
+- No destructive data migration
+- No new backend framework — stays on Supabase + TanStack Start
+
+## Delivery order
+
+1. Migration batch (enums + columns + audit + views)
+2. Command Center + Dashboard rebuild on new views
+3. Form upgrades (shared components)
+4. Ali Investor + Audit pages
+5. UI token polish pass
+
+Ready to execute on approval.
