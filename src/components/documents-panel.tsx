@@ -2,13 +2,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { DOC_TYPES, docTypeLabel, type DocType } from "@/lib/settlement";
 import { toast } from "sonner";
-import { Paperclip, Upload, ExternalLink, Trash2 } from "lucide-react";
+import { Paperclip, Upload, ExternalLink, Trash2, Camera } from "lucide-react";
 
 export type RefType = "buy" | "sell" | "expense" | "transfer" | "brought_in" | "customer" | "account" | "other";
 
@@ -23,6 +22,7 @@ export function DocumentsPanel({
 }) {
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
   const [docType, setDocType] = useState<DocType>("payment_receipt");
   const [notes, setNotes] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -129,19 +129,36 @@ export function DocumentsPanel({
             <Textarea rows={1} value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Input
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <Button type="button" variant="secondary" className="w-full" disabled={uploading}
+            onClick={() => fileRef.current?.click()}>
+            <Upload className="h-4 w-4 mr-2" /> {uploading ? "Uploading…" : "Choose file / gallery"}
+          </Button>
+          <Button type="button" variant="secondary" className="w-full sm:hidden" disabled={uploading}
+            onClick={() => cameraRef.current?.click()}>
+            <Camera className="h-4 w-4 mr-2" /> Take photo
+          </Button>
+          <input
             ref={fileRef}
             type="file"
-            className="flex-1"
+            accept="image/*,application/pdf"
+            className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0];
               if (f) handleUpload(f);
             }}
           />
-          <Button type="button" size="sm" variant="secondary" disabled={uploading}>
-            <Upload className="h-4 w-4 mr-1" /> {uploading ? "Uploading…" : "Attach"}
-          </Button>
+          <input
+            ref={cameraRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) handleUpload(f);
+            }}
+          />
         </div>
       </div>
       <div className="space-y-1">

@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { SETTLEMENT_STATUSES, HOLDER_TYPES } from "@/lib/settlement";
 import { DocumentsPanel, type RefType } from "@/components/documents-panel";
-import { SettlementStatusBadge } from "@/components/settlement-status-badge";
+import { SettlementStatusBadge, SmartLabels } from "@/components/settlement-status-badge";
+import { TxnTimeline } from "@/components/txn-timeline";
 import { toast } from "sonner";
 
 type Table = "buy_transactions" | "sell_transactions" | "expenses" | "transfers";
@@ -85,6 +86,8 @@ export function TxnDetailDialog({
         </DialogHeader>
 
         <div className="space-y-4">
+          <SmartLabels row={{ ...row, settlement_status: status }} />
+          <TxnTimeline refType={refType} row={row} />
           <div className="grid md:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs">Settlement status</Label>

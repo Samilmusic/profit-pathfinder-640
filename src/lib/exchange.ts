@@ -13,11 +13,34 @@ export const ACCOUNT_TYPES = [
 
 export const OWNERS = ["milad", "ali", "shared", "other"] as const;
 
+// Rounding rules: IRR/Toman = whole numbers, everything else up to 4 decimals.
+export function decimalsFor(currency?: string | null) {
+  if (!currency) return 4;
+  return currency === "IRR" ? 0 : 4;
+}
+
+export function roundAmount(n: number, currency?: string | null): number {
+  if (!Number.isFinite(n)) return 0;
+  const d = decimalsFor(currency);
+  const p = Math.pow(10, d);
+  return Math.round(n * p) / p;
+}
+
 export function fmt(n: number | string | null | undefined, currency?: string) {
   if (n === null || n === undefined || n === "") return "—";
   const num = typeof n === "string" ? Number(n) : n;
   if (Number.isNaN(num)) return "—";
-  const s = num.toLocaleString(undefined, { maximumFractionDigits: 4 });
+  const d = decimalsFor(currency);
+  const s = num.toLocaleString(undefined, { maximumFractionDigits: d, minimumFractionDigits: currency === "IRR" ? 0 : 0 });
+  return currency ? `${s} ${currency}` : s;
+}
+
+// Profit / P&L values: always show 2 decimals, regardless of currency.
+export function fmtProfit(n: number | string | null | undefined, currency?: string) {
+  if (n === null || n === undefined || n === "") return "—";
+  const num = typeof n === "string" ? Number(n) : n;
+  if (Number.isNaN(num)) return "—";
+  const s = num.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 });
   return currency ? `${s} ${currency}` : s;
 }
 
