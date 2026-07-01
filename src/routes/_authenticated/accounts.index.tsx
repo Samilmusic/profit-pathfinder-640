@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { fmt } from "@/lib/exchange";
 import { Plus } from "lucide-react";
 import { RecordActions } from "@/components/record-actions";
+import { EDIT_FIELDS } from "@/lib/edit-fields";
 
 export const Route = createFileRoute("/_authenticated/accounts/")({ component: AccountsPage });
 
@@ -66,12 +67,7 @@ function AccountsPage() {
                       table="accounts"
                       row={a}
                       invalidateKeys={["accounts", "accounts_full"]}
-                      fields={[
-                        { key: "name", label: "Name" },
-                        { key: "bank_name", label: "Bank" },
-                        { key: "holder_name", label: "Holder" },
-                        { key: "notes", label: "Notes", type: "textarea" },
-                      ]}
+                      fields={EDIT_FIELDS.accounts}
                     />
                   </TableCell>
                 </TableRow>

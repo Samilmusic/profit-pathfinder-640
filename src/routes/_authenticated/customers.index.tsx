@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { toast } from "sonner";
 import { Plus, Search, Building2, Trash2, Star } from "lucide-react";
 import { RecordActions } from "@/components/record-actions";
+import { EDIT_FIELDS } from "@/lib/edit-fields";
 import { CopyButton } from "@/components/copy-button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -260,11 +261,7 @@ function CustomersPage() {
                     table="customers"
                     row={c}
                     invalidateKeys={["customers"]}
-                    fields={[
-                      { key: "name", label: "Name" },
-                      { key: "phone", label: "Phone" },
-                      { key: "notes", label: "Notes", type: "textarea" },
-                    ]}
+                    fields={EDIT_FIELDS.customers}
                   />
                 </div>
                 <div className="flex flex-wrap gap-1.5">

@@ -20,6 +20,7 @@ import { SettlementStatusBadge } from "@/components/settlement-status-badge";
 import { TxnDetailDialog } from "@/components/txn-detail-dialog";
 import { Badge } from "@/components/ui/badge";
 import { RecordActions } from "@/components/record-actions";
+import { EDIT_FIELDS } from "@/lib/edit-fields";
 
 export const Route = createFileRoute("/_authenticated/buy")({ component: Page });
 
@@ -187,15 +188,7 @@ function Page() {
                       row={r}
                       onView={() => setDetailRow(r)}
                       invalidateKeys={["buys"]}
-                      fields={[
-                        { key: "entry_date", label: "Date", type: "date" },
-                        { key: "bought_amount", label: "Bought amount", type: "number", step: "0.0001" },
-                        { key: "buy_rate", label: "Buy rate", type: "number", step: "0.00000001" },
-                        { key: "bought_currency", label: "Bought currency", type: "select", options: CURRENCIES.map((c: string) => ({ value: c, label: c })) },
-                        { key: "paid_currency", label: "Paid currency", type: "select", options: CURRENCIES.map((c: string) => ({ value: c, label: c })) },
-                        { key: "paid_amount", label: "Paid amount", type: "number", step: "0.0001" },
-                        { key: "notes", label: "Notes", type: "textarea" },
-                      ]}
+                      fields={EDIT_FIELDS.buy_transactions}
                     />
                   </div>
                 </TableCell>

@@ -15,6 +15,7 @@ import { DocumentsPanel } from "@/components/documents-panel";
 import { toast } from "sonner";
 import { Plus, CheckCircle2 } from "lucide-react";
 import { RecordActions } from "@/components/record-actions";
+import { EDIT_FIELDS } from "@/lib/edit-fields";
 import { CURRENCIES } from "@/lib/exchange";
 
 export const Route = createFileRoute("/_authenticated/deposits/")({ component: Page });
@@ -59,12 +60,7 @@ function Page() {
                       row={r}
                       onView={() => setDetailId(r.id)}
                       invalidateKeys={["customer_deposits"]}
-                      fields={[
-                        { key: "entry_date", label: "Date", type: "date" },
-                        { key: "amount", label: "Amount", type: "number", step: "0.01" },
-                        { key: "currency", label: "Currency", type: "select", options: CURRENCIES.map((c: string) => ({ value: c, label: c })) },
-                        { key: "notes", label: "Notes", type: "textarea" },
-                      ]}
+                      fields={EDIT_FIELDS.customer_deposits}
                     />
                   </div>
                 </TableCell>
