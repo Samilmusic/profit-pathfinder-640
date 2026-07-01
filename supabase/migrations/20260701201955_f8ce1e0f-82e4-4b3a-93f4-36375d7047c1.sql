@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.trg_sell_received_lot() FROM PUBLIC, anon, authenticated;

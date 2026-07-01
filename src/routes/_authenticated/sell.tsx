@@ -316,9 +316,19 @@ function Page() {
                 <TableCell className="font-mono">{fmt(r.sold_amount, r.sold_currency)}</TableCell>
                 <TableCell className="font-mono">{fmt(r.sell_rate)}</TableCell>
                 <TableCell className="font-mono">{fmt(r.received_amount, r.received_currency)}</TableCell>
-                <TableCell className="text-right font-mono text-accent">{fmt(r.gross_profit)}</TableCell>
-                <TableCell className="text-right font-mono">{fmt(r.milad_profit)}</TableCell>
-                <TableCell className="text-right font-mono">{fmt(r.ali_profit)}</TableCell>
+                {r.sold_currency !== r.received_currency ? (
+                  <>
+                    <TableCell className="text-right"><span className="text-xs rounded-full border border-amber-200 bg-amber-50 text-amber-800 px-2 py-0.5 whitespace-nowrap">Pending · open cycle</span></TableCell>
+                    <TableCell className="text-right text-muted-foreground text-xs">Pending</TableCell>
+                    <TableCell className="text-right text-muted-foreground text-xs">Pending</TableCell>
+                  </>
+                ) : (
+                  <>
+                    <TableCell className="text-right font-mono text-accent">{fmt(r.gross_profit)}</TableCell>
+                    <TableCell className="text-right font-mono">{fmt(r.milad_profit)}</TableCell>
+                    <TableCell className="text-right font-mono">{fmt(r.ali_profit)}</TableCell>
+                  </>
+                )}
                 <TableCell><DealStatusBadge value={r.deal_status} /></TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1">

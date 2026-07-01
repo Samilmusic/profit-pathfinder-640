@@ -51,7 +51,11 @@ export function smartLabelsFor(row: any): { tone: Tone; label: string }[] {
     if (s === "currency_delivered" || s === "awaiting_receipt") out.push({ tone: "warning", label: "Missing receipt" });
     out.push({ tone: "info", label: "Needs action" });
   }
-  const gp = Number(row.gross_profit ?? NaN);
+  const crossCurrency = row.sold_currency && row.received_currency && row.sold_currency !== row.received_currency;
+  const gp = crossCurrency ? NaN : Number(row.gross_profit ?? NaN);
+  if (crossCurrency) {
+    out.push({ tone: "info", label: "Profit pending cycle" });
+  }
   if (!Number.isNaN(gp)) {
     if (gp > 0 && s === "completed") out.push({ tone: "success", label: "Profit ready" });
     if (gp < 0) out.push({ tone: "danger", label: "Loss warning" });
