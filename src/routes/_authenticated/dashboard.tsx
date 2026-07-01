@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
 import { fmt } from "@/lib/exchange";
-import { holderLabel } from "@/lib/settlement";
+import { holderLabel, holderShort } from "@/lib/settlement";
 import {
   ArrowDownToLine, ShoppingCart, TrendingUp, Receipt, ArrowLeftRight,
   Users, Wallet as WalletIcon, AlertTriangle, ClipboardList, HandCoins,
@@ -203,10 +203,10 @@ function DashboardPage() {
   const alerts: { text: string; tone: "warn" | "info" }[] = [];
   (pendingBuysQ.data ?? []).forEach((r: any) => {
     if (r.money_holder_type && r.money_holder_type !== "customer") {
-      alerts.push({ text: `${fmt(r.paid_amount, r.paid_currency)} sitting with ${holderLabel(r.money_holder_type)} — buy from ${r.entry_date}`, tone: "warn" });
+      alerts.push({ text: `${fmt(r.paid_amount, r.paid_currency)} is with ${holderShort(r.money_holder_type)} and must be deposited or settled — buy from ${r.entry_date}.`, tone: "warn" });
     }
     if (r.currency_holder_type && r.currency_holder_type !== "customer") {
-      alerts.push({ text: `${fmt(r.bought_amount, r.bought_currency)} currency with ${holderLabel(r.currency_holder_type)} — must be delivered`, tone: "warn" });
+      alerts.push({ text: `${fmt(r.bought_amount, r.bought_currency)} is with ${holderShort(r.currency_holder_type)} and must be delivered — buy from ${r.entry_date}.`, tone: "warn" });
     }
   });
   (pendingSellsQ.data ?? []).forEach((r: any) => {
@@ -327,7 +327,7 @@ function DashboardPage() {
         <StatCard label="Toman balance" value={fmt(totalByCurrency("IRR"), "IRR")} />
         <StatCard label="USD balance" value={fmt(totalByCurrency("USD"), "USD")} />
         <StatCard label="Cash total (mixed)" value={fmt(cashTotal)} />
-        <StatCard label="Held by people" value={String((holdingQ.data ?? []).length) + " lines"} />
+        <StatCard label="Cash with People" value={String((holdingQ.data ?? []).length) + " lines"} />
       </div>
 
       <Card className="mb-6" style={{ boxShadow: "var(--shadow-soft)" }}>
@@ -344,7 +344,7 @@ function DashboardPage() {
             const typeLabel: Record<string,string> = {
               cash: "Cash Box", toman_bank: "IRR Bank", aed_bank: "AED Bank",
               foreign_currency: "FX Bank", wallet: "Crypto",
-              person_holding: "Held by Person", customer_wallet: "Customer Wallet",
+              person_holding: "Cash with Person", customer_wallet: "Customer Wallet",
               pending_delivery: "Pending Delivery", other: "Other",
             };
             if (currencies.length === 0) return <div className="p-4 text-sm text-muted-foreground">No accounts yet.</div>;
@@ -446,7 +446,7 @@ function DashboardPage() {
               <Link to="/pending-settlements"><ClipboardList className="h-5 w-5" /><span className="text-xs">Pending</span></Link>
             </Button>
             <Button asChild variant="outline" className="h-20 flex-col gap-1">
-              <Link to="/held-by-person"><HandCoins className="h-5 w-5" /><span className="text-xs">Held by Person</span></Link>
+              <Link to="/held-by-person"><HandCoins className="h-5 w-5" /><span className="text-xs">Cash with People</span></Link>
             </Button>
           </div>
         </CardContent>

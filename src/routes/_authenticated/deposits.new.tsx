@@ -215,7 +215,7 @@ function NewDepositPage() {
 
   const quickShortcuts = useMemo(() => {
     const list = accounts.data ?? [];
-    const names = ["Cash Box", "ENBD AED", "Toman Bank", "Held by Ali", "Held by Milad"];
+    const names = ["Cash Box", "ENBD AED", "Toman Bank", "Cash with Ali", "Cash with Milad"];
     return names.map((n) => {
       const acc = list.find((a: any) => a.name?.toLowerCase().includes(n.toLowerCase()));
       return { label: n, acc };

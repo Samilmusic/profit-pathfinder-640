@@ -9,7 +9,7 @@ export const ACCOUNT_TYPES = [
   { value: "aed_bank", label: "AED Bank" },
   { value: "foreign_currency", label: "Foreign Currency Bank (USD/GBP/EUR)" },
   { value: "wallet", label: "Wallet / Crypto" },
-  { value: "person_holding", label: "Held by Person (Milad / Ali / Customer)" },
+  { value: "person_holding", label: "Cash with Person (Ali / Milad / Customer)" },
   { value: "customer_wallet", label: "Customer Wallet (Trust)" },
   { value: "pending_delivery", label: "Pending Delivery / In Transit" },
   { value: "other", label: "Other" },

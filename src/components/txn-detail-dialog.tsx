@@ -106,7 +106,7 @@ export function TxnDetailDialog({
             )}
             {showHolders && (
               <div className="space-y-1.5">
-                <Label className="text-xs">Money currently held by</Label>
+                <Label className="text-xs">Cash currently with</Label>
                 <Select value={moneyHolder || "__none"} onValueChange={(v) => setMoneyHolder(v === "__none" ? "" : v)}>
                   <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                   <SelectContent>
@@ -118,7 +118,7 @@ export function TxnDetailDialog({
             )}
             {showHolders && (
               <div className="space-y-1.5">
-                <Label className="text-xs">Currency currently held by</Label>
+                <Label className="text-xs">Currency currently with</Label>
                 <Select value={currencyHolder || "__none"} onValueChange={(v) => setCurrencyHolder(v === "__none" ? "" : v)}>
                   <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                   <SelectContent>

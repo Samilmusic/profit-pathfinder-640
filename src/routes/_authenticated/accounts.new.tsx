@@ -25,7 +25,7 @@ const KINDS: { key: Kind; label: string; hint: string; icon: string }[] = [
   { key: "cash",   label: "Cash Box",       hint: "Physical cash in any currency", icon: "💵" },
   { key: "bank",   label: "Bank Account",   hint: "AED / IRR / GBP / USD / EUR",   icon: "🏦" },
   { key: "crypto", label: "Crypto Wallet",  hint: "USDT, BTC, ETH…",               icon: "🪙" },
-  { key: "person", label: "Person Holding", hint: "Held by Ali / Milad / Other",   icon: "🧑" },
+  { key: "person", label: "Cash with Person", hint: "Cash physically with Ali / Milad / Customer / Other", icon: "🧑" },
   { key: "other",  label: "Other",          hint: "Anything else",                 icon: "•" },
 ];
 
@@ -74,20 +74,34 @@ function NewAccountPage() {
 
   // Person
   const [person, setPerson] = useState("ali");
+  const [personName, setPersonName] = useState(""); // e.g. customer name for "customer"/"other"
+
+  const personLabel = useMemo(() => {
+    if (person === "ali") return "Ali";
+    if (person === "milad") return "Milad";
+    if (person === "customer") return `Customer${personName ? ` - ${personName}` : ""}`;
+    return `Other${personName ? ` - ${personName}` : ""}`;
+  }, [person, personName]);
 
   const nameSuggestion = useMemo(() => {
     switch (kind) {
-      case "cash": return "e.g. Main Cash, Office Cash, Ali Cash";
-      case "bank": return `e.g. ${bankName || "ENBD"} ${currency}`;
+      case "cash": return "e.g. Main Cash AED, Office Cash, Petty Cash";
+      case "bank": return `e.g. ${bankName || "ENBD"} ${currency} Account`;
       case "crypto": return `e.g. USDT ${chain}`;
-      case "person": return `Held by ${person.charAt(0).toUpperCase() + person.slice(1)}`;
+      case "person": return `Cash with ${personLabel} (${currency})`;
       default: return "Account name";
     }
-  }, [kind, bankName, currency, chain, person]);
+  }, [kind, bankName, currency, chain, personLabel]);
+
+  // Auto-fill / keep in sync the "Cash with Person" name until the user edits it manually.
+  const [nameTouched, setNameTouched] = useState(false);
+  const autoName = kind === "person" ? `Cash with ${personLabel} (${currency})` : "";
+  const effectiveName = kind === "person" && !nameTouched && !name ? autoName : name;
 
   const create = useMutation({
     mutationFn: async () => {
-      if (!name.trim()) throw new Error("Account name is required");
+      const finalName = (kind === "person" && !name.trim()) ? autoName : name.trim();
+      if (!finalName) throw new Error("Account name is required");
       if (kind === "bank" && !bankName.trim()) throw new Error("Bank name is required");
       if (kind === "crypto" && !walletAddress.trim()) throw new Error("Wallet address is required");
 
@@ -96,7 +110,7 @@ function NewAccountPage() {
       const finalOwner = kind === "person" ? person : owner;
 
       const payload: any = {
-        name: name.trim(),
+        name: finalName,
         account_type,
         currency,
         owner: finalOwner as any,
@@ -120,7 +134,10 @@ function NewAccountPage() {
           account_number: walletAddress,
         });
       } else if (kind === "person") {
-        Object.assign(payload, { holder_name: name.trim() });
+        Object.assign(payload, {
+          holder_name: personName || personLabel,
+          holder_type: person, // 'ali' | 'milad' | 'customer' | 'other'
+        });
       }
 
       const { error } = await supabase.from("accounts").insert(payload);
@@ -146,7 +163,7 @@ function NewAccountPage() {
           </Button>
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-lg font-semibold">New Account</h1>
-            <p className="truncate text-xs text-muted-foreground">Cash box, bank account, crypto wallet, or person holding</p>
+            <p className="truncate text-xs text-muted-foreground">Cash box, bank account, crypto wallet, or cash with a person</p>
           </div>
         </div>
       </div>
@@ -183,7 +200,16 @@ function NewAccountPage() {
             kind === "person" ? "Label *" :
             "Name *"
           }>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={nameSuggestion} className="h-11 text-base" required />
+            <Input
+              value={effectiveName}
+              onChange={(e) => { setNameTouched(true); setName(e.target.value); }}
+              placeholder={nameSuggestion}
+              className="h-11 text-base"
+              required
+            />
+            {kind === "person" && (
+              <p className="text-[11px] text-muted-foreground">Auto-suggested — edit if you want a different label.</p>
+            )}
           </F>
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -207,12 +233,24 @@ function NewAccountPage() {
                   <SelectContent>
                     <SelectItem value="ali">Ali</SelectItem>
                     <SelectItem value="milad">Milad</SelectItem>
+                    <SelectItem value="customer">Customer</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
               </F>
             )}
           </div>
+
+          {kind === "person" && (person === "customer" || person === "other") && (
+            <F label={person === "customer" ? "Customer name *" : "Person name *"}>
+              <Input
+                value={personName}
+                onChange={(e) => setPersonName(e.target.value)}
+                placeholder={person === "customer" ? "e.g. Reza Mohammadi" : "e.g. Driver, Courier"}
+                className="h-11 text-base"
+              />
+            </F>
+          )}
 
           <F label="Opening balance">
             <NumberInput currency={currency} value={openingBalance} onChange={(e) => setOpeningBalance((e.target as HTMLInputElement).value)} placeholder="0" />

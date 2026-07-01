@@ -28,10 +28,10 @@ export const DOC_TYPES = [
 export type DocType = (typeof DOC_TYPES)[number]["value"];
 
 export const HOLDER_TYPES = [
-  { value: "milad", label: "Milad" },
-  { value: "ali", label: "Ali" },
-  { value: "customer", label: "Customer" },
-  { value: "other", label: "Other person" },
+  { value: "milad", label: "Cash with Milad" },
+  { value: "ali", label: "Cash with Ali" },
+  { value: "customer", label: "Cash with Customer" },
+  { value: "other", label: "Cash with Other person" },
 ] as const;
 
 export function statusLabel(s: string | null | undefined) {
@@ -46,14 +46,36 @@ export function holderLabel(h: string | null | undefined) {
   return HOLDER_TYPES.find((x) => x.value === h)?.label ?? h ?? "";
 }
 
+/** Short "with X" fragment for inline sentences (e.g. "…is with Ali"). */
+export function holderShort(h: string | null | undefined) {
+  switch (h) {
+    case "milad": return "Milad";
+    case "ali": return "Ali";
+    case "customer": return "the customer";
+    case "other": return "another person";
+    default: return h ?? "";
+  }
+}
+
+/** Human name only (no "Cash with"), e.g. "Ali", "Milad", "Customer". */
+export function holderName(h: string | null | undefined) {
+  switch (h) {
+    case "milad": return "Milad";
+    case "ali": return "Ali";
+    case "customer": return "Customer";
+    case "other": return "Other";
+    default: return h ?? "";
+  }
+}
+
 export const MONEY_LOCATIONS = [
   { value: "cash_box", label: "Cash Box" },
   { value: "aed_bank", label: "AED Bank" },
   { value: "toman_bank", label: "Toman Bank" },
   { value: "foreign_bank", label: "Foreign Bank" },
-  { value: "held_milad", label: "Held by Milad" },
-  { value: "held_ali", label: "Held by Ali" },
-  { value: "held_customer", label: "Held by Customer" },
+  { value: "held_milad", label: "Cash with Milad" },
+  { value: "held_ali", label: "Cash with Ali" },
+  { value: "held_customer", label: "Cash with Customer" },
   { value: "pending_delivery", label: "Pending Delivery" },
   { value: "pending_deposit", label: "Pending Deposit" },
 ] as const;
