@@ -184,6 +184,29 @@ function CommandCenter() {
           empty="All settled" to="/pending-settlements"
         >
           <Line label="Open buys" value={String(buysQ.data?.length ?? 0)} />
+
+        </ActionCard>
+
+        <ActionCard
+          icon={Repeat} tone="warn" title="Cycles awaiting buyback" count={cyclesAwaitingBuyback.length}
+          empty="No open cycles awaiting conversion" to="/trades"
+        >
+          {cyclesAwaitingBuyback.slice(0, 5).map((t: any) => (
+            <Line
+              key={t.id}
+              label={`${t.code} · ${t.initial_currency}→${t.intermediate_currency}`}
+              value={`${fmt(Number(t.intermediate_received||0) - Number(t.intermediate_used||0), t.intermediate_currency)} left`}
+            />
+          ))}
+        </ActionCard>
+
+        <ActionCard
+          icon={TrendingDown} tone="error" title="Cycles in loss" count={cyclesInLoss.length}
+          empty="No losing cycles" to="/trades"
+        >
+          {cyclesInLoss.slice(0, 5).map((t: any) => (
+            <Line key={t.id} label={t.code} value={fmt(t.realized_profit, t.realized_profit_currency || t.initial_currency)} />
+          ))}
           <Line label="Open sells" value={String(sellsQ.data?.length ?? 0)} />
           <Line label="Open deposits" value={String(depositsQ.data?.length ?? 0)} />
           <Line label="Open payment orders" value={String(ordersQ.data?.length ?? 0)} />
