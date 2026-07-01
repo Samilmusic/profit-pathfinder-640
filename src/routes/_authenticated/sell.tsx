@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { RecordActions } from "@/components/record-actions";
 import { EDIT_FIELDS } from "@/lib/edit-fields";
+import { UseMarketRateButton } from "@/components/use-market-rate-button";
 
 export const Route = createFileRoute("/_authenticated/sell")({ component: Page });
 
