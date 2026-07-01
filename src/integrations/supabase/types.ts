@@ -899,6 +899,7 @@ export type Database = {
         | "foreign_currency"
         | "wallet"
         | "person_holding"
+        | "customer_wallet"
       app_role: "admin" | "milad" | "ali" | "viewer"
       brought_in_by: "milad" | "ali" | "customer" | "other"
       brought_in_reason:
@@ -917,6 +918,9 @@ export type Database = {
         | "expense_receipt"
         | "id_passport"
         | "other"
+        | "deposit_receipt"
+        | "payment_order_proof"
+      fee_kind: "fixed" | "percent" | "manual"
       holder_type: "milad" | "ali" | "customer" | "other"
       ledger_ref_type:
         | "brought_in"
@@ -926,7 +930,17 @@ export type Database = {
         | "transfer"
         | "opening_balance"
         | "adjustment"
+        | "deposit"
+        | "payment_order"
+        | "service_charge"
       paid_by: "milad" | "ali"
+      payment_method:
+        | "bank_transfer"
+        | "cash_delivery"
+        | "currency_delivery"
+        | "internal"
+        | "international"
+        | "other"
       settlement_status:
         | "draft"
         | "awaiting_payment"
@@ -1072,6 +1086,7 @@ export const Constants = {
         "foreign_currency",
         "wallet",
         "person_holding",
+        "customer_wallet",
       ],
       app_role: ["admin", "milad", "ali", "viewer"],
       brought_in_by: ["milad", "ali", "customer", "other"],
@@ -1092,7 +1107,10 @@ export const Constants = {
         "expense_receipt",
         "id_passport",
         "other",
+        "deposit_receipt",
+        "payment_order_proof",
       ],
+      fee_kind: ["fixed", "percent", "manual"],
       holder_type: ["milad", "ali", "customer", "other"],
       ledger_ref_type: [
         "brought_in",
@@ -1102,8 +1120,19 @@ export const Constants = {
         "transfer",
         "opening_balance",
         "adjustment",
+        "deposit",
+        "payment_order",
+        "service_charge",
       ],
       paid_by: ["milad", "ali"],
+      payment_method: [
+        "bank_transfer",
+        "cash_delivery",
+        "currency_delivery",
+        "internal",
+        "international",
+        "other",
+      ],
       settlement_status: [
         "draft",
         "awaiting_payment",
