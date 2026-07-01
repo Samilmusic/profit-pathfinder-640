@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { Plus, FileText } from "lucide-react";
 import { SettlementStatusBadge } from "@/components/settlement-status-badge";
 import { TxnDetailDialog } from "@/components/txn-detail-dialog";
+import { UseMarketRateButton } from "@/components/use-market-rate-button";
 import { Badge } from "@/components/ui/badge";
 import { RecordActions } from "@/components/record-actions";
 import { EDIT_FIELDS } from "@/lib/edit-fields";
@@ -121,7 +122,7 @@ function Page() {
                       <UseMarketRateButton
                         currency={f.bought_currency}
                         which="buy"
-                        onApply={(r) => setF({ ...f, buy_rate: String(r) })}
+                        onApply={(r: number) => setF({ ...f, buy_rate: String(r) })}
                         className="self-start"
                       />
                     )}
