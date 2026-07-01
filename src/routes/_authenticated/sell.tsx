@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AccountSelect, useCustomers } from "@/components/account-select";
+import { CustomerBankAccountPicker, touchBankAccount } from "@/components/customer-bank-account-picker";
+import { maskAccount } from "@/components/customer-bank-account-form";
 import { CURRENCIES, fmt } from "@/lib/exchange";
 import { toast } from "sonner";
 import { Plus, FileText } from "lucide-react";
@@ -123,6 +125,7 @@ function Page() {
       };
       const { error } = await supabase.from("sell_transactions").insert(payload);
       if (error) throw error;
+      await touchBankAccount(f.customer_bank_account_id);
     },
     onSuccess: () => { toast.success("Sell recorded"); qc.invalidateQueries(); setOpen(false); setF({ ...f, sold_amount: "", sell_rate: "", notes: "" }); },
     onError: (e: any) => toast.error(e.message),
