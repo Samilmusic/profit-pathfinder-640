@@ -1523,6 +1523,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           creates_cycle: boolean
+          currency_delivered: boolean
           currency_holder_type:
             | Database["public"]["Enums"]["holder_type"]
             | null
@@ -1532,6 +1533,11 @@ export type Database = {
           customer_phone: string | null
           deal_status: Database["public"]["Enums"]["sell_deal_status"]
           deleted_at: string | null
+          delivered_at: string | null
+          delivered_by: string | null
+          delivered_to: string | null
+          delivery_method: string | null
+          delivery_notes: string | null
           due_date: string | null
           entry_date: string
           expected_payment_date: string | null
@@ -1568,6 +1574,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           creates_cycle?: boolean
+          currency_delivered?: boolean
           currency_holder_type?:
             | Database["public"]["Enums"]["holder_type"]
             | null
@@ -1577,6 +1584,11 @@ export type Database = {
           customer_phone?: string | null
           deal_status?: Database["public"]["Enums"]["sell_deal_status"]
           deleted_at?: string | null
+          delivered_at?: string | null
+          delivered_by?: string | null
+          delivered_to?: string | null
+          delivery_method?: string | null
+          delivery_notes?: string | null
           due_date?: string | null
           entry_date?: string
           expected_payment_date?: string | null
@@ -1613,6 +1625,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           creates_cycle?: boolean
+          currency_delivered?: boolean
           currency_holder_type?:
             | Database["public"]["Enums"]["holder_type"]
             | null
@@ -1622,6 +1635,11 @@ export type Database = {
           customer_phone?: string | null
           deal_status?: Database["public"]["Enums"]["sell_deal_status"]
           deleted_at?: string | null
+          delivered_at?: string | null
+          delivered_by?: string | null
+          delivered_to?: string | null
+          delivery_method?: string | null
+          delivery_notes?: string | null
           due_date?: string | null
           entry_date?: string
           expected_payment_date?: string | null
@@ -2944,6 +2962,16 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      mark_sell_delivered: {
+        Args: {
+          _delivered_to?: string
+          _id: string
+          _method: string
+          _notes?: string
+          _sold_from_account_id?: string
+        }
+        Returns: undefined
+      }
       recompute_cycle_profit: {
         Args: { _cycle_id: string }
         Returns: undefined
@@ -3068,6 +3096,8 @@ export type Database = {
         | "ready_to_close"
         | "closed"
         | "cancelled"
+        | "waiting_currency_delivery"
+        | "waiting_delivery_proof"
       settlement_status:
         | "draft"
         | "awaiting_payment"
@@ -3333,6 +3363,8 @@ export const Constants = {
         "ready_to_close",
         "closed",
         "cancelled",
+        "waiting_currency_delivery",
+        "waiting_delivery_proof",
       ],
       settlement_status: [
         "draft",
