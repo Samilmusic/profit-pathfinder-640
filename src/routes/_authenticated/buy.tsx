@@ -126,6 +126,27 @@ function Page() {
                     <SelectContent>{(customers.data ?? []).map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                   </Select>
                 </F>
+                <div className="md:col-span-2">
+                  <F label={`Link to open Trade Cycle (buyback ${f.paid_currency} → ${f.bought_currency})`}>
+                    <Select value={f.trade_cycle_id || "none"} onValueChange={(v) => setF({ ...f, trade_cycle_id: v === "none" ? "" : v })}>
+                      <SelectTrigger><SelectValue placeholder="Not linked (treated as fresh buy)" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Not linked</SelectItem>
+                        {(openCyclesQ.data ?? []).map((c: any) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.code} · {fmt(c.intermediate_remaining, c.intermediate_currency)} {c.intermediate_currency} left · initial {fmt(c.initial_amount, c.initial_currency)} @ {fmt(c.sell_rate)}
+                          </SelectItem>
+                        ))}
+                        {(openCyclesQ.data ?? []).length === 0 && (
+                          <div className="px-2 py-3 text-xs text-muted-foreground text-center">No open cycles awaiting {f.paid_currency}→{f.bought_currency} buyback.</div>
+                        )}
+                      </SelectContent>
+                    </Select>
+                    {f.trade_cycle_id && (
+                      <Badge variant="outline" className="mt-2 text-[11px]">Realised profit will post to this cycle on save.</Badge>
+                    )}
+                  </F>
+                </div>
                 <div className="md:col-span-2"><F label="Notes"><Textarea value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} /></F></div>
                 <div className="md:col-span-2 flex justify-end gap-2"><Button variant="ghost" type="button" onClick={() => setOpen(false)}>Cancel</Button><Button type="submit" disabled={create.isPending}>Save</Button></div>
               </form>
