@@ -9,6 +9,7 @@ import { fmt } from "@/lib/exchange";
 import {
   AlertTriangle, HandCoins, Users, FileWarning, Truck, Wallet,
   ClipboardList, TrendingDown, CalendarClock, Send, ArrowUpFromLine,
+  Clock, CheckCircle2, Hourglass,
 } from "lucide-react";
 import { Repeat } from "lucide-react";
 
@@ -34,6 +35,14 @@ function CommandCenter() {
   const sellsQ = useQuery({
     queryKey: ["cc_sells"],
     queryFn: async () => (await supabase.from("sell_transactions").select("*").is("deleted_at", null).not("settlement_status", "in", "(completed,cancelled)")).data ?? [],
+  });
+  const openDealsQ = useQuery({
+    queryKey: ["cc_open_deals"],
+    queryFn: async () => (await supabase.from("sell_transactions")
+      .select("id, entry_date, deal_status, customer_id, received_amount, received_currency, expected_payment_date, customer:customers(name)")
+      .is("deleted_at", null)
+      .not("deal_status", "in", "(closed,cancelled)")
+      .order("entry_date", { ascending: false })).data ?? [],
   });
   const depositsQ = useQuery({
     queryKey: ["cc_deposits"],
@@ -98,6 +107,15 @@ function CommandCenter() {
     (Number(t.intermediate_received || 0) - Number(t.intermediate_used || 0)) > 0.0001
   );
   const cyclesInLoss = trades.filter((t: any) => Number(t.realized_profit || 0) < 0);
+
+  const deals: any[] = openDealsQ.data ?? [];
+  const dealsByStatus = (s: string) => deals.filter((d) => d.deal_status === s);
+  const dOpen = dealsByStatus("open");
+  const dWaitPay = dealsByStatus("waiting_payment");
+  const dPartial = dealsByStatus("partially_paid");
+  const dWaitRec = dealsByStatus("waiting_receipt");
+  const dReady = dealsByStatus("ready_to_close");
+  const overdueDeals = deals.filter((d) => d.expected_payment_date && d.expected_payment_date < today && d.deal_status !== "closed");
 
   return (
     <>
@@ -254,8 +272,43 @@ function CommandCenter() {
             <Line key={m.id} label={m.to_label || m.from_label || m.movement_type} value={fmt(m.amount, m.currency)} />
           ))}
         </ActionCard>
+
+        <ActionCard icon={ClipboardList} tone="info" title="Open Deals" count={dOpen.length} empty="No open deals" to="/sell">
+          {dOpen.slice(0, 5).map((d) => (<DealLine key={d.id} d={d} />))}
+        </ActionCard>
+
+        <ActionCard icon={Hourglass} tone="warn" title="Waiting for Payment" count={dWaitPay.length} empty="Nothing waiting" to="/sell">
+          {dWaitPay.slice(0, 5).map((d) => (<DealLine key={d.id} d={d} />))}
+        </ActionCard>
+
+        <ActionCard icon={HandCoins} tone="warn" title="Partially Paid" count={dPartial.length} empty="No partials" to="/sell">
+          {dPartial.slice(0, 5).map((d) => (<DealLine key={d.id} d={d} />))}
+        </ActionCard>
+
+        <ActionCard icon={FileWarning} tone="warn" title="Waiting for Receipt" count={dWaitRec.length} empty="All receipts in" to="/sell">
+          {dWaitRec.slice(0, 5).map((d) => (<DealLine key={d.id} d={d} />))}
+        </ActionCard>
+
+        <ActionCard icon={CheckCircle2} tone="info" title="Ready to Close" count={dReady.length} empty="Nothing to close" to="/sell">
+          {dReady.slice(0, 5).map((d) => (<DealLine key={d.id} d={d} />))}
+        </ActionCard>
+
+        <ActionCard icon={Clock} tone="error" title="Overdue Deals" count={overdueDeals.length} empty="No overdue deals" to="/sell">
+          {overdueDeals.slice(0, 5).map((d) => (<DealLine key={d.id} d={d} suffix={` · due ${d.expected_payment_date}`} />))}
+        </ActionCard>
       </div>
     </>
+  );
+}
+
+function DealLine({ d, suffix }: { d: any; suffix?: string }) {
+  return (
+    <div className="flex justify-between border-b border-border/50 py-1 last:border-0">
+      <Link to="/sells/$id" params={{ id: d.id }} className="text-muted-foreground truncate mr-2 hover:underline">
+        {(d.customer?.name ?? "No customer") + (suffix ?? "")}
+      </Link>
+      <span className="font-mono text-xs">{fmt(d.received_amount, d.received_currency)}</span>
+    </div>
   );
 }
 
