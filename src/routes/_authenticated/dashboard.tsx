@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
 import { MarketRatesWidget } from "@/components/market-rates-widget";
+import { AskBusinessButton } from "@/components/ai/ask-business-button";
 import { fmt } from "@/lib/exchange";
 import {
   ArrowDownToLine, ShoppingCart, TrendingUp, Receipt, ArrowLeftRight,
@@ -280,6 +281,7 @@ function DashboardPage() {
       />
 
       <MarketRatesWidget />
+      <AskBusinessButton />
 
       {/* SECTION 1 — INVENTORY BY CURRENCY */}
       <SectionTitle icon={<Boxes className="h-4 w-4" />} title="Inventory by currency" hint="Never merged. Each currency stands alone." />
