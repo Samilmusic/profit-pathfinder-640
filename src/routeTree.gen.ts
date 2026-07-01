@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedWalletsRouteImport } from './routes/_authenticated/wallets'
+import { Route as AuthenticatedTrustRouteImport } from './routes/_authenticated/trust'
 import { Route as AuthenticatedTransfersRouteImport } from './routes/_authenticated/transfers'
 import { Route as AuthenticatedStatementsRouteImport } from './routes/_authenticated/statements'
 import { Route as AuthenticatedSellRouteImport } from './routes/_authenticated/sell'
@@ -43,6 +45,16 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedWalletsRoute = AuthenticatedWalletsRouteImport.update({
+  id: '/wallets',
+  path: '/wallets',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedTrustRoute = AuthenticatedTrustRouteImport.update({
+  id: '/trust',
+  path: '/trust',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedTransfersRoute = AuthenticatedTransfersRouteImport.update({
   id: '/transfers',
@@ -154,6 +166,8 @@ export interface FileRoutesByFullPath {
   '/sell': typeof AuthenticatedSellRoute
   '/statements': typeof AuthenticatedStatementsRoute
   '/transfers': typeof AuthenticatedTransfersRoute
+  '/trust': typeof AuthenticatedTrustRoute
+  '/wallets': typeof AuthenticatedWalletsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -175,6 +189,8 @@ export interface FileRoutesByTo {
   '/sell': typeof AuthenticatedSellRoute
   '/statements': typeof AuthenticatedStatementsRoute
   '/transfers': typeof AuthenticatedTransfersRoute
+  '/trust': typeof AuthenticatedTrustRoute
+  '/wallets': typeof AuthenticatedWalletsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -198,6 +214,8 @@ export interface FileRoutesById {
   '/_authenticated/sell': typeof AuthenticatedSellRoute
   '/_authenticated/statements': typeof AuthenticatedStatementsRoute
   '/_authenticated/transfers': typeof AuthenticatedTransfersRoute
+  '/_authenticated/trust': typeof AuthenticatedTrustRoute
+  '/_authenticated/wallets': typeof AuthenticatedWalletsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -221,6 +239,8 @@ export interface FileRouteTypes {
     | '/sell'
     | '/statements'
     | '/transfers'
+    | '/trust'
+    | '/wallets'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -242,6 +262,8 @@ export interface FileRouteTypes {
     | '/sell'
     | '/statements'
     | '/transfers'
+    | '/trust'
+    | '/wallets'
   id:
     | '__root__'
     | '/'
@@ -264,6 +286,8 @@ export interface FileRouteTypes {
     | '/_authenticated/sell'
     | '/_authenticated/statements'
     | '/_authenticated/transfers'
+    | '/_authenticated/trust'
+    | '/_authenticated/wallets'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -294,6 +318,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/wallets': {
+      id: '/_authenticated/wallets'
+      path: '/wallets'
+      fullPath: '/wallets'
+      preLoaderRoute: typeof AuthenticatedWalletsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/trust': {
+      id: '/_authenticated/trust'
+      path: '/trust'
+      fullPath: '/trust'
+      preLoaderRoute: typeof AuthenticatedTrustRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/transfers': {
       id: '/_authenticated/transfers'
@@ -435,6 +473,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSellRoute: typeof AuthenticatedSellRoute
   AuthenticatedStatementsRoute: typeof AuthenticatedStatementsRoute
   AuthenticatedTransfersRoute: typeof AuthenticatedTransfersRoute
+  AuthenticatedTrustRoute: typeof AuthenticatedTrustRoute
+  AuthenticatedWalletsRoute: typeof AuthenticatedWalletsRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -455,6 +495,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSellRoute: AuthenticatedSellRoute,
   AuthenticatedStatementsRoute: AuthenticatedStatementsRoute,
   AuthenticatedTransfersRoute: AuthenticatedTransfersRoute,
+  AuthenticatedTrustRoute: AuthenticatedTrustRoute,
+  AuthenticatedWalletsRoute: AuthenticatedWalletsRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
