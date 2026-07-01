@@ -297,8 +297,8 @@ function Page() {
                         { key: "entry_date", label: "Date", type: "date" },
                         { key: "sold_amount", label: "Sold amount", type: "number", step: "0.0001" },
                         { key: "sell_rate", label: "Sell rate", type: "number", step: "0.00000001" },
-                        { key: "sold_currency", label: "Sold currency", type: "select", options: CCY_LIST.map(c => ({ value: c, label: c })) },
-                        { key: "received_currency", label: "Received currency", type: "select", options: CCY_LIST.map(c => ({ value: c, label: c })) },
+                        { key: "sold_currency", label: "Sold currency", type: "select", options: CURRENCIES.map((c: string) => ({ value: c, label: c })) },
+                        { key: "received_currency", label: "Received currency", type: "select", options: CURRENCIES.map((c: string) => ({ value: c, label: c })) },
                         { key: "received_amount", label: "Received amount", type: "number", step: "0.0001" },
                         { key: "notes", label: "Notes", type: "textarea" },
                       ]}
