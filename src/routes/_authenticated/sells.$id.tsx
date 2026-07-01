@@ -65,25 +65,64 @@ function DealPage() {
   );
   const remaining = s ? Number(s.received_amount) - paid : 0;
 
-  const [pf, setPf] = useState({ entry_date: new Date().toISOString().slice(0, 10), amount: "", account_id: "", notes: "" });
+  const [pf, setPf] = useState({
+    entry_date: new Date().toISOString().slice(0, 10),
+    method: "cash_box" as "cash_box" | "bank_account" | "cash_with_person" | "customer_wallet",
+    currency: "",
+    amount: "",
+    account_id: "",
+    notes: "",
+  });
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [showPay, setShowPay] = useState(false);
   const [showDeliver, setShowDeliver] = useState(false);
   const [df, setDf] = useState({ method: "cash_handover", delivered_to: "", notes: "", account_id: "" });
 
   const addPayment = useMutation({
     mutationFn: async () => {
-      if (!pf.amount || !pf.account_id) throw new Error("Amount and account required");
+      if (!pf.amount || Number(pf.amount) <= 0) throw new Error("Amount is required");
+      if (!pf.account_id) throw new Error("Receiving account is required");
+      if (!receiptFile) throw new Error("Receipt upload is required");
+      const currency = pf.currency || s.received_currency;
       const { data: u } = await supabase.auth.getUser();
-      const { error } = await supabase.from("sell_payments").insert({
-        sell_id: id, entry_date: pf.entry_date, currency: s.received_currency,
+
+      // 1. Upload receipt to storage
+      const ext = receiptFile.name.split(".").pop() ?? "bin";
+      const path = `sell/${id}/${crypto.randomUUID()}.${ext}`;
+      const up = await supabase.storage.from("documents").upload(path, receiptFile, {
+        contentType: receiptFile.type || "application/octet-stream",
+      });
+      if (up.error) throw up.error;
+      const publicUrl = supabase.storage.from("documents").getPublicUrl(path).data.publicUrl;
+
+      // 2. Insert the payment (triggers post ledger + inventory lot via sync_sell_received_lot)
+      const { error: pErr } = await supabase.from("sell_payments").insert({
+        sell_id: id, entry_date: pf.entry_date, currency,
         amount: Number(pf.amount), received_into_account_id: pf.account_id,
+        receipt_url: publicUrl,
         notes: pf.notes || null, created_by: u.user?.id,
       });
-      if (error) throw error;
+      if (pErr) throw pErr;
+
+      // 3. Register the receipt in documents so status gates recognise it
+      await supabase.from("documents").insert({
+        doc_type: "payment_receipt", storage_path: path, file_name: receiptFile.name,
+        mime_type: receiptFile.type || null, size_bytes: receiptFile.size,
+        ref_type: "sell", ref_id: id, uploaded_by: u.user?.id,
+        notes: pf.notes || null,
+      });
+
+      // 4. Point the deal's receiving account at the one the user just paid into
+      //    so the inventory lot lands in the right place.
+      await supabase.from("sell_transactions")
+        .update({ received_into_account_id: pf.account_id })
+        .eq("id", id);
     },
     onSuccess: () => {
-      toast.success("Payment recorded");
-      setPf({ ...pf, amount: "", notes: "" }); setShowPay(false);
+      toast.success("Payment received · inventory updated");
+      setPf({ ...pf, amount: "", notes: "" });
+      setReceiptFile(null);
+      setShowPay(false);
       qc.invalidateQueries();
     },
     onError: (e: any) => toast.error(e.message),
@@ -301,18 +340,79 @@ function DealPage() {
               )}
             </CardHeader>
             <CardContent className="pt-0">
-              {showPay && (
-                <div className="grid md:grid-cols-4 gap-2 mb-3 p-3 rounded-md border bg-muted/30">
-                  <div><Label className="text-xs">Date</Label><Input type="date" value={pf.entry_date} onChange={(e) => setPf({ ...pf, entry_date: e.target.value })} /></div>
-                  <div><Label className="text-xs">Amount ({s.received_currency})</Label><Input inputMode="decimal" value={pf.amount} onChange={(e) => setPf({ ...pf, amount: e.target.value })} placeholder={fmt(remaining, s.received_currency)} /></div>
-                  <div><Label className="text-xs">Into account</Label><AccountSelect currency={s.received_currency} value={pf.account_id} onChange={(v) => setPf({ ...pf, account_id: v })} /></div>
-                  <div className="md:col-span-4"><Label className="text-xs">Notes</Label><Input value={pf.notes} onChange={(e) => setPf({ ...pf, notes: e.target.value })} /></div>
-                  <div className="md:col-span-4 flex justify-end gap-2">
-                    <Button variant="ghost" onClick={() => setShowPay(false)}>Cancel</Button>
-                    <Button onClick={() => addPayment.mutate()} disabled={addPayment.isPending}>Save payment</Button>
+              {showPay && (() => {
+                const methodToTypes: Record<string, string[]> = {
+                  cash_box: ["cash"],
+                  bank_account: ["aed_bank", "toman_bank", "foreign_currency"],
+                  cash_with_person: ["person_holding"],
+                  customer_wallet: ["customer_wallet"],
+                };
+                const activeCurrency = pf.currency || s.received_currency;
+                return (
+                  <div className="grid md:grid-cols-4 gap-2 mb-3 p-3 rounded-md border bg-muted/30">
+                    <div className="md:col-span-4 text-xs text-muted-foreground flex items-center gap-1">
+                      <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+                      Money enters inventory ONLY after this payment is saved with a receipt.
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label className="text-xs">Payment method</Label>
+                      <Select value={pf.method} onValueChange={(v: any) => setPf({ ...pf, method: v, account_id: "" })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="cash_box">Cash Box</SelectItem>
+                          <SelectItem value="bank_account">Bank Account</SelectItem>
+                          <SelectItem value="cash_with_person">Cash With Person</SelectItem>
+                          <SelectItem value="customer_wallet">Customer Wallet</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Receive currency</Label>
+                      <Select value={activeCurrency} onValueChange={(v) => setPf({ ...pf, currency: v, account_id: "" })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {[s.received_currency, "AED", "IRR", "USD", "EUR", "GBP", "USDT"].filter((v, i, a) => v && a.indexOf(v) === i).map(c => (
+                            <SelectItem key={c} value={c}>{c}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Date</Label>
+                      <Input type="date" value={pf.entry_date} onChange={(e) => setPf({ ...pf, entry_date: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Amount ({activeCurrency})</Label>
+                      <Input inputMode="decimal" value={pf.amount} onChange={(e) => setPf({ ...pf, amount: e.target.value })} placeholder={fmt(remaining, s.received_currency)} />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label className="text-xs">Receiving account · {activeCurrency}</Label>
+                      <AccountSelect
+                        currency={activeCurrency}
+                        onlyTypes={methodToTypes[pf.method]}
+                        value={pf.account_id}
+                        onChange={(v) => setPf({ ...pf, account_id: v })}
+                        placeholder={`Pick a ${activeCurrency} ${pf.method.replace("_", " ")} account`}
+                      />
+                    </div>
+                    <div className="md:col-span-4">
+                      <Label className="text-xs">Receipt upload <span className="text-red-600">*</span></Label>
+                      <Input type="file" accept="image/*,application/pdf" onChange={(e) => setReceiptFile(e.target.files?.[0] ?? null)} />
+                      {receiptFile && <div className="text-[11px] text-muted-foreground mt-1">{receiptFile.name}</div>}
+                    </div>
+                    <div className="md:col-span-4">
+                      <Label className="text-xs">Notes</Label>
+                      <Textarea rows={2} value={pf.notes} onChange={(e) => setPf({ ...pf, notes: e.target.value })} />
+                    </div>
+                    <div className="md:col-span-4 flex justify-end gap-2">
+                      <Button variant="ghost" onClick={() => { setShowPay(false); setReceiptFile(null); }}>Cancel</Button>
+                      <Button onClick={() => addPayment.mutate()} disabled={addPayment.isPending || !receiptFile || !pf.account_id || !pf.amount}>
+                        Receive payment
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
               <Table>
                 <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Amount</TableHead><TableHead>Into</TableHead><TableHead>Notes</TableHead></TableRow></TableHeader>
                 <TableBody>
