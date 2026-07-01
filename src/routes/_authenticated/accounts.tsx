@@ -33,9 +33,9 @@ function AccountsPage() {
         title="Accounts"
         description="Banks, cash boxes, and wallets. Balances update live from the ledger."
         actions={
-          <Link to="/accounts/new">
-            <Button><Plus className="h-4 w-4 mr-1" /> New account</Button>
-          </Link>
+          <Button asChild>
+            <Link to="/accounts/new"><Plus className="h-4 w-4 mr-1" /> New account</Link>
+          </Button>
         }
       />
       <Card>
