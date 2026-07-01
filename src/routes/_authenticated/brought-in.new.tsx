@@ -237,7 +237,7 @@ function NewBroughtInPage() {
   return (
     <div
       className="min-h-[100dvh] w-full bg-background"
-      style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 180px)" }}
+      style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 220px)" }}
     >
       <div className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-2xl items-center gap-2 px-4 py-3">
@@ -300,18 +300,40 @@ function NewBroughtInPage() {
           </div>
         </section>
 
-        {/* Deposit account */}
-        <section className="space-y-2">
-          <Label className="text-xs uppercase tracking-wide text-muted-foreground">Deposit account</Label>
-          <Select value={depositAccountId} onValueChange={setDepositAccountId}>
-            <SelectTrigger className="h-11 text-base"><SelectValue placeholder={`Pick a ${currency} account`} /></SelectTrigger>
-            <SelectContent>
-              {filteredAccounts.map((a: any) => (
-                <SelectItem key={a.id} value={a.id}>{a.name} · {a.currency}</SelectItem>
+        {/* Destination */}
+        <section className="space-y-2 rounded-lg border-2 border-primary/30 bg-primary/[0.03] p-3">
+          <div>
+            <Label className="text-sm font-semibold">Where did this money go? *</Label>
+            <p className="text-[11px] text-muted-foreground">Every brought-in entry must land in a real destination.</p>
+          </div>
+          <div>
+            <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">Destination type</Label>
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              {DEST_TYPES.map((d) => (
+                <button
+                  key={d.key}
+                  type="button"
+                  onClick={() => { setDestType(d.key); setDepositAccountId(""); }}
+                  className={cn(
+                    "h-8 rounded-full border px-3 text-xs font-medium transition",
+                    destType === d.key ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:bg-accent",
+                  )}
+                >{d.label}</button>
               ))}
-              {filteredAccounts.length === 0 && <div className="px-2 py-4 text-xs text-muted-foreground text-center">No matching accounts</div>}
-            </SelectContent>
-          </Select>
+            </div>
+          </div>
+          <div>
+            <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">Destination account / location *</Label>
+            <Select value={depositAccountId} onValueChange={setDepositAccountId}>
+              <SelectTrigger className="h-11 text-base mt-1"><SelectValue placeholder={`Pick a ${currency} destination`} /></SelectTrigger>
+              <SelectContent>
+                {filteredAccounts.map((a: any) => (
+                  <SelectItem key={a.id} value={a.id}>{a.name} · {a.currency}</SelectItem>
+                ))}
+                {filteredAccounts.length === 0 && <div className="px-2 py-4 text-xs text-muted-foreground text-center">No matching {currency} accounts. Try another destination type or add one under Accounts.</div>}
+              </SelectContent>
+            </Select>
+          </div>
           {balQ.data && (
             <Card className="border-primary/20 bg-primary/5">
               <CardContent className="flex items-center justify-between gap-3 p-3">
