@@ -207,6 +207,21 @@ function DashboardPage() {
   const dealBucket = (s: string) => openSells.filter(d => d.derived_status === s).length;
   const openCount = openSells.length;
 
+  // Expected receivables — unpaid customer money on open deals (NOT inventory)
+  const receivablesByCurrency = useMemo(() => {
+    const m = new Map<string, { currency: string; expected: number; deals: number }>();
+    for (const d of openSells) {
+      const owed = Math.max(0, Number(d.received_amount || 0) - Number(d.paid || 0));
+      if (owed < 0.0001) continue;
+      const cur = String(d.received_currency);
+      const e = m.get(cur) ?? { currency: cur, expected: 0, deals: 0 };
+      e.expected += owed;
+      e.deals += 1;
+      m.set(cur, e);
+    }
+    return Array.from(m.values()).sort((a, b) => a.currency.localeCompare(b.currency));
+  }, [openSells]);
+
   // Customer balances
   const wallets = (walletsQ.data ?? []) as any[];
   const owedByCustomers = wallets.filter(w => Number(w.balance) < -0.0001);
@@ -369,6 +384,24 @@ function DashboardPage() {
 
       {/* SECTION 7 — QUICK ACTIONS */}
       <SectionTitle icon={<TrendingUp className="h-4 w-4" />} title="Quick actions" />
+      {receivablesByCurrency.length > 0 && (
+        <>
+          <SectionTitle icon={<Clock className="h-4 w-4" />} title="Expected receivables" hint="Unpaid customer money on open deals — NOT counted in inventory or balances." />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+            {receivablesByCurrency.map(r => (
+              <div key={r.currency} className="rounded-xl border border-dashed border-amber-500/40 bg-amber-500/5 p-3">
+                <div className="flex items-center gap-2">
+                  <span className={`h-2.5 w-2.5 rounded-full ${CURRENCY_DOT[r.currency] ?? "bg-amber-500"}`} />
+                  <span className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">{r.currency} receivable</span>
+                </div>
+                <div className="text-xl font-bold font-mono mt-1">{fmt(r.expected, r.currency)}</div>
+                <div className="text-[11px] text-muted-foreground mt-0.5">{r.deals} open deal{r.deals === 1 ? "" : "s"}</div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
       <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-6">
         <Button asChild size="lg" className="h-16 text-base font-semibold col-span-2 md:col-span-1 shadow-md">
           <Link to="/quick-sell"><TrendingUp className="h-5 w-5 mr-2" /> New Deal</Link>

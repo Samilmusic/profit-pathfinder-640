@@ -2988,6 +2988,7 @@ export type Database = {
         Args: { _device?: string; _reason: string }
         Returns: undefined
       }
+      sync_sell_received_lot: { Args: { _sell_id: string }; Returns: undefined }
     }
     Enums: {
       account_owner: "milad" | "ali" | "shared" | "other"
