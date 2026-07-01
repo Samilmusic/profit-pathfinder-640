@@ -129,19 +129,36 @@ export function DocumentsPanel({
             <Textarea rows={1} value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Input
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <Button type="button" variant="secondary" className="w-full" disabled={uploading}
+            onClick={() => fileRef.current?.click()}>
+            <Upload className="h-4 w-4 mr-2" /> {uploading ? "Uploading…" : "Choose file / gallery"}
+          </Button>
+          <Button type="button" variant="secondary" className="w-full sm:hidden" disabled={uploading}
+            onClick={() => cameraRef.current?.click()}>
+            <Camera className="h-4 w-4 mr-2" /> Take photo
+          </Button>
+          <input
             ref={fileRef}
             type="file"
-            className="flex-1"
+            accept="image/*,application/pdf"
+            className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0];
               if (f) handleUpload(f);
             }}
           />
-          <Button type="button" size="sm" variant="secondary" disabled={uploading}>
-            <Upload className="h-4 w-4 mr-1" /> {uploading ? "Uploading…" : "Attach"}
-          </Button>
+          <input
+            ref={cameraRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) handleUpload(f);
+            }}
+          />
         </div>
       </div>
       <div className="space-y-1">
