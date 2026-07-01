@@ -28,6 +28,7 @@ import { RecordActions } from "@/components/record-actions";
 import { EDIT_FIELDS } from "@/lib/edit-fields";
 import { UseMarketRateButton } from "@/components/use-market-rate-button";
 import { RateComparison } from "@/components/rate-comparison";
+import { DealScoreCard } from "@/components/ai/deal-score-card";
 
 export const Route = createFileRoute("/_authenticated/sell")({ component: Page });
 
@@ -280,6 +281,18 @@ function Page() {
                       )}
                     </CardContent>
                   </Card>
+                </div>
+                <div className="md:col-span-2">
+                  <DealScoreCard
+                    kind="sell"
+                    customer_id={f.customer_id || null}
+                    sold_currency={f.sold_currency}
+                    received_currency={f.received_currency}
+                    sold_amount={Number(f.sold_amount) || undefined}
+                    sell_rate={Number(f.sell_rate) || undefined}
+                    sold_from_account_id={f.sold_from_account_id || null}
+                    received_into_account_id={f.received_into_account_id || null}
+                  />
                 </div>
                 <F label="Customer phone"><Input value={f.customer_phone} onChange={(e) => setF({ ...f, customer_phone: e.target.value })} /></F>
                 <F label="Customer account/card ref"><Input value={f.customer_account} onChange={(e) => setF({ ...f, customer_account: e.target.value })} /></F>
