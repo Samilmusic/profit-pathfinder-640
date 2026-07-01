@@ -92,7 +92,8 @@ export async function getOpenDeals(sb: SB, args: { status?: string } = {}) {
   let q = sb.from("sell_transactions")
     .select("id,doc_no,entry_date,customer_id,sold_amount,sold_currency,sell_rate,received_amount,received_currency,deal_status,amount_received,customer:customers(name)")
     .is("deleted_at", null)
-    .not("deal_status", "in", '("closed","cancelled")')
+    .neq("deal_status", "closed")
+    .neq("deal_status", "cancelled")
     .order("entry_date", { ascending: false })
     .limit(CAP);
   if (args.status) q = q.eq("deal_status", args.status);
@@ -127,7 +128,8 @@ export async function getCustomerBalances(sb: SB, args: { customer_id?: string; 
     .select("customer_id,received_amount,amount_received,received_currency,deal_status")
     .in("customer_id", ids)
     .is("deleted_at", null)
-    .not("deal_status", "in", '("closed","cancelled")');
+    .neq("deal_status", "closed")
+    .neq("deal_status", "cancelled");
   const owed: Record<string, { open_count: number; owed: Record<string, number> }> = {};
   for (const d of openDeals ?? []) {
     const k = d.customer_id!;
