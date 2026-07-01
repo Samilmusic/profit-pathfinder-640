@@ -165,57 +165,87 @@ export type Database = {
           amount: number
           attachment_url: string | null
           brought_by: Database["public"]["Enums"]["brought_in_by"]
+          conversion_fee_amount: number | null
+          conversion_fee_currency: string | null
+          conversion_fee_kind: string | null
+          conversion_rate: number | null
+          convert_enabled: boolean
+          converted_amount: number | null
+          converted_currency: string | null
           created_at: string
           created_by: string | null
           currency: string
           deleted_at: string | null
           deposit_account_id: string
           entry_date: string
+          final_deposit_account_id: string | null
           id: string
           notes: string | null
           reason: Database["public"]["Enums"]["brought_in_reason"]
           sender_account_name: string | null
           sender_account_number: string | null
           sender_bank_name: string | null
+          source_location_label: string | null
           source_name: string | null
+          status: string
           updated_at: string
         }
         Insert: {
           amount: number
           attachment_url?: string | null
           brought_by: Database["public"]["Enums"]["brought_in_by"]
+          conversion_fee_amount?: number | null
+          conversion_fee_currency?: string | null
+          conversion_fee_kind?: string | null
+          conversion_rate?: number | null
+          convert_enabled?: boolean
+          converted_amount?: number | null
+          converted_currency?: string | null
           created_at?: string
           created_by?: string | null
           currency: string
           deleted_at?: string | null
           deposit_account_id: string
           entry_date?: string
+          final_deposit_account_id?: string | null
           id?: string
           notes?: string | null
           reason?: Database["public"]["Enums"]["brought_in_reason"]
           sender_account_name?: string | null
           sender_account_number?: string | null
           sender_bank_name?: string | null
+          source_location_label?: string | null
           source_name?: string | null
+          status?: string
           updated_at?: string
         }
         Update: {
           amount?: number
           attachment_url?: string | null
           brought_by?: Database["public"]["Enums"]["brought_in_by"]
+          conversion_fee_amount?: number | null
+          conversion_fee_currency?: string | null
+          conversion_fee_kind?: string | null
+          conversion_rate?: number | null
+          convert_enabled?: boolean
+          converted_amount?: number | null
+          converted_currency?: string | null
           created_at?: string
           created_by?: string | null
           currency?: string
           deleted_at?: string | null
           deposit_account_id?: string
           entry_date?: string
+          final_deposit_account_id?: string | null
           id?: string
           notes?: string | null
           reason?: Database["public"]["Enums"]["brought_in_reason"]
           sender_account_name?: string | null
           sender_account_number?: string | null
           sender_bank_name?: string | null
+          source_location_label?: string | null
           source_name?: string | null
+          status?: string
           updated_at?: string
         }
         Relationships: [
@@ -236,6 +266,27 @@ export type Database = {
           {
             foreignKeyName: "brought_in_money_deposit_account_id_fkey"
             columns: ["deposit_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "brought_in_money_final_deposit_account_id_fkey"
+            columns: ["final_deposit_account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "brought_in_money_final_deposit_account_id_fkey"
+            columns: ["final_deposit_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brought_in_money_final_deposit_account_id_fkey"
+            columns: ["final_deposit_account_id"]
             isOneToOne: false
             referencedRelation: "customer_wallet_balances"
             referencedColumns: ["account_id"]
