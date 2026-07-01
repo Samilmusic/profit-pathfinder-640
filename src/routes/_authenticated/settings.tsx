@@ -8,7 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { triggerMarketRateRefresh, useLatestMarketRates, rateFreshness, findRate } from "@/lib/market-rates";
+import { triggerMarketRateRefresh, useLatestMarketRates, rateFreshness, pickDisplayRate } from "@/lib/market-rates";
+import { useState } from "react";
+import { fmt } from "@/lib/exchange";
 import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
@@ -144,20 +146,112 @@ function SettingsPage() {
               </Button>
             </div>
             {(["AED","USD"] as const).map((c) => {
-              const row = findRate(latest.data, c);
-              const f = rateFreshness(row?.fetched_at);
+              const { row } = pickDisplayRate(latest.data, c);
+              const bonbastRow = latest.data?.find((r) => r.currency === c && r.source === "bonbast");
+              const f = rateFreshness(bonbastRow?.fetched_at);
               return (
                 <div key={c} className="text-xs flex items-center justify-between">
-                  <span className="font-mono">{c}</span>
+                  <span className="font-mono">{c} · bonbast</span>
                   <span className={f.tone === "ok" ? "text-emerald-600" : f.tone === "warn" ? "text-amber-600" : "text-red-600"}>
-                    {f.label}{row?.fetched_at ? ` · ${new Date(row.fetched_at).toLocaleString()}` : ""}
+                    {f.label}{bonbastRow?.fetched_at ? ` · ${new Date(bonbastRow.fetched_at).toLocaleString()}` : ""}
+                    {bonbastRow?.error_message ? ` · ${bonbastRow.error_message}` : ""}
                   </span>
                 </div>
               );
             })}
+            <div className="text-[11px] text-muted-foreground pt-1 border-t">
+              Display fallback: bonbast if fresh, otherwise manual (if set), otherwise last bonbast value.
+            </div>
           </div>
         </CardContent>
       </Card>
+
+      <ManualRatesCard />
     </>
+  );
+}
+
+function ManualRatesCard() {
+  const qc = useQueryClient();
+  const latest = useLatestMarketRates();
+
+  const save = useMutation({
+    mutationFn: async ({ currency, buy, sell }: { currency: string; buy: number; sell: number }) => {
+      const mid = (buy + sell) / 2;
+      const { error } = await supabase.from("market_rates" as any).insert({
+        source: "manual",
+        currency,
+        buy_rate: buy,
+        sell_rate: sell,
+        mid_rate: mid,
+        status: "ok",
+        raw_response: { entered_by: "admin" },
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Manual rate saved");
+      qc.invalidateQueries({ queryKey: ["market_rates_latest"] });
+      qc.invalidateQueries({ queryKey: ["market_rate_history"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Save failed"),
+  });
+
+  return (
+    <Card className="max-w-2xl mt-6">
+      <CardHeader>
+        <CardTitle>Admin Manual Rates (fallback)</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Set manual AED/USD rates against IRR. These are used automatically whenever bonbast is unavailable or stale.
+        </p>
+        {(["AED","USD"] as const).map((c) => {
+          const existing = latest.data?.find((r) => r.currency === c && r.source === "manual");
+          return <ManualRateRow key={c} currency={c} existing={existing} onSave={(buy, sell) => save.mutate({ currency: c, buy, sell })} saving={save.isPending} />;
+        })}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ManualRateRow({
+  currency,
+  existing,
+  onSave,
+  saving,
+}: {
+  currency: string;
+  existing: any;
+  onSave: (buy: number, sell: number) => void;
+  saving: boolean;
+}) {
+  const [buy, setBuy] = useState<string>(existing?.buy_rate?.toString() ?? "");
+  const [sell, setSell] = useState<string>(existing?.sell_rate?.toString() ?? "");
+  const disabled = !buy || !sell || Number(buy) <= 0 || Number(sell) <= 0 || saving;
+  return (
+    <div className="rounded-lg border p-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <Label className="font-medium">{currency} / IRR</Label>
+        {existing?.fetched_at && (
+          <span className="text-[10px] text-muted-foreground">
+            Last saved {new Date(existing.fetched_at).toLocaleString()} — buy {fmt(existing.buy_rate)} · sell {fmt(existing.sell_rate)}
+          </span>
+        )}
+      </div>
+      <div className="grid grid-cols-3 gap-2 items-end">
+        <div>
+          <Label className="text-[11px] text-muted-foreground">Buy rate</Label>
+          <Input type="number" inputMode="decimal" value={buy} onChange={(e) => setBuy(e.target.value)} placeholder="e.g. 48150" />
+        </div>
+        <div>
+          <Label className="text-[11px] text-muted-foreground">Sell rate</Label>
+          <Input type="number" inputMode="decimal" value={sell} onChange={(e) => setSell(e.target.value)} placeholder="e.g. 48200" />
+        </div>
+        <Button size="sm" disabled={disabled} onClick={() => onSave(Number(buy), Number(sell))}>
+          Save {currency}
+        </Button>
+      </div>
+    </div>
   );
 }
