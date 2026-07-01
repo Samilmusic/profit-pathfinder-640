@@ -24,6 +24,22 @@ function Page() {
     },
   });
 
+  const ids = (q.data ?? []).map((r: any) => r.id);
+  const lotsQ = useQuery({
+    queryKey: ["brought_in_lots", ids.join(",")],
+    enabled: ids.length > 0,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("inventory_lots")
+        .select("id,lot_code,source_ref_id,remaining_amount,original_amount,currency,status")
+        .eq("source_ref_type", "brought_in")
+        .in("source_ref_id", ids);
+      return data ?? [];
+    },
+  });
+  const lotBySource = new Map<string, any>();
+  for (const l of (lotsQ.data ?? []) as any[]) lotBySource.set(l.source_ref_id, l);
+
   return (
     <>
       <PageHeader
@@ -44,10 +60,15 @@ function Page() {
             <TableHead>Rate</TableHead>
             <TableHead className="text-right">Converted</TableHead>
             <TableHead>Final acct</TableHead>
+            <TableHead>Lot</TableHead>
+            <TableHead className="text-right">Available</TableHead>
+            <TableHead>Lot status</TableHead>
             <TableHead></TableHead>
           </TableRow></TableHeader>
           <TableBody>
-            {(q.data ?? []).map((r: any) => (
+            {(q.data ?? []).map((r: any) => {
+              const lot = lotBySource.get(r.id);
+              return (
               <TableRow key={r.id}>
                 <TableCell>{r.entry_date}</TableCell>
                 <TableCell className="capitalize">{r.brought_by}</TableCell>
@@ -58,6 +79,9 @@ function Page() {
                 <TableCell className="font-mono text-sm">{r.convert_enabled ? r.conversion_rate : "—"}</TableCell>
                 <TableCell className="text-right font-mono">{r.convert_enabled ? fmt(r.converted_amount, r.converted_currency) : "—"}</TableCell>
                 <TableCell>{r.convert_enabled ? r.final_account?.name : "—"}</TableCell>
+                <TableCell className="font-mono text-xs">{lot?.lot_code ?? "—"}</TableCell>
+                <TableCell className="text-right font-mono">{lot ? `${fmt(lot.remaining_amount, lot.currency)} ${lot.currency}` : "—"}</TableCell>
+                <TableCell className="text-xs capitalize">{lot?.status ?? "—"}</TableCell>
                 <TableCell className="text-right">
                   <RecordActions
                     table="brought_in_money"
@@ -73,8 +97,9 @@ function Page() {
                   />
                 </TableCell>
               </TableRow>
-            ))}
-            {q.data && q.data.length === 0 && <TableRow><TableCell colSpan={10} className="text-center py-10 text-muted-foreground">Nothing brought in yet.</TableCell></TableRow>}
+              );
+            })}
+            {q.data && q.data.length === 0 && <TableRow><TableCell colSpan={13} className="text-center py-10 text-muted-foreground">Nothing brought in yet.</TableCell></TableRow>}
           </TableBody>
         </Table>
       </CardContent></Card>
