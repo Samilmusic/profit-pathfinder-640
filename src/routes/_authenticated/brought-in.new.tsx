@@ -329,11 +329,8 @@ function NewBroughtInPage() {
 
       {/* Sticky action bar */}
       <div
-        className="fixed inset-x-0 z-40 border-t bg-background/95 shadow-[0_-6px_20px_-10px_rgba(0,0,0,0.15)] backdrop-blur"
-        style={{
-          bottom: "calc(env(safe-area-inset-bottom, 0px) + var(--mobile-nav-height, 0px))",
-          paddingBottom: "8px",
-        }}
+        className="fixed inset-x-0 bottom-16 md:bottom-0 z-40 border-t bg-background/95 shadow-[0_-6px_20px_-10px_rgba(0,0,0,0.15)] backdrop-blur"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 4px)" }}
       >
         <div className="mx-auto flex max-w-2xl items-center gap-2 px-3 py-2">
           <Link to="/brought-in" className="shrink-0">
