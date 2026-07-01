@@ -12,6 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useAccounts, useCustomers } from "@/components/account-select";
+import { CustomerBankAccountPicker, touchBankAccount } from "@/components/customer-bank-account-picker";
 import { NumberInput } from "@/components/number-input";
 import { CURRENCIES, fmt } from "@/lib/exchange";
 import { toast } from "sonner";
@@ -60,6 +61,7 @@ function NewDepositPage() {
   const [depositAccountId, setDepositAccountId] = useState<string>(prefs.deposit_account_id || "");
   const [notes, setNotes] = useState("");
   const [entryDate, setEntryDate] = useState(today);
+  const [customerBankAccountId, setCustomerBankAccountId] = useState<string>("");
 
   // Advanced
   const [advOpen, setAdvOpen] = useState(false);
@@ -146,6 +148,7 @@ function NewDepositPage() {
       };
       const { data: dep, error } = await supabase.from("customer_deposits").insert(insert).select("id").single();
       if (error) throw error;
+      await touchBankAccount(customerBankAccountId);
 
       // Upload receipt if present
       if (pendingFile) {
