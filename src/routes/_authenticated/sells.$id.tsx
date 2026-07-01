@@ -44,7 +44,7 @@ function DealPage() {
     queryKey: ["sell-payments", id],
     queryFn: async () => {
       const { data, error } = await supabase.from("sell_payments")
-        .select("*, account:accounts(name,currency)")
+        .select("*, account:accounts!sell_payments_received_into_account_id_fkey(name,currency)")
         .eq("sell_id", id).is("deleted_at", null)
         .order("entry_date", { ascending: true });
       if (error) throw error;
