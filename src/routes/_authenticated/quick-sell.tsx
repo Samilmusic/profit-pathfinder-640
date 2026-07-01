@@ -127,7 +127,7 @@ function QuickSellPage() {
         sell_rate: rateN, received_currency: receivedCurrency, received_amount: receivedAmount,
         sold_from_account_id: sourceId, received_into_account_id: destId,
         customer_id: customerId || null,
-        milad_pct: 50, ali_pct: 50,
+        milad_share_pct: 50, ali_share_pct: 50,
         notes: note || null,
         completion_note: note || null,
         created_by: u.user?.id,
