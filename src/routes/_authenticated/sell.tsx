@@ -35,7 +35,7 @@ function Page() {
   const [f, setF] = useState({
     entry_date: today, sold_currency: "AED", sold_amount: "", sell_rate: "",
     received_currency: "IRR", sold_from_account_id: "", received_into_account_id: "",
-    customer_id: "", customer_phone: "", customer_account_ref: "",
+    customer_id: "", customer_phone: "", customer_account_ref: "", customer_bank_account_id: "",
     milad_pct: "50", ali_pct: "50", notes: "",
     creates_cycle: true,
   });
