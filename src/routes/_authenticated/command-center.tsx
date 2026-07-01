@@ -40,7 +40,7 @@ function CommandCenter() {
     queryKey: ["cc_open_deals"],
     queryFn: async () => {
       const { data } = await supabase.from("sell_transactions")
-        .select("id, entry_date, deal_status, customer_id, sold_from_account_id, received_into_account_id, received_amount, received_currency, expected_payment_date, customer:customers(name)")
+        .select("id, entry_date, deal_status, customer_id, sold_from_account_id, received_into_account_id, received_amount, received_currency, sold_currency, sold_amount, currency_delivered, expected_payment_date, customer:customers(name)")
         .is("deleted_at", null)
         .not("deal_status", "in", "(closed,cancelled)")
         .order("entry_date", { ascending: false });
@@ -56,6 +56,7 @@ function CommandCenter() {
       const docsBy = new Map<string, any[]>();
       (dr.data ?? []).forEach((d: any) => { if (!docsBy.has(d.ref_id)) docsBy.set(d.ref_id, []); docsBy.get(d.ref_id)!.push(d); });
       const RECEIPT = new Set(["payment_receipt","bank_transfer_screenshot","cash_delivery_receipt","whatsapp_confirmation"]);
+      const DELIV = new Set(["currency_handover_proof","cash_delivery_receipt","bank_transfer_screenshot"]);
       return sells.map((s: any) => {
         const pays = paysBy.get(s.id) ?? [];
         const docs = docsBy.get(s.id) ?? [];
@@ -63,12 +64,16 @@ function CommandCenter() {
         const payment_received = paid + 0.0001 >= Number(s.received_amount || 0) && Number(s.received_amount || 0) > 0;
         const partial = paid > 0.0001 && !payment_received;
         const receipt_uploaded = docs.some(d => RECEIPT.has(d.doc_type)) || pays.some(p => !!p.receipt_url);
+        const currency_delivered = !!s.currency_delivered;
+        const delivery_proof = docs.some(d => DELIV.has(d.doc_type));
         const closed = s.deal_status === "closed";
         let derived: string;
         if (closed) derived = "closed";
         else if (partial) derived = "partially_paid";
         else if (!payment_received) derived = "waiting_payment";
         else if (!receipt_uploaded) derived = "waiting_receipt";
+        else if (!currency_delivered) derived = "waiting_currency_delivery";
+        else if (!delivery_proof) derived = "waiting_delivery_proof";
         else derived = "ready_to_close";
         return { ...s, derived_status: derived };
       });
@@ -144,6 +149,8 @@ function CommandCenter() {
   const dWaitPay = dealsByStatus("waiting_payment");
   const dPartial = dealsByStatus("partially_paid");
   const dWaitRec = dealsByStatus("waiting_receipt");
+  const dWaitDeliver = dealsByStatus("waiting_currency_delivery");
+  const dWaitDeliverProof = dealsByStatus("waiting_delivery_proof");
   const dReady = dealsByStatus("ready_to_close");
   const overdueDeals = deals.filter((d) => d.expected_payment_date && d.expected_payment_date < today && d.derived_status !== "closed");
 
@@ -321,8 +328,20 @@ function CommandCenter() {
           {dPartial.slice(0, 5).map((d) => (<DealLine key={d.id} d={d} />))}
         </ActionCard>
 
-        <ActionCard icon={FileWarning} tone="warn" title="Waiting for Receipt" count={dWaitRec.length} empty="All receipts in" to="/sell">
+        <ActionCard icon={FileWarning} tone="warn" title="Waiting Payment Receipt" count={dWaitRec.length} empty="All receipts in" to="/sell">
           {dWaitRec.slice(0, 5).map((d) => (<DealLine key={d.id} d={d} />))}
+        </ActionCard>
+
+        <ActionCard icon={Hourglass} tone="warn" title="Waiting Currency Delivery" count={dWaitDeliver.length} empty="Nothing to deliver" to="/sell">
+          {dWaitDeliver.slice(0, 5).map((d) => (
+            <DealLine key={d.id} d={d} suffix={` · deliver ${d.sold_currency}`} />
+          ))}
+        </ActionCard>
+
+        <ActionCard icon={FileWarning} tone="warn" title="Waiting Delivery Proof" count={dWaitDeliverProof.length} empty="All delivery proofs in" to="/sell">
+          {dWaitDeliverProof.slice(0, 5).map((d) => (
+            <DealLine key={d.id} d={d} suffix={` · upload delivery proof`} />
+          ))}
         </ActionCard>
 
         <ActionCard icon={CheckCircle2} tone="info" title="Ready to Close" count={dReady.length} empty="Nothing to close" to="/sell">
