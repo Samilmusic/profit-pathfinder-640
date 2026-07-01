@@ -170,7 +170,73 @@ function SettingsPage() {
       </Card>
 
       <ManualRatesCard />
+      <AlertThresholdsCard />
     </>
+  );
+}
+
+function AlertThresholdsCard() {
+  const qc = useQueryClient();
+  const q = useQuery({
+    queryKey: ["app_settings_alerts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("app_settings" as any)
+        .select("alert_drop_pct_15min,alert_rise_pct_15min,alert_volatility_pct_1h,alert_stale_minutes,alert_near_cost_pct")
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return (data ?? {}) as Record<string, any>;
+    },
+  });
+  const save = useMutation({
+    mutationFn: async (patch: Record<string, any>) => {
+      const { error } = await supabase.from("app_settings" as any).upsert({ id: true, ...patch }, { onConflict: "id" });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Alert threshold saved");
+      qc.invalidateQueries({ queryKey: ["app_settings_alerts"] });
+      qc.invalidateQueries({ queryKey: ["alert_thresholds"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Save failed"),
+  });
+
+  const rows: Array<{ key: string; label: string; hint: string; suffix: string; step: number; def: number }> = [
+    { key: "alert_drop_pct_15min", label: "Rate drop alert", hint: "Notify when a currency drops this % in 15 minutes.", suffix: "%", step: 0.1, def: 0.5 },
+    { key: "alert_rise_pct_15min", label: "Rate rise alert", hint: "Notify when a currency rises this % in 15 minutes.", suffix: "%", step: 0.1, def: 0.5 },
+    { key: "alert_volatility_pct_1h", label: "High volatility", hint: "Notify when |Δ| ≥ this % over 1 hour.", suffix: "%", step: 0.1, def: 1 },
+    { key: "alert_stale_minutes", label: "Stale rate threshold", hint: "Minutes without a fresh fetch before flagging stale.", suffix: "min", step: 1, def: 15 },
+    { key: "alert_near_cost_pct", label: "Near-cost warning", hint: "Warn when market is within this % of average inventory cost.", suffix: "%", step: 0.1, def: 0.3 },
+  ];
+
+  return (
+    <Card className="max-w-2xl mb-6">
+      <CardHeader><CardTitle>Market alert thresholds</CardTitle></CardHeader>
+      <CardContent className="space-y-3">
+        {rows.map((r) => (
+          <div key={r.key} className="flex items-center justify-between rounded-lg border p-3 gap-3">
+            <div className="min-w-0">
+              <Label className="font-medium">{r.label}</Label>
+              <div className="text-xs text-muted-foreground">{r.hint}</div>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <Input
+                type="number"
+                step={r.step}
+                className="w-24 h-9 font-mono text-right"
+                defaultValue={q.data?.[r.key] ?? r.def}
+                onBlur={(e) => {
+                  const v = Number(e.target.value);
+                  if (Number.isFinite(v)) save.mutate({ [r.key]: v });
+                }}
+              />
+              <span className="text-xs text-muted-foreground">{r.suffix}</span>
+            </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   );
 }
 
