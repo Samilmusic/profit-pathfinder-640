@@ -12,7 +12,7 @@ import { NumberInput } from "@/components/number-input";
 import { DocumentsPanel } from "@/components/documents-panel";
 import { CURRENCIES, fmt, fmtProfit, roundAmount } from "@/lib/exchange";
 import { toast } from "sonner";
-import { AlertTriangle, CheckCircle2, Save } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Save, XCircle } from "lucide-react";
 import { z } from "zod";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 
@@ -115,38 +115,48 @@ function QuickSellPage() {
   if (!soldN) validationErrors.push("Enter sold amount");
   if (!rateN) validationErrors.push("Enter sell rate");
   if (!sourceId) validationErrors.push("Pick source account");
-  if (!destId) validationErrors.push("Pick receiving account");
+  const closeErrors: string[] = [];
+  if (!destId) closeErrors.push("Pick receiving account to close");
+  if (!note) closeErrors.push("Add a confirmation note to close");
 
   const save = useMutation({
-    mutationFn: async (opts: { complete: boolean }) => {
+    mutationFn: async (opts: { closeNow: boolean }) => {
       if (validationErrors.length) throw new Error(validationErrors[0]);
       const { data: u } = await supabase.auth.getUser();
       const payload: any = {
         entry_date: today,
         sold_currency: soldCurrency, sold_amount: soldN,
         sell_rate: rateN, received_currency: receivedCurrency, received_amount: receivedAmount,
-        sold_from_account_id: sourceId, received_into_account_id: destId,
+        sold_from_account_id: sourceId, received_into_account_id: destId || null,
         customer_id: customerId || null,
         milad_share_pct: 50, ali_share_pct: 50,
         notes: note || null,
         completion_note: note || null,
         created_by: u.user?.id,
-        settlement_status: opts.complete ? "completed" : "draft",
+        deal_status: "open",
       };
       if (savedId) {
         const { error } = await supabase.from("sell_transactions").update(payload).eq("id", savedId);
         if (error) throw error;
+        if (opts.closeNow) {
+          const { error: cerr } = await (supabase as any).rpc("close_sell_deal", { _id: savedId, _override: true, _difference_reason: null });
+          if (cerr) throw cerr;
+        }
         return savedId;
       }
       const { data, error } = await supabase.from("sell_transactions").insert(payload).select("id").single();
       if (error) throw error;
       setSavedId(data.id);
+      if (opts.closeNow) {
+        const { error: cerr } = await (supabase as any).rpc("close_sell_deal", { _id: data.id, _override: true, _difference_reason: null });
+        if (cerr) throw cerr;
+      }
       return data.id as string;
     },
     onSuccess: (id, vars) => {
       qc.invalidateQueries();
-      toast.success(vars.complete ? "Sell completed" : "Draft saved — attach receipts to complete");
-      if (vars.complete) navigate({ to: "/sell" });
+      toast.success(vars.closeNow ? "Deal closed" : "Open deal saved — waiting for payment");
+      if (vars.closeNow) navigate({ to: "/sells/$id", params: { id } });
       else setSavedId(id);
     },
     onError: (e: any) => toast.error(e.message),
@@ -156,7 +166,7 @@ function QuickSellPage() {
 
   return (
     <>
-      <PageHeader title="Quick Sell" description="Fastest way to record a sell. Save as draft any time; complete after receipts are attached." />
+      <PageHeader title="Quick Sell" description="Fastest way to record a sell. Save as Open Deal now; close when the customer pays." />
 
       <div className="grid lg:grid-cols-[1fr_360px] gap-4 pb-32 lg:pb-8">
         <div className="space-y-3">
@@ -230,7 +240,7 @@ function QuickSellPage() {
             {savedId ? (
               <DocumentsPanel refType="sell" refId={savedId} />
             ) : (
-              <p className="text-sm text-muted-foreground">Save as draft first to attach receipts, or complete later from the Sell page.</p>
+              <p className="text-sm text-muted-foreground">Save as Open Deal first to attach receipts, or upload later from the deal page.</p>
             )}
           </StepCard>
 
@@ -280,13 +290,16 @@ function QuickSellPage() {
       </div>
 
       {/* Sticky footer */}
-      <div className="fixed bottom-14 md:bottom-0 left-0 right-0 z-30 bg-card border-t p-3 lg:relative lg:bottom-auto lg:border-0 lg:bg-transparent lg:p-0 lg:mt-4">
+      <div className="fixed bottom-14 md:bottom-0 left-0 right-0 z-30 bg-card border-t p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] lg:relative lg:bottom-auto lg:border-0 lg:bg-transparent lg:p-0 lg:mt-4">
         <div className="max-w-[1600px] mx-auto flex gap-2">
-          <Button variant="outline" className="flex-1 h-12" disabled={save.isPending} onClick={() => save.mutate({ complete: false })}>
-            <Save className="h-4 w-4 mr-2" /> Save as Draft
+          <Button variant="ghost" className="h-12" onClick={() => navigate({ to: "/sell" })} disabled={save.isPending}>
+            <XCircle className="h-4 w-4 mr-2" /> Cancel
           </Button>
-          <Button className="flex-1 h-12" disabled={save.isPending || validationErrors.length > 0 || !note} onClick={() => save.mutate({ complete: true })}>
-            <CheckCircle2 className="h-4 w-4 mr-2" /> Complete
+          <Button className="flex-1 h-12" disabled={save.isPending || validationErrors.length > 0} onClick={() => save.mutate({ closeNow: false })}>
+            <Save className="h-4 w-4 mr-2" /> Save as Open Deal
+          </Button>
+          <Button variant="outline" className="flex-1 h-12" disabled={save.isPending || validationErrors.length > 0 || closeErrors.length > 0} onClick={() => save.mutate({ closeNow: true })}>
+            <CheckCircle2 className="h-4 w-4 mr-2" /> Close Deal
           </Button>
         </div>
       </div>
