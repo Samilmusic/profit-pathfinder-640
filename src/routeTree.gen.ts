@@ -12,15 +12,19 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedWalletsRouteImport } from './routes/_authenticated/wallets'
+import { Route as AuthenticatedTrustRouteImport } from './routes/_authenticated/trust'
 import { Route as AuthenticatedTransfersRouteImport } from './routes/_authenticated/transfers'
 import { Route as AuthenticatedStatementsRouteImport } from './routes/_authenticated/statements'
 import { Route as AuthenticatedSellRouteImport } from './routes/_authenticated/sell'
 import { Route as AuthenticatedRolesRouteImport } from './routes/_authenticated/roles'
 import { Route as AuthenticatedQuickSellRouteImport } from './routes/_authenticated/quick-sell'
 import { Route as AuthenticatedPendingSettlementsRouteImport } from './routes/_authenticated/pending-settlements'
+import { Route as AuthenticatedPaymentOrdersRouteImport } from './routes/_authenticated/payment-orders'
 import { Route as AuthenticatedInventoryRouteImport } from './routes/_authenticated/inventory'
 import { Route as AuthenticatedHeldByPersonRouteImport } from './routes/_authenticated/held-by-person'
 import { Route as AuthenticatedExpensesRouteImport } from './routes/_authenticated/expenses'
+import { Route as AuthenticatedDepositsRouteImport } from './routes/_authenticated/deposits'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedDailyClosingRouteImport } from './routes/_authenticated/daily-closing'
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
@@ -41,6 +45,16 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedWalletsRoute = AuthenticatedWalletsRouteImport.update({
+  id: '/wallets',
+  path: '/wallets',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedTrustRoute = AuthenticatedTrustRouteImport.update({
+  id: '/trust',
+  path: '/trust',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedTransfersRoute = AuthenticatedTransfersRouteImport.update({
   id: '/transfers',
@@ -73,6 +87,12 @@ const AuthenticatedPendingSettlementsRoute =
     path: '/pending-settlements',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPaymentOrdersRoute =
+  AuthenticatedPaymentOrdersRouteImport.update({
+    id: '/payment-orders',
+    path: '/payment-orders',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedInventoryRoute = AuthenticatedInventoryRouteImport.update({
   id: '/inventory',
   path: '/inventory',
@@ -87,6 +107,11 @@ const AuthenticatedHeldByPersonRoute =
 const AuthenticatedExpensesRoute = AuthenticatedExpensesRouteImport.update({
   id: '/expenses',
   path: '/expenses',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedDepositsRoute = AuthenticatedDepositsRouteImport.update({
+  id: '/deposits',
+  path: '/deposits',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
@@ -130,15 +155,19 @@ export interface FileRoutesByFullPath {
   '/customers': typeof AuthenticatedCustomersRoute
   '/daily-closing': typeof AuthenticatedDailyClosingRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/deposits': typeof AuthenticatedDepositsRoute
   '/expenses': typeof AuthenticatedExpensesRoute
   '/held-by-person': typeof AuthenticatedHeldByPersonRoute
   '/inventory': typeof AuthenticatedInventoryRoute
+  '/payment-orders': typeof AuthenticatedPaymentOrdersRoute
   '/pending-settlements': typeof AuthenticatedPendingSettlementsRoute
   '/quick-sell': typeof AuthenticatedQuickSellRoute
   '/roles': typeof AuthenticatedRolesRoute
   '/sell': typeof AuthenticatedSellRoute
   '/statements': typeof AuthenticatedStatementsRoute
   '/transfers': typeof AuthenticatedTransfersRoute
+  '/trust': typeof AuthenticatedTrustRoute
+  '/wallets': typeof AuthenticatedWalletsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -149,15 +178,19 @@ export interface FileRoutesByTo {
   '/customers': typeof AuthenticatedCustomersRoute
   '/daily-closing': typeof AuthenticatedDailyClosingRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/deposits': typeof AuthenticatedDepositsRoute
   '/expenses': typeof AuthenticatedExpensesRoute
   '/held-by-person': typeof AuthenticatedHeldByPersonRoute
   '/inventory': typeof AuthenticatedInventoryRoute
+  '/payment-orders': typeof AuthenticatedPaymentOrdersRoute
   '/pending-settlements': typeof AuthenticatedPendingSettlementsRoute
   '/quick-sell': typeof AuthenticatedQuickSellRoute
   '/roles': typeof AuthenticatedRolesRoute
   '/sell': typeof AuthenticatedSellRoute
   '/statements': typeof AuthenticatedStatementsRoute
   '/transfers': typeof AuthenticatedTransfersRoute
+  '/trust': typeof AuthenticatedTrustRoute
+  '/wallets': typeof AuthenticatedWalletsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -170,15 +203,19 @@ export interface FileRoutesById {
   '/_authenticated/customers': typeof AuthenticatedCustomersRoute
   '/_authenticated/daily-closing': typeof AuthenticatedDailyClosingRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/deposits': typeof AuthenticatedDepositsRoute
   '/_authenticated/expenses': typeof AuthenticatedExpensesRoute
   '/_authenticated/held-by-person': typeof AuthenticatedHeldByPersonRoute
   '/_authenticated/inventory': typeof AuthenticatedInventoryRoute
+  '/_authenticated/payment-orders': typeof AuthenticatedPaymentOrdersRoute
   '/_authenticated/pending-settlements': typeof AuthenticatedPendingSettlementsRoute
   '/_authenticated/quick-sell': typeof AuthenticatedQuickSellRoute
   '/_authenticated/roles': typeof AuthenticatedRolesRoute
   '/_authenticated/sell': typeof AuthenticatedSellRoute
   '/_authenticated/statements': typeof AuthenticatedStatementsRoute
   '/_authenticated/transfers': typeof AuthenticatedTransfersRoute
+  '/_authenticated/trust': typeof AuthenticatedTrustRoute
+  '/_authenticated/wallets': typeof AuthenticatedWalletsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -191,15 +228,19 @@ export interface FileRouteTypes {
     | '/customers'
     | '/daily-closing'
     | '/dashboard'
+    | '/deposits'
     | '/expenses'
     | '/held-by-person'
     | '/inventory'
+    | '/payment-orders'
     | '/pending-settlements'
     | '/quick-sell'
     | '/roles'
     | '/sell'
     | '/statements'
     | '/transfers'
+    | '/trust'
+    | '/wallets'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -210,15 +251,19 @@ export interface FileRouteTypes {
     | '/customers'
     | '/daily-closing'
     | '/dashboard'
+    | '/deposits'
     | '/expenses'
     | '/held-by-person'
     | '/inventory'
+    | '/payment-orders'
     | '/pending-settlements'
     | '/quick-sell'
     | '/roles'
     | '/sell'
     | '/statements'
     | '/transfers'
+    | '/trust'
+    | '/wallets'
   id:
     | '__root__'
     | '/'
@@ -230,15 +275,19 @@ export interface FileRouteTypes {
     | '/_authenticated/customers'
     | '/_authenticated/daily-closing'
     | '/_authenticated/dashboard'
+    | '/_authenticated/deposits'
     | '/_authenticated/expenses'
     | '/_authenticated/held-by-person'
     | '/_authenticated/inventory'
+    | '/_authenticated/payment-orders'
     | '/_authenticated/pending-settlements'
     | '/_authenticated/quick-sell'
     | '/_authenticated/roles'
     | '/_authenticated/sell'
     | '/_authenticated/statements'
     | '/_authenticated/transfers'
+    | '/_authenticated/trust'
+    | '/_authenticated/wallets'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -269,6 +318,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/wallets': {
+      id: '/_authenticated/wallets'
+      path: '/wallets'
+      fullPath: '/wallets'
+      preLoaderRoute: typeof AuthenticatedWalletsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/trust': {
+      id: '/_authenticated/trust'
+      path: '/trust'
+      fullPath: '/trust'
+      preLoaderRoute: typeof AuthenticatedTrustRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/transfers': {
       id: '/_authenticated/transfers'
@@ -312,6 +375,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPendingSettlementsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/payment-orders': {
+      id: '/_authenticated/payment-orders'
+      path: '/payment-orders'
+      fullPath: '/payment-orders'
+      preLoaderRoute: typeof AuthenticatedPaymentOrdersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/inventory': {
       id: '/_authenticated/inventory'
       path: '/inventory'
@@ -331,6 +401,13 @@ declare module '@tanstack/react-router' {
       path: '/expenses'
       fullPath: '/expenses'
       preLoaderRoute: typeof AuthenticatedExpensesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/deposits': {
+      id: '/_authenticated/deposits'
+      path: '/deposits'
+      fullPath: '/deposits'
+      preLoaderRoute: typeof AuthenticatedDepositsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/dashboard': {
@@ -385,15 +462,19 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRoute
   AuthenticatedDailyClosingRoute: typeof AuthenticatedDailyClosingRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedDepositsRoute: typeof AuthenticatedDepositsRoute
   AuthenticatedExpensesRoute: typeof AuthenticatedExpensesRoute
   AuthenticatedHeldByPersonRoute: typeof AuthenticatedHeldByPersonRoute
   AuthenticatedInventoryRoute: typeof AuthenticatedInventoryRoute
+  AuthenticatedPaymentOrdersRoute: typeof AuthenticatedPaymentOrdersRoute
   AuthenticatedPendingSettlementsRoute: typeof AuthenticatedPendingSettlementsRoute
   AuthenticatedQuickSellRoute: typeof AuthenticatedQuickSellRoute
   AuthenticatedRolesRoute: typeof AuthenticatedRolesRoute
   AuthenticatedSellRoute: typeof AuthenticatedSellRoute
   AuthenticatedStatementsRoute: typeof AuthenticatedStatementsRoute
   AuthenticatedTransfersRoute: typeof AuthenticatedTransfersRoute
+  AuthenticatedTrustRoute: typeof AuthenticatedTrustRoute
+  AuthenticatedWalletsRoute: typeof AuthenticatedWalletsRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -403,15 +484,19 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCustomersRoute: AuthenticatedCustomersRoute,
   AuthenticatedDailyClosingRoute: AuthenticatedDailyClosingRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedDepositsRoute: AuthenticatedDepositsRoute,
   AuthenticatedExpensesRoute: AuthenticatedExpensesRoute,
   AuthenticatedHeldByPersonRoute: AuthenticatedHeldByPersonRoute,
   AuthenticatedInventoryRoute: AuthenticatedInventoryRoute,
+  AuthenticatedPaymentOrdersRoute: AuthenticatedPaymentOrdersRoute,
   AuthenticatedPendingSettlementsRoute: AuthenticatedPendingSettlementsRoute,
   AuthenticatedQuickSellRoute: AuthenticatedQuickSellRoute,
   AuthenticatedRolesRoute: AuthenticatedRolesRoute,
   AuthenticatedSellRoute: AuthenticatedSellRoute,
   AuthenticatedStatementsRoute: AuthenticatedStatementsRoute,
   AuthenticatedTransfersRoute: AuthenticatedTransfersRoute,
+  AuthenticatedTrustRoute: AuthenticatedTrustRoute,
+  AuthenticatedWalletsRoute: AuthenticatedWalletsRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

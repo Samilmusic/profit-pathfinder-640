@@ -9,7 +9,7 @@ import { DOC_TYPES, docTypeLabel, type DocType } from "@/lib/settlement";
 import { toast } from "sonner";
 import { Paperclip, Upload, ExternalLink, Trash2, Camera } from "lucide-react";
 
-export type RefType = "buy" | "sell" | "expense" | "transfer" | "brought_in" | "customer" | "account" | "other";
+export type RefType = "buy" | "sell" | "expense" | "transfer" | "brought_in" | "customer" | "account" | "deposit" | "payment_order" | "other";
 
 export function DocumentsPanel({
   refType,

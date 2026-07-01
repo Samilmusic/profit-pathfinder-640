@@ -6,7 +6,7 @@ export function useAccounts() {
   return useQuery({
     queryKey: ["accounts"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("accounts").select("id,name,currency,account_type,owner").is("deleted_at", null).eq("is_active", true).order("name");
+      const { data, error } = await supabase.from("accounts").select("id,name,currency,account_type,owner,holder_customer_id").is("deleted_at", null).eq("is_active", true).order("name");
       if (error) throw error;
       return data ?? [];
     },
@@ -15,9 +15,17 @@ export function useAccounts() {
 
 export function AccountSelect({
   value, onChange, currency, placeholder = "Select account",
-}: { value: string; onChange: (v: string) => void; currency?: string; placeholder?: string }) {
+  excludeTypes, onlyTypes, holderCustomerId,
+}: { value: string; onChange: (v: string) => void; currency?: string; placeholder?: string;
+  excludeTypes?: string[]; onlyTypes?: string[]; holderCustomerId?: string | null }) {
   const { data } = useAccounts();
-  const filtered = (data ?? []).filter((a) => !currency || a.currency === currency);
+  const filtered = (data ?? []).filter((a: any) => {
+    if (currency && a.currency !== currency) return false;
+    if (excludeTypes && excludeTypes.includes(a.account_type)) return false;
+    if (onlyTypes && !onlyTypes.includes(a.account_type)) return false;
+    if (holderCustomerId && a.holder_customer_id !== holderCustomerId) return false;
+    return true;
+  });
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger><SelectValue placeholder={placeholder} /></SelectTrigger>

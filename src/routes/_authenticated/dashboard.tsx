@@ -10,6 +10,7 @@ import { holderLabel } from "@/lib/settlement";
 import {
   ArrowDownToLine, ShoppingCart, TrendingUp, Receipt, ArrowLeftRight,
   Users, Wallet as WalletIcon, AlertTriangle, ClipboardList, HandCoins,
+  ShieldCheck, Landmark, Send, ArrowUpFromLine,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -24,6 +25,10 @@ const quickActions = [
   { to: "/transfers", label: "Transfer", icon: ArrowLeftRight },
   { to: "/customers", label: "Add Customer", icon: Users },
   { to: "/accounts", label: "Add Account", icon: WalletIcon },
+  { to: "/deposits", label: "Customer Deposit", icon: ArrowUpFromLine },
+  { to: "/payment-orders", label: "Payment Order", icon: Send },
+  { to: "/wallets", label: "Customer Wallets", icon: Landmark },
+  { to: "/trust", label: "Trust vs Company", icon: ShieldCheck },
 ] as const;
 
 function DashboardPage() {
@@ -112,6 +117,47 @@ function DashboardPage() {
     },
   });
 
+  const trustQ = useQuery({
+    queryKey: ["company_vs_customer_funds"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("company_vs_customer_funds").select("*");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const walletsQ = useQuery({
+    queryKey: ["customer_wallet_balances"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("customer_wallet_balances").select("*");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const pendingDepositsQ = useQuery({
+    queryKey: ["action_center", "deposits"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("customer_deposits").select("*, customer:customers(name)").is("deleted_at", null).neq("settlement_status", "completed").neq("settlement_status", "cancelled").order("entry_date");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const pendingOrdersQ = useQuery({
+    queryKey: ["action_center", "orders"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("payment_orders").select("*, customer:customers(name)").is("deleted_at", null).neq("settlement_status", "completed").neq("settlement_status", "cancelled").order("entry_date");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const scTodayQ = useQuery({
+    queryKey: ["sc_today", today],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("service_charges").select("*").eq("entry_date", today);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const alerts: { text: string; tone: "warn" | "info" }[] = [];
   (pendingBuysQ.data ?? []).forEach((r: any) => {
     if (r.money_holder_type && r.money_holder_type !== "customer") {
@@ -134,6 +180,20 @@ function DashboardPage() {
   });
   (holdingQ.data ?? []).forEach((b: any) => {
     alerts.push({ text: `${fmt(b.current_balance, b.currency)} held in ${b.name}`, tone: "info" });
+  });
+  (walletsQ.data ?? []).forEach((w: any) => {
+    const bal = Number(w.balance || 0);
+    if (bal < -0.0001) {
+      alerts.push({ text: `${w.customer_name} owes us ${fmt(-bal, w.currency)} (wallet debt)`, tone: "warn" });
+    } else if (bal > 0.0001) {
+      alerts.push({ text: `We hold ${fmt(bal, w.currency)} for ${w.customer_name}`, tone: "info" });
+    }
+  });
+  (pendingDepositsQ.data ?? []).forEach((r: any) => {
+    alerts.push({ text: `Deposit from ${r.customer?.name} ${fmt(r.amount, r.currency)} — needs receipt & completion`, tone: "warn" });
+  });
+  (pendingOrdersQ.data ?? []).forEach((r: any) => {
+    alerts.push({ text: `Payment order for ${r.customer?.name} ${fmt(r.amount, r.currency)} → ${r.receiver_name || r.destination_bank || "receiver"} pending`, tone: "warn" });
   });
 
   return (
@@ -159,6 +219,36 @@ function DashboardPage() {
         <StatCard label="Cash total (mixed)" value={fmt(cashTotal)} />
         <StatCard label="Held by people" value={String((holdingQ.data ?? []).length) + " lines"} />
       </div>
+
+      <Card className="mb-6 border-emerald-500/30" style={{ boxShadow: "var(--shadow-soft)" }}>
+        <CardHeader className="flex-row items-center justify-between space-y-0">
+          <CardTitle className="text-base flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-emerald-600" /> Trust separation</CardTitle>
+          <Button size="sm" variant="outline" asChild><Link to="/trust">View report</Link></Button>
+        </CardHeader>
+        <CardContent className="grid md:grid-cols-2 gap-4 text-sm">
+          <div>
+            <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Company assets</div>
+            {(trustQ.data ?? []).filter((r: any) => r.bucket === "company").map((r: any) => (
+              <div key={r.currency} className="flex justify-between border-b py-1 last:border-0">
+                <span className="text-muted-foreground">{r.currency}</span>
+                <span className="font-mono">{fmt(r.balance, r.currency)}</span>
+              </div>
+            ))}
+          </div>
+          <div>
+            <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Customer trust funds</div>
+            {(trustQ.data ?? []).filter((r: any) => r.bucket === "customer").map((r: any) => (
+              <div key={r.currency} className="flex justify-between border-b py-1 last:border-0">
+                <span className="text-muted-foreground">{r.currency}</span>
+                <span className={"font-mono " + (Number(r.balance) < 0 ? "text-destructive" : "")}>{fmt(r.balance, r.currency)}</span>
+              </div>
+            ))}
+            {(trustQ.data ?? []).filter((r: any) => r.bucket === "customer").length === 0 && (
+              <div className="text-xs text-muted-foreground">No customer balances.</div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       <Card className="mb-6 border-warning/40" style={{ boxShadow: "var(--shadow-soft)" }}>
         <CardHeader className="flex-row items-center justify-between space-y-0">
@@ -214,6 +304,7 @@ function DashboardPage() {
             <Row label="Gross profit" value={fmt(grossProfit)} />
             <Row label="Business expenses (reduce profit)" value={fmt(businessExpensesReducingProfit)} />
             <Row label="Net profit" value={fmt(netProfit)} accent />
+            <Row label="Service charges (today)" value={(scTodayQ.data ?? []).length === 0 ? "—" : (scTodayQ.data ?? []).reduce((s: number, r: any) => s + Number(r.amount||0), 0).toFixed(2)} />
             <Row label="Milad share" value={fmt(miladShare)} />
             <Row label="Ali share" value={fmt(aliShare)} />
           </CardContent>

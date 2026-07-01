@@ -9,9 +9,25 @@ export const ACCOUNT_TYPES = [
   { value: "aed_bank", label: "AED Bank" },
   { value: "foreign_currency", label: "Foreign Currency" },
   { value: "wallet", label: "Wallet / Crypto" },
+  { value: "customer_wallet", label: "Customer Wallet (Trust)" },
 ] as const;
 
 export const OWNERS = ["milad", "ali", "shared", "other"] as const;
+
+export const PAYMENT_METHODS = [
+  { value: "bank_transfer", label: "Bank Transfer" },
+  { value: "cash_delivery", label: "Cash Delivery" },
+  { value: "currency_delivery", label: "Currency Delivery" },
+  { value: "internal", label: "Internal Transfer" },
+  { value: "international", label: "International Transfer" },
+  { value: "other", label: "Other" },
+] as const;
+
+export const FEE_KINDS = [
+  { value: "fixed", label: "Fixed" },
+  { value: "percent", label: "Percent (%)" },
+  { value: "manual", label: "Manual" },
+] as const;
 
 // Rounding rules: IRR/Toman = whole numbers, everything else up to 4 decimals.
 export function decimalsFor(currency?: string | null) {

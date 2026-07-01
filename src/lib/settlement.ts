@@ -20,6 +20,8 @@ export const DOC_TYPES = [
   { value: "invoice", label: "Invoice" },
   { value: "expense_receipt", label: "Expense receipt" },
   { value: "id_passport", label: "ID / Passport" },
+  { value: "deposit_receipt", label: "Deposit receipt" },
+  { value: "payment_order_proof", label: "Payment order proof" },
   { value: "other", label: "Other document" },
 ] as const;
 
