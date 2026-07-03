@@ -1434,6 +1434,10 @@ export type Database = {
           raw_response: Json | null
           sell_rate: number | null
           source: string
+          source_buy_rate: number | null
+          source_mid_rate: number | null
+          source_sell_rate: number | null
+          source_unit: string | null
           status: string
         }
         Insert: {
@@ -1447,6 +1451,10 @@ export type Database = {
           raw_response?: Json | null
           sell_rate?: number | null
           source?: string
+          source_buy_rate?: number | null
+          source_mid_rate?: number | null
+          source_sell_rate?: number | null
+          source_unit?: string | null
           status?: string
         }
         Update: {
@@ -1460,6 +1468,10 @@ export type Database = {
           raw_response?: Json | null
           sell_rate?: number | null
           source?: string
+          source_buy_rate?: number | null
+          source_mid_rate?: number | null
+          source_sell_rate?: number | null
+          source_unit?: string | null
           status?: string
         }
         Relationships: []
