@@ -198,3 +198,45 @@
   }
   .rise-in { animation: rise-in 220ms ease-out both; }
 }
+
+/* ---------- Responsive / mobile helpers ---------- */
+@utility safe-bottom {
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+}
+@utility safe-top {
+  padding-top: calc(0.5rem + env(safe-area-inset-top));
+}
+
+/* Sticky bottom action bar. Fixed on mobile, static inside content on md+. */
+@utility sticky-action-bar {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: color-mix(in oklab, var(--card) 92%, transparent);
+  backdrop-filter: blur(10px) saturate(140%);
+  border-top: 1px solid var(--border);
+  padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
+  margin-left: -1rem;
+  margin-right: -1rem;
+}
+
+/* Prevent horizontal overflow globally without clipping vertical scroll. */
+html, body { overflow-x: clip; }
+
+/* Numbers that must fit in narrow cards without breaking layout. */
+@utility num-fit {
+  font-size: clamp(0.95rem, 3.4vw, 1.5rem);
+  line-height: 1.15;
+  word-break: break-all;
+}
+
+/* Hide on mobile / show on mobile helpers used by ResponsiveTable. */
+@utility only-md {
+  display: none;
+}
+@media (min-width: 768px) {
+  .only-md { display: revert; }
+  .not-md { display: none !important; }
+}
