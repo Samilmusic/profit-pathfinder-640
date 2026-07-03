@@ -3273,6 +3273,7 @@ export type Database = {
       }
     }
     Functions: {
+      admin_recalculate_balances: { Args: never; Returns: Json }
       avg_buy_rate: {
         Args: { _as_of?: string; _currency: string; _quote_currency: string }
         Returns: number
