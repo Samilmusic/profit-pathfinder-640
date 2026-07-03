@@ -171,7 +171,40 @@ function SettingsPage() {
 
       <ManualRatesCard />
       <AlertThresholdsCard />
+      <RecalculateCard />
     </>
+  );
+}
+
+function RecalculateCard() {
+  const qc = useQueryClient();
+  const run = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await (supabase as any).rpc("admin_recalculate_balances");
+      if (error) throw error;
+      return data as { lots_removed: number; ledger_entries_removed: number };
+    },
+    onSuccess: (r) => {
+      toast.success(`Recalculated — removed ${r?.lots_removed ?? 0} orphan lot(s), ${r?.ledger_entries_removed ?? 0} ledger entries.`);
+      qc.invalidateQueries();
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Recalculate failed"),
+  });
+  return (
+    <Card className="max-w-2xl mt-6">
+      <CardHeader><CardTitle>Admin — Recalculate balances</CardTitle></CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-sm text-muted-foreground">
+          Purge inventory lots and ledger entries left behind by cancelled or deleted
+          brought-in / buy records, then rebuild account balances and inventory from
+          valid data only. Financial history is preserved (soft-deleted rows remain in
+          the audit log).
+        </p>
+        <Button onClick={() => run.mutate()} disabled={run.isPending}>
+          {run.isPending ? "Recalculating…" : "Recalculate balances"}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
 
