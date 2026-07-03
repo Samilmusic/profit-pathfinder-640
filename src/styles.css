@@ -232,11 +232,4 @@ html, body { overflow-x: clip; }
   word-break: break-all;
 }
 
-/* Hide on mobile / show on mobile helpers used by ResponsiveTable. */
-@utility only-md {
-  display: none;
-}
-@media (min-width: 768px) {
-  .only-md { display: revert; }
-  .not-md { display: none !important; }
-}
+/* Responsive table breakpoint helpers are handled with Tailwind's md: prefix. */
