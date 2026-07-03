@@ -14,6 +14,8 @@ import { useState } from "react";
 import { fmt } from "@/lib/exchange";
 import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { adminRecalculateBalances } from "@/lib/admin-recalculate.functions";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   component: SettingsPage,
@@ -178,11 +180,10 @@ function SettingsPage() {
 
 function RecalculateCard() {
   const qc = useQueryClient();
+  const recalc = useServerFn(adminRecalculateBalances);
   const run = useMutation({
     mutationFn: async () => {
-      const { data, error } = await (supabase as any).rpc("admin_recalculate_balances");
-      if (error) throw error;
-      return data as { lots_removed: number; ledger_entries_removed: number };
+      return await recalc();
     },
     onSuccess: (r) => {
       toast.success(`Recalculated — removed ${r?.lots_removed ?? 0} orphan lot(s), ${r?.ledger_entries_removed ?? 0} ledger entries.`);
