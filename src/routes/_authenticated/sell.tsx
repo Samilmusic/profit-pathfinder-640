@@ -10,7 +10,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AccountSelect, useCustomers } from "@/components/account-select";
 import { CustomerBankAccountPicker, touchBankAccount } from "@/components/customer-bank-account-picker";
 import { maskAccount } from "@/components/customer-bank-account-form";
@@ -29,6 +28,8 @@ import { EDIT_FIELDS } from "@/lib/edit-fields";
 import { UseMarketRateButton } from "@/components/use-market-rate-button";
 import { RateComparison } from "@/components/rate-comparison";
 import { DealScoreCard } from "@/components/ai/deal-score-card";
+import { ResponsiveTable, type RTColumn } from "@/components/responsive-table";
+import { StickyActionBar } from "@/components/sticky-action-bar";
 
 export const Route = createFileRoute("/_authenticated/sell")({ component: Page });
 
@@ -158,9 +159,12 @@ function Page() {
         actions={
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" /> New sell</Button></DialogTrigger>
-            <DialogContent className="max-w-3xl">
+            <DialogContent className="sm:max-w-3xl">
               <DialogHeader><DialogTitle>New sell — Open Deal</DialogTitle></DialogHeader>
-              <form onSubmit={(e) => { e.preventDefault(); create.mutate({ closeNow: false }); }} className="grid md:grid-cols-2 gap-3">
+              <form
+                onSubmit={(e) => { e.preventDefault(); create.mutate({ closeNow: false }); }}
+                className="grid grid-cols-1 md:grid-cols-2 gap-3"
+              >
                 <F label="Date"><Input type="date" value={f.entry_date} onChange={(e) => setF({ ...f, entry_date: e.target.value })} /></F>
                 <F label="Customer">
                   <Select value={f.customer_id} onValueChange={(v) => setF({ ...f, customer_id: v })}>
@@ -308,100 +312,98 @@ function Page() {
                   </div>
                   <Switch checked={f.creates_cycle} onCheckedChange={(v) => setF({ ...f, creates_cycle: v })} />
                 </div>
-                <div className="md:col-span-2 flex justify-end gap-2">
-                  <Button variant="ghost" type="button" onClick={() => setOpen(false)}>Cancel</Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={
-                      create.isPending || !f.sold_amount || !f.sell_rate ||
-                      !f.sold_from_account_id || preview.shortfall > 0 ||
-                      !f.received_into_account_id
-                    }
-                    onClick={() => create.mutate({ closeNow: true })}
-                    title="Same-day cash: post received leg immediately"
-                  >Save &amp; Close Now</Button>
-                  <Button
-                    type="submit"
-                    disabled={
-                      create.isPending || !f.sold_amount || !f.sell_rate ||
-                      !f.sold_from_account_id || preview.shortfall > 0
-                    }
-                    title={
-                      preview.shortfall > 0
-                        ? `Not enough inventory (short ${fmt(preview.shortfall, f.sold_currency)})`
-                        : !f.sold_from_account_id
-                          ? "Pick the source account for the sold currency"
-                          : "Inventory decreases now; customer owes the receivable"
-                    }
-                  >Save as Open Deal</Button>
+                <div className="md:col-span-2">
+                  <StickyActionBar>
+                    <Button variant="ghost" type="button" onClick={() => setOpen(false)}>Cancel</Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={
+                        create.isPending || !f.sold_amount || !f.sell_rate ||
+                        !f.sold_from_account_id || preview.shortfall > 0 ||
+                        !f.received_into_account_id
+                      }
+                      onClick={() => create.mutate({ closeNow: true })}
+                      title="Same-day cash: post received leg immediately"
+                    >Close Deal</Button>
+                    <Button
+                      type="submit"
+                      disabled={
+                        create.isPending || !f.sold_amount || !f.sell_rate ||
+                        !f.sold_from_account_id || preview.shortfall > 0
+                      }
+                      title={
+                        preview.shortfall > 0
+                          ? `Not enough inventory (short ${fmt(preview.shortfall, f.sold_currency)})`
+                          : !f.sold_from_account_id
+                            ? "Pick the source account for the sold currency"
+                            : "Inventory decreases now; customer owes the receivable"
+                      }
+                    >Save Open Deal</Button>
+                  </StickyActionBar>
                 </div>
               </form>
             </DialogContent>
           </Dialog>
         }
       />
-      <Card><CardContent className="p-0 overflow-x-auto">
-        <Table>
-          <TableHeader><TableRow><TableHead>Doc #</TableHead><TableHead>Date</TableHead><TableHead>Sold</TableHead><TableHead>Rate</TableHead><TableHead>Received</TableHead><TableHead className="text-right">Profit</TableHead><TableHead className="text-right">Milad</TableHead><TableHead className="text-right">Ali</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow></TableHeader>
-          <TableBody>
-            {(q.data ?? []).map((r: any) => (
-              <TableRow key={r.id} className="rise-in">
-                <TableCell className="whitespace-nowrap">
-                  {r.doc_no ? <Copyable value={r.doc_no} label="Doc #" /> : <span className="text-muted-foreground text-xs">—</span>}
-                </TableCell>
-                <TableCell>
-                  <Link to="/sells/$id" params={{ id: r.id }} className="underline decoration-dotted underline-offset-2">{r.entry_date}</Link>
-                </TableCell>
-                <TableCell className="font-mono">{fmt(r.sold_amount, r.sold_currency)}</TableCell>
-                <TableCell className="font-mono">{fmt(r.sell_rate)}</TableCell>
-                <TableCell className="font-mono">{fmt(r.received_amount, r.received_currency)}</TableCell>
-                {r.sold_currency !== r.received_currency ? (
-                  <>
-                    <TableCell className="text-right"><span className="text-xs rounded-full border border-amber-200 bg-amber-50 text-amber-800 px-2 py-0.5 whitespace-nowrap">Pending · open cycle</span></TableCell>
-                    <TableCell className="text-right text-muted-foreground text-xs">Pending</TableCell>
-                    <TableCell className="text-right text-muted-foreground text-xs">Pending</TableCell>
-                  </>
-                ) : (
-                  <>
-                    <TableCell className="text-right font-mono text-accent">{fmt(r.gross_profit)}</TableCell>
-                    <TableCell className="text-right font-mono">{fmt(r.milad_profit)}</TableCell>
-                    <TableCell className="text-right font-mono">{fmt(r.ali_profit)}</TableCell>
-                  </>
-                )}
-                <TableCell><DealStatusBadge value={r.deal_status} /></TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-1">
-                    <Button asChild variant="ghost" size="sm">
-                      <Link to="/sells/$id" params={{ id: r.id }}>
-                        <FileText className="h-4 w-4 mr-1" /> Open deal
-                      </Link>
-                    </Button>
-                    <RecordActions
-                      table="sell_transactions"
-                      row={r}
-                      onView={() => setDetailRow(r)}
-                      invalidateKeys={["sells"]}
-                      fields={EDIT_FIELDS.sell_transactions}
-                    />
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-            {q.data && q.data.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={10} className="p-4">
-                  <EmptyState
-                    icon={Sparkles}
-                    title="No deals yet"
-                    body="Start a new sell to create your first deal. Every deal gets a document number automatically."
-                  />
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </CardContent></Card>
+      <ResponsiveTable<any>
+        data={q.data ?? []}
+        getRowKey={(r) => r.id}
+        empty={
+          <EmptyState
+            icon={Sparkles}
+            title="No deals yet"
+            body="Start a new sell to create your first deal. Every deal gets a document number automatically."
+          />
+        }
+        columns={[
+          { key: "doc", header: "Doc #", primary: true, cell: (r) => (
+            <div className="flex items-center gap-2 min-w-0">
+              {r.doc_no ? <Copyable value={r.doc_no} label="Doc #" /> : <span className="text-muted-foreground text-xs">—</span>}
+              <Link to="/sells/$id" params={{ id: r.id }} className="text-xs text-muted-foreground underline decoration-dotted underline-offset-2 truncate">{r.entry_date}</Link>
+            </div>
+          ) },
+          { key: "date", header: "Date", hideOnMobile: true, cell: (r) => (
+            <Link to="/sells/$id" params={{ id: r.id }} className="underline decoration-dotted underline-offset-2">{r.entry_date}</Link>
+          ) },
+          { key: "sold", header: "Sold", cell: (r) => <span className="font-mono">{fmt(r.sold_amount, r.sold_currency)}</span> },
+          { key: "rate", header: "Rate", cell: (r) => <span className="font-mono">{fmt(r.sell_rate)}</span> },
+          { key: "recv", header: "Received", cell: (r) => <span className="font-mono">{fmt(r.received_amount, r.received_currency)}</span> },
+          { key: "profit", header: "Profit", className: "text-right", headerClassName: "text-right", cell: (r) => (
+            r.sold_currency !== r.received_currency
+              ? <span className="text-xs rounded-full border border-amber-200 bg-amber-50 text-amber-800 px-2 py-0.5 whitespace-nowrap">Pending · open cycle</span>
+              : <span className="font-mono text-accent">{fmt(r.gross_profit)}</span>
+          ) },
+          { key: "milad", header: "Milad", className: "text-right", headerClassName: "text-right", cell: (r) => (
+            r.sold_currency !== r.received_currency
+              ? <span className="text-muted-foreground text-xs">Pending</span>
+              : <span className="font-mono">{fmt(r.milad_profit)}</span>
+          ) },
+          { key: "ali", header: "Ali", className: "text-right", headerClassName: "text-right", cell: (r) => (
+            r.sold_currency !== r.received_currency
+              ? <span className="text-muted-foreground text-xs">Pending</span>
+              : <span className="font-mono">{fmt(r.ali_profit)}</span>
+          ) },
+          { key: "status", header: "Status", cell: (r) => <DealStatusBadge value={r.deal_status} /> },
+          { key: "actions", header: "", cell: (r) => (
+            <div className="flex items-center justify-end gap-1 flex-wrap">
+              <Button asChild variant="ghost" size="sm">
+                <Link to="/sells/$id" params={{ id: r.id }}>
+                  <FileText className="h-4 w-4 mr-1" /> Open
+                </Link>
+              </Button>
+              <RecordActions
+                table="sell_transactions"
+                row={r}
+                onView={() => setDetailRow(r)}
+                invalidateKeys={["sells"]}
+                fields={EDIT_FIELDS.sell_transactions}
+              />
+            </div>
+          ) },
+        ]}
+      />
       <TxnDetailDialog
         open={!!detailRow}
         onOpenChange={(v) => !v && setDetailRow(null)}
