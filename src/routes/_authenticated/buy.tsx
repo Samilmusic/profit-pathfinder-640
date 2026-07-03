@@ -78,7 +78,7 @@ function Page() {
         paid_from_account_id: f.paid_from_account_id || null,
         received_into_account_id: f.received_into_account_id || null,
         customer_id: f.customer_id || null,
-        owner: f.owner,
+        txn_owner: f.owner,
         notes: f.notes || null,
         created_by: u.user?.id,
         trade_cycle_id: f.trade_cycle_id || null,
@@ -196,7 +196,7 @@ function Page() {
                 <TableCell className="font-mono">{fmt(r.bought_amount, r.bought_currency)}</TableCell>
                 <TableCell className="font-mono">{fmt(r.buy_rate)}</TableCell>
                 <TableCell className="font-mono">{fmt(r.paid_amount, r.paid_currency)}</TableCell>
-                <TableCell className="capitalize">{r.owner}</TableCell>
+                <TableCell className="capitalize">{r.txn_owner ?? r.owner}</TableCell>
                 <TableCell><SettlementStatusBadge value={r.settlement_status} /></TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1">
