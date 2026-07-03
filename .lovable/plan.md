@@ -1,95 +1,81 @@
+# Responsive Overhaul — Full App Audit
 
-# AI Business Brain & Deal Score
+Goal: make every page work natively on iPhone / Android / iPad / small laptops without breaking desktop. Fix the Sell page scroll bug first, then apply the same pattern across the app.
 
-Grounded, tool-based AI layer over the existing portal. The AI never writes SQL, never invents numbers, and only speaks from a fixed set of read-only "data tools" that hit the current tables (`accounts`, `inventory_lots`, `sell_transactions`, `buy_transactions`, `customers`, `customer_bank_accounts`, `brought_in_money`, `trade_cycles`, `expenses`, `transfers`, `market_rates_latest`, `sell_payments`, `documents`, `audit_events`). No accounting logic, triggers, or existing forms are rebuilt — Deal Score is a read-only overlay.
+## Approach
 
-## Scope (7 deliverables)
+Rather than editing every page individually with bespoke CSS (slow, inconsistent, easy to regress), I will:
 
-1. **Server AI layer** — TanStack `createServerFn` handlers, protected by `requireSupabaseAuth` + `has_role('admin'|'milad'|'ali')`, using Lovable AI Gateway (`google/gemini-3-flash-preview`) with the AI SDK `tool()` + `stopWhen(stepCountIs(50))` pattern. AI never sees raw tables — only tool results.
-2. **AI Business Brain page** at `/_authenticated/ai-brain` — chat-style Q&A, suggested-question chips, cards for Money location / Open deals / Customer risk / Inventory exposure / Market movement / Today summary.
-3. **Floating "Ask Business" button** on Dashboard that opens the same brain in a slide-over.
-4. **AI Deal Score card** — reusable `<DealScoreCard />` embedded in Sell, Buy, and Brought-In (conversion) forms. Computed **fully deterministically in the client from the same tool outputs** (no LLM in the scoring loop → instant, cheap, reliable). LLM is only used to produce the plain-English "why" line.
-5. **Daily CEO Report** — "Generate Today Report" button on Dashboard, renders a structured brief filled from tool data, LLM only writes the narrative paragraphs.
-6. **Risk warnings surface** — same rule engine as Deal Score, exposed as inline warnings in forms and as an "AI Risk" section on the brain page.
-7. **Guardrails** — role check on every server fn, allow-list of tool names, hard input validation with Zod, no raw-SQL tool, strict "I don't have enough data for that" fallback, tool results capped in size, tokens capped per call.
+1. **Fix the root causes in shared layout** — `AppShell`, `Dialog`, `Table`, `Card`, `PageHeader`, `styles.css`. Most "not responsive" symptoms in this codebase come from a few shared containers with `overflow-hidden`, fixed heights, or desktop-only paddings.
+2. **Introduce 3 small primitives** used across pages:
+   - `<ResponsiveTable>` — renders `<table>` on `md+`, stacked cards on mobile from the same column config.
+   - `<StickyActionBar>` — bottom-anchored action bar with iOS safe-area padding; becomes inline on `md+`.
+   - `<CollapsibleSection>` — collapsed by default on mobile, always-open on desktop. Used for Sell/Buy/Brought-In form sections and AI Score.
+3. **Fix the Sell page** end-to-end as the reference implementation, then propagate the same patterns to Buy, Brought-In, Quick Sell, Transfers, Expenses, Dashboard, Command Center, AI Brain, Market Intel, and list pages.
 
-## Data tools (the only way AI can read data)
+## Concrete changes
 
-Every tool = one server fn returning a compact JSON DTO from the existing DB. No new tables required.
+### Global / shared
+- `src/styles.css`
+  - Add `--sat-bottom: env(safe-area-inset-bottom)` and `--sat-top` tokens; apply to sticky bars and mobile bottom nav (already partially there).
+  - Add `.no-scroll-lock` utility, `.table-as-cards` responsive utility, `.text-fit` (clamped font-size with `clamp()`), `.stack-md` (grid-cols-1 md:grid-cols-2), `.stack-lg` (up to 3 cols).
+  - Ensure `html, body { overflow-x: hidden }` is NOT set to `hidden` on any vertical axis; remove any leftover `overflow: hidden` on `#root`.
+- `src/components/app-shell.tsx`
+  - Verify `<main>` uses `min-h-0` and no `overflow-hidden`; add extra `pb-[calc(6rem+env(safe-area-inset-bottom))]` on mobile so sticky bars never cover content.
+  - Header: shrink padding on mobile, hide search label, keep bell + search compact.
+- `src/components/ui/dialog.tsx`
+  - Content: `max-h-[100dvh]`, `overflow-y-auto`, `w-[calc(100vw-1rem)]`, `sm:max-w-lg`, padding scales down on mobile, rounded-none on <sm for full-sheet feel on phones. Body scroll not locked by nested overflow.
+- `src/components/ui/table.tsx` — keep as-is but wrapper switches to `overflow-x-auto` only on `md+`; on mobile it's the caller's job to render cards (via ResponsiveTable).
+- `src/components/page-header.tsx` — allow title to wrap, actions stack full-width on mobile.
 
-| Tool | Backing query |
-|---|---|
-| `getCurrencyBalances({currency?})` | `SUM(remaining_amount)` from `inventory_lots` grouped by currency |
-| `getAccountBalances({type?, currency?})` | `ledger_entries` sums joined to `accounts` |
-| `getInventoryLots({currency?, maxCostRate?, holder?})` | `inventory_lots` with `remaining_amount>0` |
-| `getOpenDeals({status?})` | `sell_transactions` where `deal_status NOT IN ('closed','cancelled')` |
-| `getCustomerBalances({customer_id?})` | wallet + open-deal receivables per customer |
-| `getPendingReceipts()` | deals in `waiting_receipt` / `waiting_payment` / `partially_paid` |
-| `getPendingPayments()` | expenses/payment_orders not completed |
-| `getMarketRates({currency?})` | `market_rates_latest` + staleness |
-| `getProfitSummary({from?, to?})` | realized (closed same-ccy) vs pending (open cycles) |
-| `getInvestorSummary()` | reuses existing Ali investor view |
-| `getRateExposure()` | inventory value @ cost vs @ live mid |
-| `getRecentActivity({since?})` | last N `audit_events` rows |
-| `findCustomer({q})` | fuzzy `ilike` on customers, returns id + summary |
-| `getCashWithPerson({person?})` | `accounts` where `account_type='person_holding'` |
+### New primitives
+- `src/components/responsive-table.tsx`
+  - Props: `columns: { key, header, cell, mobileLabel?, primary? }[]`, `data`, `getRowKey`, `onRowClick?`, `emptyState?`.
+  - `md+`: renders `<Table>`. `<md`: renders a list of Cards with label/value rows.
+- `src/components/sticky-action-bar.tsx`
+  - Fixed bottom on mobile with safe-area padding, background blur, top border; static/inline on `md+`. Children are the action buttons.
+- `src/components/collapsible-section.tsx`
+  - Wraps a Card with a header button that toggles open/closed on mobile; `alwaysOpen` prop or `md+` breakpoint forces open on tablet/desktop.
 
-Each returns ≤ ~50 rows and includes `record_id` + route link so the UI can render drill-downs.
+### Sell page (`src/routes/_authenticated/sell.tsx`) — reference fix
+- Remove any `h-screen` / `overflow-hidden` from the form container.
+- Wrap the form in a normal flow div, no fixed heights.
+- Split form into `CollapsibleSection`s: Customer, Currency & Rate, Market, Accounts, AI Score (collapsed by default), Documents, Notes.
+- Actions moved into `<StickyActionBar>` containing "Save Open Deal" and "Close Deal".
+- Existing list view swapped to `<ResponsiveTable>` (already has an EmptyState).
+- AI Score card: pass `defaultOpen={false}` on mobile; compact summary row visible when collapsed.
 
-## AI Deal Score (deterministic + narrated)
+### Buy / Brought-In / Quick Sell / Transfers / Expenses
+- Same section-collapse + sticky action bar treatment.
+- Lists → `ResponsiveTable`.
 
-Client-side pure function scores 10 factors, each capped so the total is 0–100. Runs on every debounced form change. LLM is called **once** after scoring to produce the one-line explanation per factor from the numeric result — it cannot change the score.
+### Dashboard (`dashboard.tsx`)
+- Grid: `grid-cols-1 md:grid-cols-2 xl:grid-cols-3` for KPI cards.
+- Bonbast/Inventory/Quick actions blocks each get `min-w-0` and `truncate` on numbers; large amounts use `.text-fit`.
+- Recent Activity table → `ResponsiveTable`.
 
-```text
-factor              max   check
-rate_quality        20    (our_rate - market_mid) / market_mid  vs sell/buy side
-inventory_avail     15    sum(remaining) >= sold_amount (source account)
-cost_basis_ok       10    FIFO preview returns non-zero blended rate
-expected_margin     15    (our_rate - avg_cost) / avg_cost, sign-aware for buy/sell
-settlement_risk    -15    customer has open unpaid / overdue deals
-receipt_risk        -5    required docs missing (soft — informational)
-balance_impact     -10    resulting account balance < 20% of 30-day avg
-market_movement    -10    |Δ 15m| > threshold from app_settings
-completeness       -20    any required field missing → clamps score to <40
-customer_history    10    on-time settlement ratio ≥ 0.8
-```
+### Command Center, Market Intelligence, AI Brain
+- Convert multi-column grids to `grid-cols-1 md:grid-cols-2` where they currently force wider columns.
+- Chat input area: sticky bottom with safe-area on mobile.
 
-Labels: 90+ Excellent, 75+ Good, 60+ Acceptable, 40+ Risky, <40 Dangerous. Never blocks save — hard blocks stay owned by existing DB triggers (`enforce_sell_inventory`, `enforce_txn_completion`, etc.). Uses the already-captured `reference_*` snapshot columns on transactions.
+### List pages (accounts, customers, inventory, statements, audit, pending-settlements, held-by-person, wallets, deposits, payment-orders, trust, ali-investor, trades, daily-closing, roles, settings)
+- Swap tables to `ResponsiveTable`.
+- Filter bars: `flex flex-wrap gap-2`, each control `min-w-0 flex-1 md:flex-none`.
 
-## Daily CEO Report
+### Detail pages (`sells.$id`, `customers.$id`, `trades.$id`)
+- Header stacks on mobile per the responsive-layout rule (grid-cols-[minmax(0,1fr)_auto]).
+- Side panels drop under main content on mobile.
 
-Server fn `generateDailyReport()` calls the tool set in a fixed sequence (not by LLM), assembles a typed brief, then asks the LLM to write short narrative sections (headline, biggest risk, best deal, worst issue, follow-ups) with the brief as the only source. Renders as a printable card on the brain page.
-
-## Guardrails (zero-hallucination)
-
-- Server fn `askBusinessBrain({ question, history })` — role-gated, uses AI SDK `streamText` with an allow-listed `tools` map (the getters above), `stopWhen: stepCountIs(50)`, system prompt: *"Only use tool results. If a tool returns empty, say 'I don't have enough data for that.' Never invent numbers. Cite record IDs."*
-- No `dynamicTool`, no SQL tool, no filesystem tool.
-- Tool inputs validated by Zod; outputs truncated.
-- Every numeric shown in the answer must appear in a tool result — enforced by prompt + reviewed via the "Sources" list rendered under each answer.
-- Rate-limit / 402 handling per gateway rules.
-
-## Technical notes (for the record)
-
-- Files created:
-  - `src/lib/ai/tools.server.ts` — the 14 data tools (server-only helpers)
-  - `src/lib/ai/gateway.server.ts` — Lovable AI Gateway provider (per knowledge file)
-  - `src/lib/ai/brain.functions.ts` — `askBusinessBrain`, `generateDailyReport`
-  - `src/lib/ai/deal-score.ts` — pure deterministic scorer (client-safe)
-  - `src/lib/ai/deal-score.functions.ts` — server fn wrapping scorer + narration LLM call
-  - `src/routes/_authenticated/ai-brain.tsx` — page
-  - `src/components/ai/ask-business-button.tsx` — floating dashboard button + sheet
-  - `src/components/ai/deal-score-card.tsx` — embeddable card
-  - `src/components/ai/daily-report.tsx` — CEO report renderer
-  - `src/components/ai/message-bubble.tsx`, `sources-list.tsx`
-- Integrations: mount `<DealScoreCard/>` in existing Sell (`/_authenticated/sell.tsx` — quick-sell dialog), Buy, Brought-In conversion forms — no logic changes to their submit handlers. Add `<AskBusinessButton/>` to the dashboard route.
-- Auth attacher: verify `src/start.ts` has bearer middleware (already present per project history); no changes if so.
-- No schema migrations required — reuses existing tables and views.
+### Auth page (`auth.tsx`)
+- Fix the hydration mismatch showing in runtime errors (the `<div>` vs `<Suspense>` mismatch) by ensuring the outer wrapper is identical on server and client — remove any conditional wrapper.
 
 ## Out of scope
+- No accounting logic, no schema changes, no new business rules.
+- No changes to Supabase policies, server functions, or AI logic.
+- No visual rebrand — same tokens, same colors, only layout/spacing/scroll behavior.
 
-- No changes to any trigger, RPC, ledger, or profit logic.
-- No new tables.
-- No public/anon exposure — every AI endpoint is admin/staff only.
-- No auto-actions — AI is read-only advisory; it can never create/edit/cancel records.
+## Verification
+- Screenshot Sell, Dashboard, Command Center, AI Brain, one list, one dialog at 360, 480, 768, 1024, 1280 via Playwright.
+- Confirm: no horizontal scroll on any viewport, sticky action bars visible above safe area, dialogs scroll internally, tables become cards on mobile.
 
-Ready to build once you approve.
+Reply "go" to execute, or tell me what to adjust (e.g., skip a page, keep tables horizontal on mobile, different breakpoints).
