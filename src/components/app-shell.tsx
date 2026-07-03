@@ -156,7 +156,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <NotificationBell />
           <GlobalSearchTrigger />
         </header>
-        <main className="flex-1 p-4 md:p-6 lg:p-8 max-w-[1600px] w-full mx-auto pb-24 md:pb-8">{children}</main>
+        <main className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 max-w-[1600px] w-full mx-auto min-w-0 pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-8">{children}</main>
 
         {/* Mobile bottom nav */}
         <nav className="fixed bottom-0 inset-x-0 z-30 bg-card border-t md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
