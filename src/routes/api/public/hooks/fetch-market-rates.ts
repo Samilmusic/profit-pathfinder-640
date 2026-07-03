@@ -91,13 +91,23 @@ async function insertRate(
   errorMessage: string | null,
 ) {
   const status = buy || sell ? "ok" : "error";
-  const mid = buy && sell ? (buy + sell) / 2 : buy ?? sell ?? null;
+  // Bonbast publishes rates in Toman. System unit is IRR (1 IRR = 0.1 Toman),
+  // so multiply by 10 for the normalized values used by the app.
+  const TOMAN_TO_IRR = 10;
+  const srcMid = buy && sell ? (buy + sell) / 2 : buy ?? sell ?? null;
+  const normBuy = buy != null ? buy * TOMAN_TO_IRR : null;
+  const normSell = sell != null ? sell * TOMAN_TO_IRR : null;
+  const normMid = srcMid != null ? srcMid * TOMAN_TO_IRR : null;
   const { error } = await supabaseAdmin.from("market_rates").insert({
     source: "bonbast",
     currency,
-    buy_rate: buy,
-    sell_rate: sell,
-    mid_rate: mid,
+    buy_rate: normBuy,
+    sell_rate: normSell,
+    mid_rate: normMid,
+    source_unit: "TOMAN",
+    source_buy_rate: buy,
+    source_sell_rate: sell,
+    source_mid_rate: srcMid,
     raw_response: raw ? { extracted: raw } : null,
     status,
     error_message: errorMessage,

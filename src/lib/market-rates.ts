@@ -11,6 +11,10 @@ export type MarketRateRow = {
   fetched_at: string;
   status: string;
   error_message: string | null;
+  source_unit?: string | null;
+  source_buy_rate?: number | null;
+  source_sell_rate?: number | null;
+  source_mid_rate?: number | null;
 };
 
 export type MarketRateRecentRow = MarketRateRow & { rn: number };
