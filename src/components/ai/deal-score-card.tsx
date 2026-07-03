@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { getDealSignals } from "@/lib/ai/brain.functions";
 import { scoreDeal, type DealScoreInput } from "@/lib/ai/deal-score";
 import { Card, CardContent } from "@/components/ui/card";
-import { Sparkles, TrendingUp, TrendingDown, Info } from "lucide-react";
+import { Sparkles, TrendingUp, TrendingDown, Info, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const toneClass = {
@@ -28,6 +28,7 @@ export function DealScoreCard(props: Props) {
   const fetchSignals = useServerFn(getDealSignals);
   const [signals, setSignals] = useState<DealScoreInput["signals"] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const key = JSON.stringify({
     ccy: props.sold_currency,
@@ -75,18 +76,24 @@ export function DealScoreCard(props: Props) {
 
   return (
     <Card className="glass card-lift">
-      <CardContent className="p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" />
+      <CardContent className="p-3 sm:p-4 space-y-3">
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="w-full flex items-center justify-between gap-3 text-left"
+          aria-expanded={expanded}
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <Sparkles className="h-4 w-4 text-primary shrink-0" />
             <span className="text-xs uppercase tracking-wide text-muted-foreground">AI Deal Score</span>
+            <span className={cn("text-xs font-medium ml-1 truncate", labelColor[result.label])}>{result.label}</span>
           </div>
-          <div className="text-right">
-            <div className="text-3xl font-bold leading-none">{result.score}<span className="text-sm text-muted-foreground">/100</span></div>
-            <div className={cn("text-xs font-medium", labelColor[result.label])}>{result.label}</div>
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="text-2xl font-bold leading-none tabular-nums">{result.score}<span className="text-xs text-muted-foreground">/100</span></div>
+            <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", expanded && "rotate-180")} />
           </div>
-        </div>
-        <div className="h-2 rounded-full bg-muted overflow-hidden">
+        </button>
+        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
           <div
             className={cn("h-full transition-all",
               result.score >= 75 ? "bg-emerald-500" :
@@ -95,26 +102,30 @@ export function DealScoreCard(props: Props) {
             style={{ width: `${result.score}%` }}
           />
         </div>
-        <p className="text-sm">{result.headline}</p>
-        <ul className="space-y-1.5">
+        {expanded && (
+          <>
+          <p className="text-sm">{result.headline}</p>
+          <ul className="space-y-1.5">
           {result.factors.map((x) => (
             <li key={x.key} className="flex items-start gap-2 text-xs">
               <span className={cn("mt-0.5 shrink-0", toneClass[x.tone])}>
                 {x.points > 0 ? <TrendingUp className="h-3.5 w-3.5" /> : x.points < 0 ? <TrendingDown className="h-3.5 w-3.5" /> : <Info className="h-3.5 w-3.5" />}
               </span>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <div className="flex justify-between gap-2">
                   <span className="font-medium">{x.label}</span>
                   <span className={cn("tabular-nums", x.points > 0 ? "text-emerald-600" : x.points < 0 ? "text-rose-600" : "text-muted-foreground")}>
                     {x.points > 0 ? "+" : ""}{x.points}
                   </span>
                 </div>
-                <div className="text-muted-foreground">{x.note}</div>
+                <div className="text-muted-foreground break-words">{x.note}</div>
               </div>
             </li>
           ))}
-        </ul>
-        <p className="text-[10px] text-muted-foreground italic">Score is advisory. Existing accounting rules still block invalid saves.</p>
+          </ul>
+          <p className="text-[10px] text-muted-foreground italic">Score is advisory. Existing accounting rules still block invalid saves.</p>
+          </>
+        )}
       </CardContent>
     </Card>
   );
