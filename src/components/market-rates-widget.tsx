@@ -147,6 +147,11 @@ function RateBlock({
           <AlertTriangle className="h-3 w-3" /> Bonbast unavailable — showing manual fallback.
         </div>
       )}
+      {row?.source === "bonbast" && row?.source_unit === "TOMAN" && (
+        <div className="mt-1 text-[10px] text-muted-foreground">
+          Source: Bonbast, converted from Toman ×10
+        </div>
+      )}
       {!row && (
         <div className="mt-2 flex items-center gap-1 text-[11px] text-red-600 dark:text-red-400">
           <AlertTriangle className="h-3 w-3" /> No rate yet. Set a manual rate in Settings.
