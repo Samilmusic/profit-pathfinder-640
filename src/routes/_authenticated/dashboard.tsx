@@ -14,6 +14,7 @@ import {
   Landmark, ChevronDown, ChevronRight, Layers, Users2, Activity,
   PackageCheck, Timer, Boxes, Clock,
 } from "lucide-react";
+import { Briefcase } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
@@ -282,6 +283,17 @@ function DashboardPage() {
 
       <MarketRatesWidget />
       <AskBusinessButton />
+
+      {/* DEAL CENTER PIPELINE — quick access to filtered deal lists */}
+      <SectionTitle icon={<Briefcase className="h-4 w-4" />} title="Deal Center" hint="Every deal, one place. Click a status to filter." />
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-6">
+        <PipelineTile to={{ status: "open" }}              label="Open Deals"        count={openCount}                            tone="info" />
+        <PipelineTile to={{ status: "waiting_payment" }}   label="Waiting Payment"   count={dealBucket("waiting_payment") + dealBucket("partially_paid")} tone="warn" />
+        <PipelineTile to={{ status: "waiting_receipt" }}   label="Waiting Receipt"   count={dealBucket("waiting_receipt")}         tone="info" />
+        <PipelineTile to={{ status: "waiting_delivery" }}  label="Waiting Delivery"  count={dealBucket("waiting_currency_delivery") + dealBucket("waiting_delivery_proof")} tone="warn" />
+        <PipelineTile to={{ status: "ready_to_close" }}    label="Ready to Close"    count={dealBucket("ready_to_close")}          tone="success" />
+        <PipelineTile to={{ status: "all" }}               label="All Deals"         count={openCount + closedToday}               tone="muted" />
+      </div>
 
       {/* SECTION 1 — INVENTORY BY CURRENCY */}
       <SectionTitle icon={<Boxes className="h-4 w-4" />} title="Inventory by currency" hint="Never merged. Each currency stands alone." />
