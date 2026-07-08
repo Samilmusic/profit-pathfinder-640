@@ -13,9 +13,10 @@ import { AccountSelect, useAccounts, useCustomers } from "@/components/account-s
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { CURRENCIES, OWNERS, fmt } from "@/lib/exchange";
+import { NumberInput } from "@/components/number-input";
 import { UseMarketRateButton } from "@/components/use-market-rate-button";
 import { toast } from "sonner";
-import { ArrowLeft, ChevronsUpDown, TrendingUp } from "lucide-react";
+import { ArrowLeft, ChevronsUpDown, TrendingUp, ArrowLeftRight, Warehouse } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/trades/new")({ component: NewTradePage });
 
