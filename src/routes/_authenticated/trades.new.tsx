@@ -58,6 +58,8 @@ function NewTradePage() {
     entry_date: today,
     owner: "shared",
     notes: "",
+    // Top-level trade type
+    trade_type: "inventory" as "inventory" | "matched",
     // STEP 1 — Give
     give_currency: "AED",
     give_amount: "",
@@ -85,6 +87,41 @@ function NewTradePage() {
     milad_pct: 50,
     ali_pct: 50,
   });
+
+  // ---- Matched (broker) trade state ----
+  const [m, setM] = useState({
+    // Customer A (supplier)
+    a_customer_id: "",
+    a_currency: "AED",
+    a_amount: "",
+    a_rate: "",
+    a_account_id: "",
+    a_status: "not_received" as "not_received" | "received" | "later",
+    a_proof: "",
+    // Customer B (buyer)
+    b_customer_id: "",
+    b_currency: "AED",
+    b_amount: "",
+    b_rate: "",
+    b_account_id: "",
+    b_status: "not_delivered" as "not_delivered" | "delivered" | "later",
+    b_proof: "",
+    // Rates are quoted in this "counter" currency (e.g. IRR)
+    counter_currency: "IRR",
+    // Which currency to book the company profit in
+    book_profit_in: "counter" as "counter" | "primary",
+  });
+
+  const mAmtA = Number(m.a_amount || 0);
+  const mAmtB = Number(m.b_amount || 0);
+  const mRateA = Number(m.a_rate || 0);
+  const mRateB = Number(m.b_rate || 0);
+  const mValueA = mAmtA * mRateA; // counter ccy paid by/to A
+  const mValueB = mAmtB * mRateB; // counter ccy paid by B
+  const mProfitCounter = mValueB - mValueA;
+  const mProfitInA = mRateA > 0 ? mProfitCounter / mRateA : 0;
+  const mProfitInB = mRateB > 0 ? mProfitCounter / mRateB : 0;
+  const mMarginPct = mRateA > 0 ? ((mRateB - mRateA) / mRateA) * 100 : 0;
 
   const giveAmt = Number(f.give_amount || 0);
   const buyRate = Number(f.buy_rate || 0);
