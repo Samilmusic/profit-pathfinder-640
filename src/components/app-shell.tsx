@@ -41,6 +41,7 @@ import { NotificationBell } from "@/components/notification-bell";
 const nav = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/deals", label: "Deal Center", icon: Briefcase },
+  { to: "/trades/new", label: "+ New Trade", icon: Sparkles },
   { to: "/command-center", label: "Command Center", icon: Target },
   { to: "/ai-brain", label: "AI Business Brain", icon: Sparkles },
   { to: "/market-intelligence", label: "Market Intel", icon: BarChart3 },
