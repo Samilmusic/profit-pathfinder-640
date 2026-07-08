@@ -265,46 +265,109 @@ function DashboardPage() {
     return items;
   }, [openSells, today]);
 
-  // ── Section 4: Cash position by currency, grouped
-  const cashByCurrency = useMemo(() => {
+  // ── Section 4: Currency positions — rich treasury cards
+  const currencyPositions = useMemo(() => {
     const balByAcc = new Map<string, number>();
     for (const r of ledgerRows) balByAcc.set(r.account_id, (balByAcc.get(r.account_id) ?? 0) + Number(r.amount || 0));
-    const groups = new Map<string, any[]>();
+    const accountById = new Map<string, any>();
+    for (const a of accounts) accountById.set(a.id, a);
+
+    // Group accounts by currency
+    const accountsByCcy = new Map<string, any[]>();
     for (const a of accounts) {
       const bal = balByAcc.get(a.id) ?? 0;
       if (Math.abs(bal) < 0.001) continue;
-      const holderLabel =
-        a.account_type === "person_holding" && a.holder_person_name ? `Held by ${a.holder_person_name}` :
-        a.name;
-      const arr = groups.get(a.currency) ?? [];
-      arr.push({ id: a.id, label: holderLabel, type: a.account_type, balance: bal });
-      groups.set(a.currency, arr);
+      const arr = accountsByCcy.get(a.currency) ?? [];
+      arr.push({
+        id: a.id,
+        name: a.name,
+        type: a.account_type,
+        holder: a.holder_person_name,
+        balance: bal,
+      });
+      accountsByCcy.set(a.currency, arr);
     }
-    // Also add inventory-lot cash summary
-    return Array.from(groups.entries())
-      .map(([ccy, list]) => ({
+
+    // Pending outbound per currency = open sells not yet delivered
+    const pendingByCcy = new Map<string, number>();
+    for (const s of openSells) {
+      if (!s.currency_delivered) {
+        pendingByCcy.set(s.sold_currency, (pendingByCcy.get(s.sold_currency) ?? 0) + Number(s.sold_amount || 0));
+      }
+    }
+
+    // Group lots per currency with cost + market + owner
+    const lotsByCcy = new Map<string, any[]>();
+    for (const l of lots) {
+      const acc = accountById.get(l.account_id);
+      const owner =
+        acc?.account_type === "person_holding" && acc?.holder_person_name ? acc.holder_person_name
+        : acc?.name ?? "—";
+      const mkt = midByCcy.get(l.currency) ?? 0;
+      const remaining = Number(l.remaining_amount || 0);
+      const cost = Number(l.cost_basis_rate || 0);
+      const isDeposit = l.source_ref_type === "brought_in" && cost <= 0;
+      const profitIRR = cost > 0 && mkt > 0 ? remaining * (mkt - cost) : 0;
+      const arr = lotsByCcy.get(l.currency) ?? [];
+      arr.push({
+        id: l.id,
+        lot_code: l.lot_code,
+        remaining,
+        original: Number(l.original_amount || 0),
+        cost_rate: cost,
+        cost_ccy: l.cost_basis_currency,
+        status: l.status,
+        source: l.source_ref_type,
+        source_description: l.source_description,
+        account_id: l.account_id,
+        account_type: acc?.account_type,
+        owner,
+        entry_date: l.entry_date,
+        market_rate: mkt,
+        profit_irr: profitIRR,
+        is_deposit: isDeposit,
+      });
+      lotsByCcy.set(l.currency, arr);
+    }
+
+    // Build positions per currency (union of ccys with any lot or account)
+    const allCcys = new Set<string>([...lotsByCcy.keys(), ...accountsByCcy.keys()]);
+    const positions = Array.from(allCcys).map((ccy) => {
+      const lotList = (lotsByCcy.get(ccy) ?? []).sort((a, b) => (a.entry_date < b.entry_date ? 1 : -1));
+      const accList = (accountsByCcy.get(ccy) ?? []).sort((a, b) => Math.abs(b.balance) - Math.abs(a.balance));
+      const totalQty = lotList.reduce((n, l) => n + l.remaining, 0);
+      const costLots = lotList.filter((l) => l.cost_rate > 0);
+      const costQty = costLots.reduce((n, l) => n + l.remaining, 0);
+      const costTotal = costLots.reduce((n, l) => n + l.remaining * l.cost_rate, 0);
+      const avgCost = costQty > 0 ? costTotal / costQty : 0;
+      const mkt = midByCcy.get(ccy) ?? 0;
+      const floatingIRR = costLots.reduce((n, l) => n + l.remaining * (mkt - l.cost_rate), 0);
+      const floatingPct = avgCost > 0 && mkt > 0 ? ((mkt - avgCost) / avgCost) * 100 : 0;
+      const dates = lotList.map((l) => l.entry_date).filter(Boolean).sort();
+      const oldest = dates[0] ?? null;
+      const newest = dates[dates.length - 1] ?? null;
+      const hasDeposit = lotList.some((l) => l.is_deposit);
+      const pending = pendingByCcy.get(ccy) ?? 0;
+      return {
         ccy,
-        list: list.sort((a, b) => Math.abs(b.balance) - Math.abs(a.balance)),
-        total: list.reduce((n, r) => n + r.balance, 0),
-      }))
-      .sort((a, b) => toAED(b.total, b.ccy) - toAED(a.total, a.ccy));
-  }, [accounts, ledgerRows, midByCcy, aedPerIRR]);
+        totalQty,
+        aed: toAED(totalQty, ccy),
+        avgCost, marketRate: mkt,
+        floatingIRR, floatingPct,
+        lotCount: lotList.length,
+        accountCount: accList.length,
+        pending,
+        oldest, newest,
+        hasDeposit,
+        lots: lotList,
+        accounts: accList,
+      };
+    }).sort((a, b) => b.aed - a.aed);
+
+    return positions;
+  }, [accounts, ledgerRows, lots, openSells, midByCcy, aedPerIRR]);
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-
-  // ── Section 4b: Avg cost per currency for lot summary
-  const avgCostByCcy = useMemo(() => {
-    const m = new Map<string, { qty: number; cost: number }>();
-    for (const l of lots) {
-      const c = m.get(l.currency) ?? { qty: 0, cost: 0 };
-      c.qty += Number(l.remaining_amount || 0);
-      c.cost += Number(l.remaining_amount || 0) * Number(l.cost_basis_rate || 0);
-      m.set(l.currency, c);
-    }
-    const out = new Map<string, number>();
-    for (const [k, v] of m) out.set(k, v.qty > 0 ? v.cost / v.qty : 0);
-    return out;
-  }, [lots]);
 
   return (
     <div className="max-w-[1400px] mx-auto space-y-12 pb-16">
