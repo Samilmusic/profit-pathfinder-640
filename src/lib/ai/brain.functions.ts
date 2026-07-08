@@ -224,3 +224,109 @@ export const getDealSignals = createServerFn({ method: "POST" })
       customer: c ? { name: c.name, open_deal_count: c.open_deal_count, owed: c.owed } : null,
     };
   });
+
+// Business Health + AI recommendation for the Treasury dashboard.
+// Combines real system data (inventory, exposure, cash, pending, profit) with
+// a short AI-generated narrative. Falls back gracefully if AI is unavailable.
+export const getBusinessHealth = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context as any;
+    await assertStaff(supabase, userId);
+
+    const [exposure, balances, pending, profit, cashWith] = await Promise.all([
+      getRateExposure(supabase),
+      getCurrencyBalances(supabase),
+      getPendingReceipts(supabase),
+      getProfitSummary(supabase, {
+        from: new Date(Date.now() - 30 * 86400_000).toISOString().slice(0, 10),
+        to: new Date().toISOString().slice(0, 10),
+      }),
+      getCashWithPerson(supabase),
+    ]);
+
+    const exp = (exposure as any).exposure ?? [];
+    const totalMkt = exp.reduce((n: number, e: any) => n + (e.market_value_total || 0), 0);
+    const largestShare = exp.reduce((m: number, e: any) => {
+      if (!totalMkt) return m;
+      return Math.max(m, (e.market_value_total || 0) / totalMkt);
+    }, 0);
+    const pendingList = (pending as any).pending ?? [];
+    const overdueCount = pendingList.length;
+
+    // Heuristic star ratings (1-5)
+    const liquidity = totalMkt > 0 ? 5 : 1;
+    const cashFlow = overdueCount === 0 ? 5 : overdueCount <= 2 ? 4 : overdueCount <= 5 ? 3 : 2;
+    const receivables = overdueCount === 0 ? 5 : overdueCount <= 2 ? 4 : overdueCount <= 5 ? 3 : 2;
+    const inventory = exp.length >= 3 ? 5 : exp.length === 2 ? 4 : exp.length === 1 ? 3 : 1;
+    const opRisk = largestShare > 0.85 ? 2 : largestShare > 0.7 ? 3 : largestShare > 0.5 ? 4 : 5;
+
+    const score = Math.round(((liquidity + cashFlow + receivables + inventory + opRisk) / 25) * 100);
+    const status: "healthy" | "watch" | "warning" =
+      score >= 80 ? "healthy" : score >= 60 ? "watch" : "warning";
+
+    // Concentration signal for the summary sentence
+    const dominant = exp.reduce((best: any, e: any) => {
+      if (!best) return e;
+      return (e.market_value_total || 0) > (best.market_value_total || 0) ? e : best;
+    }, null as any);
+
+    let summary = "Everything is operating normally.";
+    let recommendation = "No action required.";
+    let confidence = 70;
+
+    if (overdueCount >= 3) {
+      summary = `${overdueCount} deals are waiting for payment or receipt.`;
+      recommendation = "Collect payments before booking new inventory.";
+      confidence = 85;
+    } else if (largestShare > 0.85 && dominant) {
+      summary = `${Math.round(largestShare * 100)}% of company assets are held in ${dominant.currency}.`;
+      recommendation = "Diversification is recommended.";
+      confidence = 80;
+    } else if (totalMkt <= 0) {
+      summary = "No live inventory detected.";
+      recommendation = "Buy inventory or refresh market rates.";
+      confidence = 90;
+    }
+
+    // Try AI polish — but never fail the request if AI is down
+    const key = process.env.LOVABLE_API_KEY;
+    let aiNarrative: string | null = null;
+    if (key) {
+      try {
+        const gateway = createLovableAiGatewayProvider(key);
+        const brief = {
+          score, status,
+          exposure: exp.map((e: any) => ({ currency: e.currency, qty: e.quantity, cost: e.cost_basis_total, mkt: e.market_value_total })),
+          balances: (balances as any).balances,
+          overdue_deals: overdueCount,
+          profit_last_30d: (profit as any).realized_profit,
+          cash_with_person: (cashWith as any).holders,
+          largest_currency_share_pct: Math.round(largestShare * 100),
+        };
+        const result = await generateText({
+          model: gateway(DEFAULT_MODEL),
+          system: `You are the AI treasury advisor for a currency exchange. Use ONLY the JSON. Never invent numbers. Reply with 2-3 short sentences: (1) one-line state, (2) one specific recommendation, (3) optional caution. No greetings, no markdown, no bullets.`,
+          prompt: JSON.stringify(brief).slice(0, 4000),
+        });
+        aiNarrative = result.text.trim();
+      } catch {
+        aiNarrative = null;
+      }
+    }
+
+    return {
+      score,
+      status,
+      stars: { liquidity, cashFlow, receivables, inventory, opRisk },
+      summary,
+      recommendation,
+      confidence,
+      ai_narrative: aiNarrative,
+      totals: {
+        market_value_by_currency: exp.map((e: any) => ({ currency: e.currency, market: e.market_value_total, cost: e.cost_basis_total, qty: e.quantity })),
+        overdue_deals: overdueCount,
+        profit_last_30d: (profit as any).realized_profit,
+      },
+    };
+  });
