@@ -9,7 +9,7 @@ import { triggerMarketRateRefresh, useLatestMarketRates, useMarketRateHistory } 
 import { MARKET_CURRENCIES, currencyMeta } from "@/lib/market-currencies";
 import {
   ArrowDown, ArrowUp, ArrowRight, RefreshCw, Sparkles, Star, ChevronDown,
-  AlertTriangle, CheckCircle2, Clock, Wallet, Activity,
+  AlertTriangle, CheckCircle2, Clock, Wallet, Activity, Package, Users, Landmark,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -41,7 +41,7 @@ function DashboardPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("inventory_lots")
-        .select("id,lot_code,currency,remaining_amount,cost_basis_rate,cost_basis_currency,account_id,status,entry_date")
+        .select("id,lot_code,currency,remaining_amount,original_amount,cost_basis_rate,cost_basis_currency,account_id,status,entry_date,source_ref_type,source_description")
         .gt("remaining_amount", 0)
         .neq("status", "depleted")
         .order("entry_date", { ascending: false });
@@ -265,46 +265,109 @@ function DashboardPage() {
     return items;
   }, [openSells, today]);
 
-  // ── Section 4: Cash position by currency, grouped
-  const cashByCurrency = useMemo(() => {
+  // ── Section 4: Currency positions — rich treasury cards
+  const currencyPositions = useMemo(() => {
     const balByAcc = new Map<string, number>();
     for (const r of ledgerRows) balByAcc.set(r.account_id, (balByAcc.get(r.account_id) ?? 0) + Number(r.amount || 0));
-    const groups = new Map<string, any[]>();
+    const accountById = new Map<string, any>();
+    for (const a of accounts) accountById.set(a.id, a);
+
+    // Group accounts by currency
+    const accountsByCcy = new Map<string, any[]>();
     for (const a of accounts) {
       const bal = balByAcc.get(a.id) ?? 0;
       if (Math.abs(bal) < 0.001) continue;
-      const holderLabel =
-        a.account_type === "person_holding" && a.holder_person_name ? `Held by ${a.holder_person_name}` :
-        a.name;
-      const arr = groups.get(a.currency) ?? [];
-      arr.push({ id: a.id, label: holderLabel, type: a.account_type, balance: bal });
-      groups.set(a.currency, arr);
+      const arr = accountsByCcy.get(a.currency) ?? [];
+      arr.push({
+        id: a.id,
+        name: a.name,
+        type: a.account_type,
+        holder: a.holder_person_name,
+        balance: bal,
+      });
+      accountsByCcy.set(a.currency, arr);
     }
-    // Also add inventory-lot cash summary
-    return Array.from(groups.entries())
-      .map(([ccy, list]) => ({
+
+    // Pending outbound per currency = open sells not yet delivered
+    const pendingByCcy = new Map<string, number>();
+    for (const s of openSells) {
+      if (!s.currency_delivered) {
+        pendingByCcy.set(s.sold_currency, (pendingByCcy.get(s.sold_currency) ?? 0) + Number(s.sold_amount || 0));
+      }
+    }
+
+    // Group lots per currency with cost + market + owner
+    const lotsByCcy = new Map<string, any[]>();
+    for (const l of lots) {
+      const acc = accountById.get(l.account_id);
+      const owner =
+        acc?.account_type === "person_holding" && acc?.holder_person_name ? acc.holder_person_name
+        : acc?.name ?? "—";
+      const mkt = midByCcy.get(l.currency) ?? 0;
+      const remaining = Number(l.remaining_amount || 0);
+      const cost = Number(l.cost_basis_rate || 0);
+      const isDeposit = l.source_ref_type === "brought_in" && cost <= 0;
+      const profitIRR = cost > 0 && mkt > 0 ? remaining * (mkt - cost) : 0;
+      const arr = lotsByCcy.get(l.currency) ?? [];
+      arr.push({
+        id: l.id,
+        lot_code: l.lot_code,
+        remaining,
+        original: Number(l.original_amount || 0),
+        cost_rate: cost,
+        cost_ccy: l.cost_basis_currency,
+        status: l.status,
+        source: l.source_ref_type,
+        source_description: l.source_description,
+        account_id: l.account_id,
+        account_type: acc?.account_type,
+        owner,
+        entry_date: l.entry_date,
+        market_rate: mkt,
+        profit_irr: profitIRR,
+        is_deposit: isDeposit,
+      });
+      lotsByCcy.set(l.currency, arr);
+    }
+
+    // Build positions per currency (union of ccys with any lot or account)
+    const allCcys = new Set<string>([...lotsByCcy.keys(), ...accountsByCcy.keys()]);
+    const positions = Array.from(allCcys).map((ccy) => {
+      const lotList = (lotsByCcy.get(ccy) ?? []).sort((a, b) => (a.entry_date < b.entry_date ? 1 : -1));
+      const accList = (accountsByCcy.get(ccy) ?? []).sort((a, b) => Math.abs(b.balance) - Math.abs(a.balance));
+      const totalQty = lotList.reduce((n, l) => n + l.remaining, 0);
+      const costLots = lotList.filter((l) => l.cost_rate > 0);
+      const costQty = costLots.reduce((n, l) => n + l.remaining, 0);
+      const costTotal = costLots.reduce((n, l) => n + l.remaining * l.cost_rate, 0);
+      const avgCost = costQty > 0 ? costTotal / costQty : 0;
+      const mkt = midByCcy.get(ccy) ?? 0;
+      const floatingIRR = costLots.reduce((n, l) => n + l.remaining * (mkt - l.cost_rate), 0);
+      const floatingPct = avgCost > 0 && mkt > 0 ? ((mkt - avgCost) / avgCost) * 100 : 0;
+      const dates = lotList.map((l) => l.entry_date).filter(Boolean).sort();
+      const oldest = dates[0] ?? null;
+      const newest = dates[dates.length - 1] ?? null;
+      const hasDeposit = lotList.some((l) => l.is_deposit);
+      const pending = pendingByCcy.get(ccy) ?? 0;
+      return {
         ccy,
-        list: list.sort((a, b) => Math.abs(b.balance) - Math.abs(a.balance)),
-        total: list.reduce((n, r) => n + r.balance, 0),
-      }))
-      .sort((a, b) => toAED(b.total, b.ccy) - toAED(a.total, a.ccy));
-  }, [accounts, ledgerRows, midByCcy, aedPerIRR]);
+        totalQty,
+        aed: toAED(totalQty, ccy),
+        avgCost, marketRate: mkt,
+        floatingIRR, floatingPct,
+        lotCount: lotList.length,
+        accountCount: accList.length,
+        pending,
+        oldest, newest,
+        hasDeposit,
+        lots: lotList,
+        accounts: accList,
+      };
+    }).sort((a, b) => b.aed - a.aed);
+
+    return positions;
+  }, [accounts, ledgerRows, lots, openSells, midByCcy, aedPerIRR]);
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-
-  // ── Section 4b: Avg cost per currency for lot summary
-  const avgCostByCcy = useMemo(() => {
-    const m = new Map<string, { qty: number; cost: number }>();
-    for (const l of lots) {
-      const c = m.get(l.currency) ?? { qty: 0, cost: 0 };
-      c.qty += Number(l.remaining_amount || 0);
-      c.cost += Number(l.remaining_amount || 0) * Number(l.cost_basis_rate || 0);
-      m.set(l.currency, c);
-    }
-    const out = new Map<string, number>();
-    for (const [k, v] of m) out.set(k, v.qty > 0 ? v.cost / v.qty : 0);
-    return out;
-  }, [lots]);
 
   return (
     <div className="max-w-[1400px] mx-auto space-y-12 pb-16">
@@ -410,51 +473,21 @@ function DashboardPage() {
 
       {/* SECTION 4 — Live Cash Position */}
       <section>
-        <SectionHead title="Cash Position" hint="Real balances across every account and lot." action={
+        <SectionHead title="Live Cash Position" hint="Every currency, every lot, every account — priced against live market." action={
           <Link to="/accounts" className="text-xs text-muted-foreground hover:text-foreground">View accounts <ArrowRight className="inline h-3 w-3" /></Link>
         } />
-        {cashByCurrency.length === 0 ? (
+        {currencyPositions.length === 0 ? (
           <EmptyState icon={<Wallet className="h-5 w-5" />} text="No cash positions yet." />
         ) : (
-          <div className="rounded-2xl border bg-card divide-y overflow-hidden">
-            {cashByCurrency.map((g) => {
-              const open = expanded[g.ccy] ?? false;
-              const avg = avgCostByCcy.get(g.ccy) ?? 0;
-              return (
-                <div key={g.ccy}>
-                  <button
-                    type="button"
-                    onClick={() => setExpanded((e) => ({ ...e, [g.ccy]: !open }))}
-                    className="w-full flex items-center gap-4 px-5 py-4 hover:bg-muted/40 transition-colors text-left"
-                  >
-                    <div className="text-lg font-semibold tracking-wide">{g.ccy}</div>
-                    <div className="flex-1 min-w-0 text-2xl font-mono tabular-nums">
-                      {nfSmart(g.total)} <span className="text-xs text-muted-foreground uppercase ml-1">{g.ccy}</span>
-                    </div>
-                    {avg > 0 && g.ccy !== "IRR" && (
-                      <div className="text-[11px] text-muted-foreground tabular-nums hidden sm:block">
-                        avg cost <span className="font-mono">{nfInt.format(avg)}</span> IRR
-                      </div>
-                    )}
-                    <div className="text-[11px] text-muted-foreground shrink-0 hidden sm:block tabular-nums">
-                      ≈ {nfInt.format(toAED(g.total, g.ccy))} AED
-                    </div>
-                    <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform shrink-0 ${open ? "rotate-180" : ""}`} />
-                  </button>
-                  {open && (
-                    <ul className="bg-muted/20 divide-y">
-                      {g.list.map((r: any) => (
-                        <li key={r.id} className="flex items-center gap-3 px-6 py-2.5 text-sm">
-                          <span className={`h-1.5 w-1.5 rounded-full ${r.type === "cash_box" ? "bg-emerald-500" : r.type === "bank" ? "bg-sky-500" : r.type === "person_holding" ? "bg-amber-500" : "bg-muted-foreground"}`} />
-                          <div className="flex-1 min-w-0 truncate">{r.label}</div>
-                          <div className="font-mono tabular-nums">{nfSmart(r.balance)} <span className="text-[10px] text-muted-foreground uppercase">{g.ccy}</span></div>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              );
-            })}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {currencyPositions.map((p) => (
+              <CurrencyPositionCard
+                key={p.ccy}
+                position={p}
+                open={expanded[p.ccy] ?? false}
+                onToggle={() => setExpanded((e) => ({ ...e, [p.ccy]: !(e[p.ccy] ?? false) }))}
+              />
+            ))}
           </div>
         )}
       </section>
@@ -675,6 +708,276 @@ function EmptyState({ icon, text }: { icon: React.ReactNode; text: string }) {
     <div className="rounded-2xl border bg-card p-6 flex items-center gap-3 text-sm">
       {icon}<span>{text}</span>
     </div>
+  );
+}
+
+// ── Currency Position Card (Section 4) ─────────────────────────────
+
+function CurrencyPositionCard({
+  position: p,
+  open,
+  onToggle,
+}: {
+  position: any;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  const positive = p.floatingIRR >= 0;
+  const hasCost = p.avgCost > 0;
+  const spread = hasCost && p.marketRate > 0 ? ((p.marketRate - p.avgCost) / p.avgCost) * 100 : 0;
+  const daysSince = (iso?: string | null) => {
+    if (!iso) return "—";
+    const d = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86400000));
+    return d === 0 ? "Today" : `${d}d`;
+  };
+  return (
+    <div className="group rounded-2xl border bg-card overflow-hidden transition-all hover:border-primary/30 hover:shadow-sm">
+      {/* Header — always visible */}
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full text-left p-6 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${
+              !hasCost ? "bg-sky-500"
+              : positive ? "bg-emerald-500"
+              : "bg-destructive"
+            }`} />
+            <div className="text-lg font-semibold tracking-wide">{p.ccy}</div>
+            <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Available</div>
+          </div>
+          <ChevronDown className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform duration-300 ${open ? "rotate-180" : ""}`} />
+        </div>
+
+        <div className="mt-3 flex items-baseline gap-2 flex-wrap">
+          <div className="text-3xl md:text-4xl font-semibold font-mono tabular-nums tracking-tight">
+            {nfInt.format(p.totalQty)}
+          </div>
+          <div className="text-xs text-muted-foreground uppercase tracking-wider">{p.ccy}</div>
+        </div>
+        {p.ccy !== "AED" && p.aed > 0 && (
+          <div className="mt-1 text-[11px] text-muted-foreground tabular-nums">
+            ≈ {nfSmart(p.aed)} AED
+            {p.ccy === "IRR" ? "" : ` · ${nfSmart(p.totalQty * (p.marketRate || 0))} IRR`}
+          </div>
+        )}
+        {p.ccy === "AED" && p.marketRate > 0 && (
+          <div className="mt-1 text-[11px] text-muted-foreground tabular-nums">
+            ≈ {nfSmart(p.totalQty * p.marketRate)} IRR
+          </div>
+        )}
+
+        {/* Floating P/L strip */}
+        {hasCost && (
+          <div className={`mt-4 inline-flex items-center gap-1.5 text-xs font-medium tabular-nums ${
+            positive ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"
+          }`}>
+            {positive ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />}
+            <span>Floating {positive ? "Profit" : "Loss"}</span>
+            <span className="font-mono">
+              {positive ? "+" : ""}{nfSmart(p.floatingIRR)} IRR
+            </span>
+            <span className="text-muted-foreground">·</span>
+            <span className="font-mono">{positive ? "+" : ""}{p.floatingPct.toFixed(2)}%</span>
+          </div>
+        )}
+        {!hasCost && p.hasDeposit && (
+          <div className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-sky-600 dark:text-sky-400">
+            <Landmark className="h-3.5 w-3.5" /> Capital Deposit
+          </div>
+        )}
+
+        {/* Stats grid */}
+        <div className="mt-5 grid grid-cols-3 sm:grid-cols-6 gap-3 pt-4 border-t">
+          <Stat label="Lots" value={String(p.lotCount)} icon={<Package className="h-3 w-3" />} />
+          <Stat label="Accounts" value={String(p.accountCount)} icon={<Wallet className="h-3 w-3" />} />
+          <Stat label="Pending" value={p.pending > 0 ? nfSmart(p.pending) : "0"} tone={p.pending > 0 ? "warn" : undefined} />
+          {hasCost ? (
+            <>
+              <Stat label="Avg Cost" value={nfInt.format(p.avgCost)} mono />
+              <Stat label="Market" value={p.marketRate > 0 ? nfInt.format(p.marketRate) : "—"} mono />
+              <Stat label="Spread" value={p.marketRate > 0 ? `${spread >= 0 ? "+" : ""}${spread.toFixed(2)}%` : "—"} tone={spread >= 0 ? "ok" : "danger"} />
+            </>
+          ) : (
+            <>
+              <Stat label="Type" value={p.hasDeposit ? "Deposit" : "—"} />
+              <Stat label="Oldest" value={daysSince(p.oldest)} />
+              <Stat label="Newest" value={daysSince(p.newest)} />
+            </>
+          )}
+        </div>
+      </button>
+
+      {/* Expanded details */}
+      <div
+        className={`grid transition-[grid-template-rows] duration-300 ease-out ${open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
+      >
+        <div className="overflow-hidden">
+          <div className="border-t bg-muted/20">
+            {/* Inventory Summary */}
+            <div className="px-6 py-4 border-b">
+              <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">Inventory Summary</div>
+              <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-4">
+                <SummaryTile label="Average Buy" value={hasCost ? nfInt.format(p.avgCost) : "—"} mono />
+                <SummaryTile label="Current Market" value={p.marketRate > 0 ? nfInt.format(p.marketRate) : "—"} mono />
+                <SummaryTile
+                  label="Floating Profit"
+                  value={hasCost ? `${positive ? "+" : ""}${nfSmart(p.floatingIRR)} IRR` : "—"}
+                  tone={hasCost ? (positive ? "ok" : "danger") : undefined}
+                  mono
+                />
+                <SummaryTile label="Oldest → Newest" value={`${daysSince(p.oldest)} → ${daysSince(p.newest)}`} />
+              </div>
+            </div>
+
+            {/* Lot list */}
+            <ul className="divide-y">
+              {p.lots.length === 0 && (
+                <li className="px-6 py-6 text-sm text-muted-foreground text-center">No lots yet.</li>
+              )}
+              {p.lots.map((l: any) => (
+                <LotRow key={l.id} lot={l} ccy={p.ccy} />
+              ))}
+            </ul>
+
+            {/* Account breakdown footer */}
+            {p.accounts.length > 0 && (
+              <div className="border-t px-6 py-3 bg-background/40">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-2">Accounts</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
+                  {p.accounts.map((a: any) => (
+                    <div key={a.id} className="flex items-center gap-2 text-xs">
+                      <span className={`h-1.5 w-1.5 rounded-full ${
+                        a.type === "cash_box" ? "bg-emerald-500"
+                        : a.type === "bank" ? "bg-sky-500"
+                        : a.type === "person_holding" ? "bg-amber-500"
+                        : "bg-muted-foreground"
+                      }`} />
+                      <span className="flex-1 min-w-0 truncate text-muted-foreground">
+                        {a.type === "person_holding" && a.holder ? `Held by ${a.holder}` : a.name}
+                      </span>
+                      <span className="font-mono tabular-nums">{nfSmart(a.balance)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Stat({ label, value, icon, mono, tone }: { label: string; value: string; icon?: React.ReactNode; mono?: boolean; tone?: "warn" | "ok" | "danger" }) {
+  const toneCls = tone === "warn" ? "text-amber-600 dark:text-amber-400"
+    : tone === "ok" ? "text-emerald-600 dark:text-emerald-400"
+    : tone === "danger" ? "text-destructive"
+    : "";
+  return (
+    <div>
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+        {icon}{label}
+      </div>
+      <div className={`mt-1 text-sm tabular-nums ${mono ? "font-mono" : "font-medium"} ${toneCls}`}>{value}</div>
+    </div>
+  );
+}
+
+function SummaryTile({ label, value, mono, tone }: { label: string; value: string; mono?: boolean; tone?: "ok" | "danger" }) {
+  const toneCls = tone === "ok" ? "text-emerald-600 dark:text-emerald-400" : tone === "danger" ? "text-destructive" : "";
+  return (
+    <div>
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className={`mt-1 text-base tabular-nums ${mono ? "font-mono" : "font-semibold"} ${toneCls}`}>{value}</div>
+    </div>
+  );
+}
+
+function LotRow({ lot, ccy }: { lot: any; ccy: string }) {
+  const isDeposit = lot.is_deposit;
+  const isPersonHold = lot.account_type === "person_holding";
+  const profit = lot.profit_irr;
+  const positive = profit >= 0;
+
+  // Color classes per spec: Green=profit, Yellow=Reserved(partial), Blue=CashWithPerson, Gray=Spent, Red=NegativeP/L
+  const stripe =
+    isPersonHold ? "bg-sky-500"
+    : lot.status === "partial" ? "bg-amber-500"
+    : lot.status === "depleted" ? "bg-muted-foreground"
+    : !lot.cost_rate ? "bg-sky-500"
+    : positive ? "bg-emerald-500"
+    : "bg-destructive";
+
+  const statusLabel =
+    isPersonHold ? "Cash With Person"
+    : lot.status === "partial" ? "Partial"
+    : lot.status === "depleted" ? "Spent"
+    : isDeposit ? "Direct Deposit"
+    : "Available";
+
+  const statusTone =
+    isPersonHold ? "text-sky-600 dark:text-sky-400 bg-sky-500/10 border-sky-500/30"
+    : lot.status === "partial" ? "text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/30"
+    : lot.status === "depleted" ? "text-muted-foreground bg-muted border-border"
+    : isDeposit ? "text-sky-600 dark:text-sky-400 bg-sky-500/10 border-sky-500/30"
+    : "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30";
+
+  return (
+    <li className="relative px-6 py-4 hover:bg-background/50 transition-colors">
+      <span className={`absolute left-0 top-3 bottom-3 w-0.5 rounded-r ${stripe}`} />
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 items-start">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[11px] font-mono font-semibold tracking-wider">{lot.lot_code}</span>
+            <span className={`text-[10px] uppercase tracking-wider border rounded-full px-1.5 py-0.5 ${statusTone}`}>
+              {statusLabel}
+            </span>
+          </div>
+          <div className="mt-1.5 text-lg font-mono tabular-nums font-semibold">
+            {nfInt.format(lot.remaining)} <span className="text-[10px] text-muted-foreground uppercase ml-0.5">{ccy}</span>
+          </div>
+          <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-muted-foreground">
+            {isDeposit ? (
+              <span className="text-sky-600 dark:text-sky-400 font-medium">
+                Direct Deposit{lot.source_description ? ` · ${lot.source_description}` : ""}
+              </span>
+            ) : lot.cost_rate > 0 ? (
+              <>
+                <span>Bought <span className="font-mono tabular-nums text-foreground">{nfInt.format(lot.cost_rate)}</span></span>
+                {lot.market_rate > 0 && (
+                  <span>Current <span className="font-mono tabular-nums text-foreground">{nfInt.format(lot.market_rate)}</span></span>
+                )}
+              </>
+            ) : (
+              <span>Transferred</span>
+            )}
+            {lot.owner && lot.owner !== "—" && (
+              <span>Owner <span className="text-foreground">{lot.owner}</span></span>
+            )}
+          </div>
+          {lot.cost_rate > 0 && lot.market_rate > 0 && (
+            <div className={`mt-1 text-xs font-mono tabular-nums ${positive ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+              {positive ? "▲" : "▼"} {positive ? "+" : ""}{nfSmart(profit)} IRR
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+          {/* Actions kept visible always on touch; opacity is on parent group. */}
+        </div>
+      </div>
+      <div className="mt-2.5 flex items-center gap-3 text-[11px]">
+        <Link to="/inventory" className="text-muted-foreground hover:text-foreground transition-colors">History</Link>
+        <span className="text-muted-foreground/40">·</span>
+        <Link to="/transfers" className="text-muted-foreground hover:text-foreground transition-colors">Transfer</Link>
+        <span className="text-muted-foreground/40">·</span>
+        <Link to="/trades/new" search={{ from_ccy: ccy } as any} className="text-primary hover:underline">Sell</Link>
+        <span className="text-muted-foreground/40">·</span>
+        <Link to="/inventory" className="text-muted-foreground hover:text-foreground transition-colors">Edit</Link>
+      </div>
+    </li>
   );
 }
 
