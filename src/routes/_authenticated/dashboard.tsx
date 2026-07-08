@@ -9,7 +9,7 @@ import { triggerMarketRateRefresh, useLatestMarketRates, useMarketRateHistory } 
 import { MARKET_CURRENCIES, currencyMeta } from "@/lib/market-currencies";
 import {
   ArrowDown, ArrowUp, ArrowRight, RefreshCw, Sparkles, Star, ChevronDown,
-  AlertTriangle, CheckCircle2, Clock, Wallet, Activity,
+  AlertTriangle, CheckCircle2, Clock, Wallet, Activity, Package, Users, Landmark,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -41,7 +41,7 @@ function DashboardPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("inventory_lots")
-        .select("id,lot_code,currency,remaining_amount,cost_basis_rate,cost_basis_currency,account_id,status,entry_date")
+        .select("id,lot_code,currency,remaining_amount,original_amount,cost_basis_rate,cost_basis_currency,account_id,status,entry_date,source_ref_type,source_description")
         .gt("remaining_amount", 0)
         .neq("status", "depleted")
         .order("entry_date", { ascending: false });
