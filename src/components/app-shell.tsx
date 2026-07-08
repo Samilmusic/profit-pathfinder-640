@@ -29,6 +29,7 @@ import {
   BarChart3,
   Bell,
 } from "lucide-react";
+import { Briefcase } from "lucide-react";
 import { Sparkles } from "lucide-react";
 import { Repeat } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,6 +40,7 @@ import { NotificationBell } from "@/components/notification-bell";
 
 const nav = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/deals", label: "Deal Center", icon: Briefcase },
   { to: "/command-center", label: "Command Center", icon: Target },
   { to: "/ai-brain", label: "AI Business Brain", icon: Sparkles },
   { to: "/market-intelligence", label: "Market Intel", icon: BarChart3 },
@@ -68,7 +70,7 @@ const nav = [
 
 const mobileNav = [
   { to: "/dashboard", label: "Home", icon: LayoutDashboard },
-  { to: "/command-center", label: "Center", icon: Target },
+  { to: "/deals", label: "Deals", icon: Briefcase },
   { to: "/quick-sell", label: "Sell", icon: Zap },
   { to: "/buy", label: "Buy", icon: ShoppingCart },
   { to: "/pending-settlements", label: "Pending", icon: ClipboardList },

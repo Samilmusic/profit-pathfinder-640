@@ -14,6 +14,7 @@ import {
   Landmark, ChevronDown, ChevronRight, Layers, Users2, Activity,
   PackageCheck, Timer, Boxes, Clock,
 } from "lucide-react";
+import { Briefcase } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
@@ -282,6 +283,17 @@ function DashboardPage() {
 
       <MarketRatesWidget />
       <AskBusinessButton />
+
+      {/* DEAL CENTER PIPELINE — quick access to filtered deal lists */}
+      <SectionTitle icon={<Briefcase className="h-4 w-4" />} title="Deal Center" hint="Every deal, one place. Click a status to filter." />
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-6">
+        <PipelineTile to={{ status: "open" }}              label="Open Deals"        count={openCount}                            tone="info" />
+        <PipelineTile to={{ status: "waiting_payment" }}   label="Waiting Payment"   count={dealBucket("waiting_payment") + dealBucket("partially_paid")} tone="warn" />
+        <PipelineTile to={{ status: "waiting_receipt" }}   label="Waiting Receipt"   count={dealBucket("waiting_receipt")}         tone="info" />
+        <PipelineTile to={{ status: "waiting_delivery" }}  label="Waiting Delivery"  count={dealBucket("waiting_currency_delivery") + dealBucket("waiting_delivery_proof")} tone="warn" />
+        <PipelineTile to={{ status: "ready_to_close" }}    label="Ready to Close"    count={dealBucket("ready_to_close")}          tone="success" />
+        <PipelineTile to={{ status: "all" }}               label="All Deals"         count={openCount + closedToday}               tone="muted" />
+      </div>
 
       {/* SECTION 1 — INVENTORY BY CURRENCY */}
       <SectionTitle icon={<Boxes className="h-4 w-4" />} title="Inventory by currency" hint="Never merged. Each currency stands alone." />
@@ -631,4 +643,21 @@ function accountTypeLabel(t: string) {
     pending_delivery: "Pending Delivery", other: "Other",
   };
   return m[t] ?? t;
+}
+
+function PipelineTile({ to, label, count, tone }: { to: { status: string }; label: string; count: number; tone: "warn" | "info" | "success" | "muted" }) {
+  const tint = tone === "warn" ? "border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/15"
+    : tone === "success" ? "border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/15"
+    : tone === "muted" ? "border-border bg-muted/40 hover:bg-muted/60"
+    : "border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/15";
+  return (
+    <Link
+      to="/deals"
+      search={{ status: to.status, type: "all", currency: "all", q: "" }}
+      className={"rounded-lg border p-3 text-left transition " + tint}
+    >
+      <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="text-2xl font-bold mt-0.5">{count}</div>
+    </Link>
+  );
 }
