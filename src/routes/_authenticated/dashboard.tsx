@@ -644,3 +644,20 @@ function accountTypeLabel(t: string) {
   };
   return m[t] ?? t;
 }
+
+function PipelineTile({ to, label, count, tone }: { to: { status: string }; label: string; count: number; tone: "warn" | "info" | "success" | "muted" }) {
+  const tint = tone === "warn" ? "border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/15"
+    : tone === "success" ? "border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/15"
+    : tone === "muted" ? "border-border bg-muted/40 hover:bg-muted/60"
+    : "border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/15";
+  return (
+    <Link
+      to="/deals"
+      search={{ status: to.status, type: "all", currency: "all", q: "" }}
+      className={"rounded-lg border p-3 text-left transition " + tint}
+    >
+      <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="text-2xl font-bold mt-0.5">{count}</div>
+    </Link>
+  );
+}
