@@ -9,11 +9,13 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AccountSelect, useCustomers } from "@/components/account-select";
+import { AccountSelect, useAccounts, useCustomers } from "@/components/account-select";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Badge } from "@/components/ui/badge";
 import { CURRENCIES, OWNERS, fmt } from "@/lib/exchange";
 import { UseMarketRateButton } from "@/components/use-market-rate-button";
 import { toast } from "sonner";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ChevronsUpDown, TrendingUp } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/trades/new")({ component: NewTradePage });
 
@@ -27,55 +29,88 @@ function F({ label, children, hint }: { label: string; children: React.ReactNode
   );
 }
 
+type SourceMode = "inventory" | "buy_now";
+type SettlementPath =
+  | "customer_pays_us"
+  | "customer_pays_supplier"
+  | "ali_pays_supplier"
+  | "milad_pays_supplier"
+  | "company_pays_supplier"
+  | "third_party";
+
+const SETTLEMENT_PATHS: { value: SettlementPath; label: string; hint: string }[] = [
+  { value: "customer_pays_us", label: "Customer pays us", hint: "IRR arrives in our account, we pay supplier from our account." },
+  { value: "customer_pays_supplier", label: "Customer pays supplier directly", hint: "Money bypasses our account. Profit is a receivable until confirmed." },
+  { value: "ali_pays_supplier", label: "Ali pays supplier", hint: "Ali's IRR account settles the supplier." },
+  { value: "milad_pays_supplier", label: "Milad pays supplier", hint: "Milad's IRR account settles the supplier." },
+  { value: "company_pays_supplier", label: "Company pays supplier", hint: "Our IRR account pays the supplier." },
+  { value: "third_party", label: "Third-party settlement", hint: "External party settles supplier. Attach proof." },
+];
+
 function NewTradePage() {
   const navigate = useNavigate();
   const customers = useCustomers();
+  const accountsQ = useAccounts();
   const today = new Date().toISOString().slice(0, 10);
 
   const [f, setF] = useState({
     entry_date: today,
     owner: "shared",
     notes: "",
-    // Buy side
+    // STEP 1 — Give
+    give_currency: "AED",
+    give_amount: "",
+    give_to_customer_id: "",
+    give_to_name: "",
+    give_from_account_id: "",
+    delivery_status: "not_delivered" as "not_delivered" | "delivered" | "later",
+    // STEP 2 — Receive
+    receive_currency: "IRR",
+    sell_rate: "",
+    receive_from_customer_id: "",
+    receive_into_account_id: "",
+    payment_status: "not_received" as "not_received" | "received" | "later",
+    // STEP 3 — Source
+    source_mode: "buy_now" as SourceMode,
     bought_from_customer_id: "",
     bought_from_name: "",
-    bought_currency: "AED",
-    bought_amount: "",
     buy_rate: "",
-    paid_currency: "IRR",
-    paid_from_account_id: "",
-    received_into_account_id: "",
-    // Sell side
-    sold_to_customer_id: "",
-    sold_to_name: "",
-    sold_amount: "",
-    sell_rate: "",
-    receive_currency: "IRR",
-    receive_into_account_id: "",
+    settlement_currency: "IRR",
+    settlement_paid_from_account_id: "",
+    settlement_paid_to_account_id: "",
+    settlement_status: "not_paid" as "not_paid" | "paid" | "later",
+    settlement_path: "customer_pays_us" as SettlementPath,
     // Split
     milad_pct: 50,
     ali_pct: 50,
   });
 
-  const boughtAmt = Number(f.bought_amount || 0);
-  const soldAmt = Number(f.sold_amount || 0);
+  const giveAmt = Number(f.give_amount || 0);
   const buyRate = Number(f.buy_rate || 0);
   const sellRate = Number(f.sell_rate || 0);
-  const paidAmount = useMemo(() => boughtAmt * buyRate, [boughtAmt, buyRate]);
-  const receiveAmount = useMemo(() => soldAmt * sellRate, [soldAmt, sellRate]);
+  const receiveAmount = useMemo(() => giveAmt * sellRate, [giveAmt, sellRate]);
+  const buyCostSettlement = giveAmt * buyRate; // e.g. IRR paid to supplier for give-currency
+  const spread = receiveAmount - buyCostSettlement; // in receive/settlement ccy
+  const sameSettleReceive = f.settlement_currency === f.receive_currency;
+  // Profit expressed in the GIVE currency (e.g. AED)
+  const profitInGiveCcy = sellRate > 0 && sameSettleReceive ? spread / sellRate : 0;
+  const marginPct = buyRate > 0 && sellRate > 0 ? ((sellRate - buyRate) / buyRate) * 100 : 0;
+  const miladShare = (profitInGiveCcy * Number(f.milad_pct || 0)) / 100;
+  const aliShare = (profitInGiveCcy * Number(f.ali_pct || 0)) / 100;
 
-  const buyCostForSold = soldAmt * buyRate; // cost portion attributed to sold amount
-  const grossProfit = receiveAmount - buyCostForSold;
-  const marginPct = buyCostForSold > 0 ? (grossProfit / buyCostForSold) * 100 : 0;
-  const miladShare = (grossProfit * Number(f.milad_pct || 0)) / 100;
-  const aliShare = (grossProfit * Number(f.ali_pct || 0)) / 100;
-  const remainingInventory = Math.max(0, boughtAmt - soldAmt);
+  const isBuyNow = f.source_mode === "buy_now";
 
-  const sameCurrency = f.paid_currency === f.receive_currency;
+  // Auto-derive settlement_paid_from based on settlement path + customers
+  const accounts = accountsQ.data ?? [];
+  const findCustomerAcct = (customerId: string, currency: string) =>
+    accounts.find((a: any) => a.holder_customer_id === customerId && a.currency === currency && (a.account_type === "person_holding" || a.account_type === "customer_wallet"))?.id ?? "";
+
   const canSubmit =
-    boughtAmt > 0 && soldAmt > 0 && buyRate > 0 && sellRate > 0 &&
-    soldAmt <= boughtAmt &&
-    f.paid_from_account_id && f.received_into_account_id && f.receive_into_account_id;
+    giveAmt > 0 && sellRate > 0 &&
+    (!isBuyNow || buyRate > 0) &&
+    !!f.give_from_account_id &&
+    !!f.receive_into_account_id &&
+    (!isBuyNow || (!!f.settlement_paid_from_account_id && !!f.settlement_paid_to_account_id));
 
   const previewCode = useMemo(() => {
     const y = new Date(f.entry_date).getFullYear();
@@ -84,31 +119,34 @@ function NewTradePage() {
 
   const submit = useMutation({
     mutationFn: async (opts: { closeNow: boolean }) => {
-      if (!canSubmit) throw new Error("Fill all required fields (accounts, amounts, rates). Sold amount cannot exceed bought amount.");
+      if (!canSubmit) throw new Error("Fill all required fields (amounts, rates, and accounts in Advanced Accounts).");
       if (Math.abs(Number(f.milad_pct) + Number(f.ali_pct) - 100) > 0.01) throw new Error("Milad % + Ali % must equal 100");
 
       const { data: u } = await supabase.auth.getUser();
       const uid = u.user?.id;
 
-      // 1. Create trade cycle
+      // 1. Create trade cycle (always)
       const cyclePayload: any = {
         entry_date: f.entry_date,
-        title: `Buy/Sell ${f.bought_currency}`,
+        title: `Trade ${f.give_currency} → ${f.receive_currency}`,
         customer_id: f.bought_from_customer_id || null,
-        counterparty_id: f.sold_to_customer_id || null,
-        base_currency: f.bought_currency,
-        quote_currency: f.paid_currency,
-        initial_currency: f.paid_currency,
-        intermediate_currency: f.bought_currency,
+        counterparty_id: f.give_to_customer_id || null,
+        base_currency: f.give_currency,
+        quote_currency: f.receive_currency,
+        initial_currency: f.settlement_currency,
+        intermediate_currency: f.give_currency,
         final_currency: f.receive_currency,
-        capital_amount: paidAmount,
-        capital_currency: f.paid_currency,
-        initial_amount: paidAmount,
-        expected_profit: grossProfit,
-        expected_profit_currency: f.receive_currency,
+        capital_amount: buyCostSettlement,
+        capital_currency: f.settlement_currency,
+        initial_amount: buyCostSettlement,
+        expected_profit: profitInGiveCcy,
+        expected_profit_currency: f.give_currency,
         milad_share_pct: Number(f.milad_pct),
         ali_share_pct: Number(f.ali_pct),
-        notes: f.notes || null,
+        notes: [
+          `Settlement path: ${SETTLEMENT_PATHS.find((p) => p.value === f.settlement_path)?.label}`,
+          f.notes,
+        ].filter(Boolean).join(" · ") || null,
         status: "in_progress",
       };
       const { data: cycle, error: cErr } = await supabase.from("trade_cycles" as any)
@@ -117,45 +155,48 @@ function NewTradePage() {
       const cycleId = (cycle as any).id as string;
       const cycleCode = (cycle as any).code as string;
 
-      // 2. Insert buy transaction (creates inventory lot via trigger)
-      const buyPayload: any = {
-        entry_date: f.entry_date,
-        bought_currency: f.bought_currency,
-        bought_amount: boughtAmt,
-        buy_rate: buyRate,
-        paid_currency: f.paid_currency,
-        paid_amount: paidAmount,
-        paid_from_account_id: f.paid_from_account_id,
-        received_into_account_id: f.received_into_account_id,
-        customer_id: f.bought_from_customer_id || null,
-        counterparty: f.bought_from_name || null,
-        txn_owner: f.owner,
-        notes: f.notes ? `[${cycleCode}] ${f.notes}` : `[${cycleCode}]`,
-        created_by: uid,
-        trade_cycle_id: cycleId,
-      };
-      const { error: bErr } = await supabase.from("buy_transactions").insert(buyPayload);
-      if (bErr) throw new Error(`Buy leg failed: ${bErr.message}`);
+      // 2. Optional buy leg — only when source = buy_now
+      if (isBuyNow) {
+        const buyPayload: any = {
+          entry_date: f.entry_date,
+          bought_currency: f.give_currency,
+          bought_amount: giveAmt,
+          buy_rate: buyRate,
+          paid_currency: f.settlement_currency,
+          paid_amount: buyCostSettlement,
+          paid_from_account_id: f.settlement_paid_from_account_id,
+          received_into_account_id: f.give_from_account_id,
+          customer_id: f.bought_from_customer_id || null,
+          counterparty: f.bought_from_name || null,
+          txn_owner: f.owner,
+          notes: `[${cycleCode}] Buy leg · path=${f.settlement_path}${f.notes ? " · " + f.notes : ""}`,
+          created_by: uid,
+          trade_cycle_id: cycleId,
+        };
+        const { error: bErr } = await supabase.from("buy_transactions").insert(buyPayload);
+        if (bErr) throw new Error(`Buy leg failed: ${bErr.message}`);
+      }
 
-      // 3. Insert sell transaction (consumes lot via FIFO trigger)
+      // 3. Sell leg (always) — consumes inventory FIFO
       const sellPayload: any = {
         entry_date: f.entry_date,
-        sold_currency: f.bought_currency,
-        sold_amount: soldAmt,
+        sold_currency: f.give_currency,
+        sold_amount: giveAmt,
         sell_rate: sellRate,
         received_currency: f.receive_currency,
         received_amount: receiveAmount,
-        sold_from_account_id: f.received_into_account_id, // buy deposited here
+        sold_from_account_id: f.give_from_account_id,
         received_into_account_id: f.receive_into_account_id,
-        customer_id: f.sold_to_customer_id || null,
-        customer_name: f.sold_to_name || null,
+        customer_id: f.give_to_customer_id || null,
+        customer_name: f.give_to_name || null,
         milad_share_pct: Number(f.milad_pct),
         ali_share_pct: Number(f.ali_pct),
-        notes: `[${cycleCode}] ${f.notes || ""}`.trim(),
+        notes: `[${cycleCode}] Sell leg · path=${f.settlement_path}${f.notes ? " · " + f.notes : ""}`,
         created_by: uid,
         creates_cycle: false,
         trade_cycle_id: cycleId,
         deal_status: "open",
+        currency_delivered: f.delivery_status === "delivered",
       };
       const { data: sellIns, error: sErr } = await supabase.from("sell_transactions").insert(sellPayload).select("id").single();
       if (sErr) throw new Error(`Sell leg failed: ${sErr.message}`);
@@ -179,8 +220,8 @@ function NewTradePage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="New Trade"
-        description="Enter a buy + sell as one connected trade. Accounting, inventory, and ledger update automatically."
+        title="New Exchange Trade"
+        description="One form. Describe the deal in plain terms — the system handles inventory, ledger, and receipts in the background."
         actions={
           <Button asChild variant="ghost" size="sm">
             <Link to="/trades"><ArrowLeft className="h-4 w-4 mr-1" />Back to trades</Link>
@@ -192,9 +233,13 @@ function NewTradePage() {
         <div className="lg:col-span-2 space-y-4">
           {/* Basic info */}
           <Card>
-            <CardHeader className="pb-3"><CardTitle className="text-sm">Basic info</CardTitle></CardHeader>
-            <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <F label="Trade code (auto)"><Input value={previewCode} disabled className="font-mono" /></F>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between gap-2">
+                <CardTitle className="text-sm">Trade info</CardTitle>
+                <Badge variant="outline" className="font-mono">{previewCode}</Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <F label="Date"><Input type="date" value={f.entry_date} onChange={(e) => setF({ ...f, entry_date: e.target.value })} /></F>
               <F label="Owner">
                 <Select value={f.owner} onValueChange={(v) => setF({ ...f, owner: v })}>
@@ -202,110 +247,201 @@ function NewTradePage() {
                   <SelectContent>{OWNERS.map((o) => <SelectItem key={o} value={o} className="capitalize">{o}</SelectItem>)}</SelectContent>
                 </Select>
               </F>
-              <div className="sm:col-span-2">
-                <F label="Notes"><Textarea rows={2} value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} placeholder="Optional context for this trade" /></F>
+              <F label="Settlement path">
+                <Select value={f.settlement_path} onValueChange={(v: SettlementPath) => setF({ ...f, settlement_path: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{SETTLEMENT_PATHS.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
+                </Select>
+              </F>
+              <div className="sm:col-span-3 text-[11px] text-muted-foreground -mt-1">
+                {SETTLEMENT_PATHS.find((p) => p.value === f.settlement_path)?.hint}
+              </div>
+              <div className="sm:col-span-3">
+                <F label="Notes"><Textarea rows={2} value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} placeholder="Optional context (proof references, verbal terms, etc.)" /></F>
               </div>
             </CardContent>
           </Card>
 
-          {/* Buy side */}
-          <Card>
-            <CardHeader className="pb-3"><CardTitle className="text-sm">Buy side — where the currency comes from</CardTitle></CardHeader>
-            <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <F label="Bought from (customer)">
-                <Select value={f.bought_from_customer_id} onValueChange={(v) => setF({ ...f, bought_from_customer_id: v })}>
-                  <SelectTrigger><SelectValue placeholder="Select customer" /></SelectTrigger>
+          {/* STEP 1 — Give */}
+          <StepCard step={1} title="Currency we give" subtitle="What are we handing over?">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <F label="Give currency">
+                <Select value={f.give_currency} onValueChange={(v) => setF({ ...f, give_currency: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{CURRENCIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                </Select>
+              </F>
+              <F label={`Give amount (${f.give_currency})`}>
+                <Input type="number" step="0.0001" value={f.give_amount} onChange={(e) => setF({ ...f, give_amount: e.target.value })} placeholder="e.g. 70000" />
+              </F>
+              <F label="Give to (customer)">
+                <Select value={f.give_to_customer_id} onValueChange={(v) => setF({ ...f, give_to_customer_id: v, receive_from_customer_id: f.receive_from_customer_id || v })}>
+                  <SelectTrigger><SelectValue placeholder="Select customer B" /></SelectTrigger>
                   <SelectContent>{(customers.data ?? []).map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                 </Select>
               </F>
               <F label="Or free-text name">
-                <Input value={f.bought_from_name} onChange={(e) => setF({ ...f, bought_from_name: e.target.value })} placeholder="e.g. Ali" />
+                <Input value={f.give_to_name} onChange={(e) => setF({ ...f, give_to_name: e.target.value })} placeholder="Customer B" />
               </F>
-              <F label="Bought currency">
-                <Select value={f.bought_currency} onValueChange={(v) => setF({ ...f, bought_currency: v })}>
+              <F label="Delivery status">
+                <Select value={f.delivery_status} onValueChange={(v: any) => setF({ ...f, delivery_status: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{CURRENCIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    <SelectItem value="not_delivered">Not delivered</SelectItem>
+                    <SelectItem value="delivered">Delivered</SelectItem>
+                    <SelectItem value="later">Will deliver later</SelectItem>
+                  </SelectContent>
                 </Select>
               </F>
-              <F label="Bought amount">
-                <Input type="number" step="0.0001" value={f.bought_amount}
-                  onChange={(e) => setF({ ...f, bought_amount: e.target.value, sold_amount: f.sold_amount || e.target.value })} />
-              </F>
-              <F label={`Buy rate (${f.paid_currency} per 1 ${f.bought_currency})`}>
-                <div className="flex gap-2 items-center">
-                  <Input type="number" step="0.0001" value={f.buy_rate} onChange={(e) => setF({ ...f, buy_rate: e.target.value })} />
-                  <UseMarketRateButton currency={f.bought_currency} which="buy" onApply={(r) => setF({ ...f, buy_rate: String(r) })} />
-                </div>
-              </F>
-              <F label="Paid currency">
-                <Select value={f.paid_currency} onValueChange={(v) => setF({ ...f, paid_currency: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{CURRENCIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                </Select>
-              </F>
-              <F label="Paid amount (auto)"><Input value={paidAmount ? fmt(paidAmount) : ""} disabled /></F>
-              <F label="Paid from account">
-                <AccountSelect value={f.paid_from_account_id} onChange={(v) => setF({ ...f, paid_from_account_id: v })} currency={f.paid_currency} />
-              </F>
-              <F label="Bought currency deposit account">
-                <AccountSelect value={f.received_into_account_id} onChange={(v) => setF({ ...f, received_into_account_id: v })} currency={f.bought_currency} />
-              </F>
-            </CardContent>
-          </Card>
+            </div>
+          </StepCard>
 
-          {/* Sell side */}
-          <Card>
-            <CardHeader className="pb-3"><CardTitle className="text-sm">Sell side — where the currency goes</CardTitle></CardHeader>
-            <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <F label="Sold to (customer)">
-                <Select value={f.sold_to_customer_id} onValueChange={(v) => setF({ ...f, sold_to_customer_id: v })}>
-                  <SelectTrigger><SelectValue placeholder="Select customer" /></SelectTrigger>
-                  <SelectContent>{(customers.data ?? []).map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+          {/* STEP 2 — Receive */}
+          <StepCard step={2} title="Money we receive" subtitle="What comes back in exchange?">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <F label="Receive currency">
+                <Select value={f.receive_currency} onValueChange={(v) => setF({ ...f, receive_currency: v, settlement_currency: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{CURRENCIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                 </Select>
               </F>
-              <F label="Or free-text name">
-                <Input value={f.sold_to_name} onChange={(e) => setF({ ...f, sold_to_name: e.target.value })} placeholder="e.g. Reza" />
-              </F>
-              <F label={`Sold amount (${f.bought_currency})`} hint={remainingInventory > 0 ? `Remaining inventory: ${fmt(remainingInventory)} ${f.bought_currency}` : undefined}>
-                <Input type="number" step="0.0001" value={f.sold_amount} onChange={(e) => setF({ ...f, sold_amount: e.target.value })} />
-              </F>
-              <F label={`Sell rate (${f.receive_currency} per 1 ${f.bought_currency})`}>
+              <F label={`Sell rate (${f.receive_currency} per 1 ${f.give_currency})`}>
                 <div className="flex gap-2 items-center">
                   <Input type="number" step="0.0001" value={f.sell_rate} onChange={(e) => setF({ ...f, sell_rate: e.target.value })} />
-                  <UseMarketRateButton currency={f.bought_currency} which="sell" onApply={(r) => setF({ ...f, sell_rate: String(r) })} />
+                  <UseMarketRateButton currency={f.give_currency} which="sell" onApply={(r) => setF({ ...f, sell_rate: String(r) })} />
                 </div>
               </F>
-              <F label="Receive currency">
-                <Select value={f.receive_currency} onValueChange={(v) => setF({ ...f, receive_currency: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{CURRENCIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+              <F label={`Receive amount (${f.receive_currency}) — auto`}>
+                <Input value={receiveAmount ? fmt(receiveAmount) : ""} disabled />
+              </F>
+              <F label="Receive from (customer)">
+                <Select value={f.receive_from_customer_id} onValueChange={(v) => setF({ ...f, receive_from_customer_id: v })}>
+                  <SelectTrigger><SelectValue placeholder="Usually customer B" /></SelectTrigger>
+                  <SelectContent>{(customers.data ?? []).map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                 </Select>
               </F>
-              <F label="Receive amount (auto)"><Input value={receiveAmount ? fmt(receiveAmount) : ""} disabled /></F>
-              <F label="Receive into account">
-                <AccountSelect value={f.receive_into_account_id} onChange={(v) => setF({ ...f, receive_into_account_id: v })} currency={f.receive_currency} />
+              <F label="Payment status">
+                <Select value={f.payment_status} onValueChange={(v: any) => setF({ ...f, payment_status: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="not_received">Not received</SelectItem>
+                    <SelectItem value="received">Received</SelectItem>
+                    <SelectItem value="later">Will receive later</SelectItem>
+                  </SelectContent>
+                </Select>
               </F>
-            </CardContent>
-          </Card>
+            </div>
+          </StepCard>
+
+          {/* STEP 3 — Source */}
+          <StepCard step={3} title="Currency source" subtitle="Where does the give-currency come from?">
+            <div className="flex gap-2 mb-3">
+              <SourcePill active={f.source_mode === "inventory"} onClick={() => setF({ ...f, source_mode: "inventory" })}>From existing inventory</SourcePill>
+              <SourcePill active={f.source_mode === "buy_now"} onClick={() => setF({ ...f, source_mode: "buy_now" })}>Bought from supplier now</SourcePill>
+            </div>
+
+            {isBuyNow ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <F label="Bought from (supplier / customer A)">
+                  <Select value={f.bought_from_customer_id} onValueChange={(v) => setF({ ...f, bought_from_customer_id: v })}>
+                    <SelectTrigger><SelectValue placeholder="Select supplier" /></SelectTrigger>
+                    <SelectContent>{(customers.data ?? []).map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                  </Select>
+                </F>
+                <F label="Or free-text name">
+                  <Input value={f.bought_from_name} onChange={(e) => setF({ ...f, bought_from_name: e.target.value })} placeholder="Customer A" />
+                </F>
+                <F label={`Buy rate (${f.settlement_currency} per 1 ${f.give_currency})`}>
+                  <div className="flex gap-2 items-center">
+                    <Input type="number" step="0.0001" value={f.buy_rate} onChange={(e) => setF({ ...f, buy_rate: e.target.value })} />
+                    <UseMarketRateButton currency={f.give_currency} which="buy" onApply={(r) => setF({ ...f, buy_rate: String(r) })} />
+                  </div>
+                </F>
+                <F label={`Settlement amount (${f.settlement_currency}) — auto`}>
+                  <Input value={buyCostSettlement ? fmt(buyCostSettlement) : ""} disabled />
+                </F>
+                <F label="Settlement status">
+                  <Select value={f.settlement_status} onValueChange={(v: any) => setF({ ...f, settlement_status: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="not_paid">Not paid</SelectItem>
+                      <SelectItem value="paid">Paid</SelectItem>
+                      <SelectItem value="later">Will pay later</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </F>
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground">
+                Sell will consume existing {f.give_currency} inventory (FIFO). Pick the source account in Advanced Accounts.
+              </div>
+            )}
+          </StepCard>
+
+          {/* Advanced accounts */}
+          <Collapsible>
+            <Card>
+              <CardHeader className="pb-3">
+                <CollapsibleTrigger className="flex w-full items-center justify-between text-left">
+                  <div>
+                    <CardTitle className="text-sm">Advanced — accounts &amp; ledger routing</CardTitle>
+                    <div className="text-[11px] text-muted-foreground">Where do the funds physically move? Required to save.</div>
+                  </div>
+                  <ChevronsUpDown className="h-4 w-4 opacity-60" />
+                </CollapsibleTrigger>
+              </CardHeader>
+              <CollapsibleContent>
+                <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <F label={`Give from account (${f.give_currency})`} hint="Inventory source or staging account where the give-currency sits.">
+                    <AccountSelect value={f.give_from_account_id} onChange={(v) => setF({ ...f, give_from_account_id: v })} currency={f.give_currency} />
+                  </F>
+                  <F label={`Receive into account (${f.receive_currency})`} hint="Where receive money lands (our account, Ali/Milad, customer, or pending).">
+                    <AccountSelect value={f.receive_into_account_id} onChange={(v) => setF({ ...f, receive_into_account_id: v })} currency={f.receive_currency} />
+                  </F>
+                  {isBuyNow && (
+                    <>
+                      <F label={`Settlement paid from (${f.settlement_currency})`} hint="Whose account settles the supplier?">
+                        <AccountSelect value={f.settlement_paid_from_account_id} onChange={(v) => setF({ ...f, settlement_paid_from_account_id: v })} currency={f.settlement_currency} />
+                      </F>
+                      <F label={`Settlement paid to (${f.settlement_currency})`} hint="Supplier's account (Customer A) or their bank.">
+                        <AccountSelect value={f.settlement_paid_to_account_id} onChange={(v) => setF({ ...f, settlement_paid_to_account_id: v })} currency={f.settlement_currency} holderCustomerId={f.bought_from_customer_id || undefined} />
+                      </F>
+                    </>
+                  )}
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
         </div>
 
         {/* Sticky profit preview */}
         <div className="space-y-4">
           <Card className="lg:sticky lg:top-4">
-            <CardHeader className="pb-3"><CardTitle className="text-sm">Profit preview</CardTitle></CardHeader>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="h-4 w-4" />Profit preview</CardTitle>
+            </CardHeader>
             <CardContent className="text-sm space-y-2">
-              <Row label="Buy cost" value={`${fmt(buyCostForSold)} ${f.paid_currency}`} />
-              <Row label="Sell value" value={`${fmt(receiveAmount)} ${f.receive_currency}`} />
+              <Row label="Buy rate" value={buyRate ? `${fmt(buyRate)} ${f.settlement_currency}` : "—"} />
+              <Row label="Sell rate" value={sellRate ? `${fmt(sellRate)} ${f.receive_currency}` : "—"} />
+              <Row label="Buy cost" value={isBuyNow && buyCostSettlement ? `${fmt(buyCostSettlement)} ${f.settlement_currency}` : "—"} />
+              <Row label="Sell value" value={receiveAmount ? `${fmt(receiveAmount)} ${f.receive_currency}` : "—"} />
+              <Row label={`Spread (${f.receive_currency})`} value={isBuyNow ? `${fmt(spread)} ${f.receive_currency}` : "—"} />
               <div className="border-t pt-2">
-                <Row label="Gross profit"
-                  value={sameCurrency ? `${fmt(grossProfit)} ${f.receive_currency}` : "—"}
-                  strong tone={grossProfit >= 0 ? "pos" : "neg"} />
-                {!sameCurrency && (
-                  <div className="text-[11px] text-muted-foreground">Profit shown only when paid and receive currencies match.</div>
-                )}
-                {sameCurrency && (
+                <Row
+                  label={`Profit (${f.give_currency})`}
+                  value={isBuyNow && sameSettleReceive && sellRate > 0 ? `${fmt(profitInGiveCcy)} ${f.give_currency}` : "—"}
+                  strong
+                  tone={profitInGiveCcy >= 0 ? "pos" : "neg"}
+                />
+                {isBuyNow && sameSettleReceive && (
                   <Row label="Margin" value={`${marginPct.toFixed(2)}%`} tone={marginPct >= 0 ? "pos" : "neg"} />
                 )}
+                {!isBuyNow && (
+                  <div className="text-[11px] text-muted-foreground">Profit vs. inventory cost basis is calculated once the deal is saved.</div>
+                )}
+              </div>
+              <div className="border-t pt-2 text-[11px] text-muted-foreground">
+                Settlement: <span className="font-medium">{SETTLEMENT_PATHS.find((p) => p.value === f.settlement_path)?.label}</span>
               </div>
               <div className="border-t pt-2 grid grid-cols-2 gap-2">
                 <F label={`Milad %`}>
@@ -314,21 +450,11 @@ function NewTradePage() {
                 </F>
                 <F label="Ali %"><Input type="number" value={f.ali_pct} disabled /></F>
               </div>
-              {sameCurrency && (
+              {isBuyNow && sameSettleReceive && (
                 <>
-                  <Row label="Milad share" value={`${fmt(miladShare)} ${f.receive_currency}`} />
-                  <Row label="Ali share" value={`${fmt(aliShare)} ${f.receive_currency}`} />
+                  <Row label="Milad share" value={`${fmt(miladShare)} ${f.give_currency}`} />
+                  <Row label="Ali share" value={`${fmt(aliShare)} ${f.give_currency}`} />
                 </>
-              )}
-              {remainingInventory > 0 && (
-                <div className="border-t pt-2 text-xs text-amber-600">
-                  Partial trade: {fmt(remainingInventory)} {f.bought_currency} will remain in inventory.
-                </div>
-              )}
-              {soldAmt > boughtAmt && (
-                <div className="border-t pt-2 text-xs text-destructive">
-                  Sold amount exceeds bought amount. Reduce sold amount or increase bought amount.
-                </div>
               )}
 
               <div className="flex flex-col gap-2 pt-3 border-t">
@@ -346,7 +472,7 @@ function NewTradePage() {
                   Close Trade Now
                 </Button>
                 <div className="text-[11px] text-muted-foreground">
-                  Open = track payment/receipts later. Close Now = record settled trade immediately (uses admin override for receipts).
+                  Open = track missing payment/receipts in Deal Center. Close Now = record as settled (uses admin override for receipts).
                 </div>
               </div>
             </CardContent>
@@ -354,6 +480,35 @@ function NewTradePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function StepCard({ step, title, subtitle, children }: { step: number; title: string; subtitle?: string; children: React.ReactNode }) {
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center gap-3">
+          <div className="h-7 w-7 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">{step}</div>
+          <div>
+            <CardTitle className="text-sm">{title}</CardTitle>
+            {subtitle ? <div className="text-[11px] text-muted-foreground">{subtitle}</div> : null}
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
+  );
+}
+
+function SourcePill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`px-3 py-1.5 rounded-full text-xs border transition ${active ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-muted"}`}
+    >
+      {children}
+    </button>
   );
 }
 
