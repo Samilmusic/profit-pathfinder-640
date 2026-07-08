@@ -473,51 +473,21 @@ function DashboardPage() {
 
       {/* SECTION 4 — Live Cash Position */}
       <section>
-        <SectionHead title="Cash Position" hint="Real balances across every account and lot." action={
+        <SectionHead title="Live Cash Position" hint="Every currency, every lot, every account — priced against live market." action={
           <Link to="/accounts" className="text-xs text-muted-foreground hover:text-foreground">View accounts <ArrowRight className="inline h-3 w-3" /></Link>
         } />
-        {cashByCurrency.length === 0 ? (
+        {currencyPositions.length === 0 ? (
           <EmptyState icon={<Wallet className="h-5 w-5" />} text="No cash positions yet." />
         ) : (
-          <div className="rounded-2xl border bg-card divide-y overflow-hidden">
-            {cashByCurrency.map((g) => {
-              const open = expanded[g.ccy] ?? false;
-              const avg = avgCostByCcy.get(g.ccy) ?? 0;
-              return (
-                <div key={g.ccy}>
-                  <button
-                    type="button"
-                    onClick={() => setExpanded((e) => ({ ...e, [g.ccy]: !open }))}
-                    className="w-full flex items-center gap-4 px-5 py-4 hover:bg-muted/40 transition-colors text-left"
-                  >
-                    <div className="text-lg font-semibold tracking-wide">{g.ccy}</div>
-                    <div className="flex-1 min-w-0 text-2xl font-mono tabular-nums">
-                      {nfSmart(g.total)} <span className="text-xs text-muted-foreground uppercase ml-1">{g.ccy}</span>
-                    </div>
-                    {avg > 0 && g.ccy !== "IRR" && (
-                      <div className="text-[11px] text-muted-foreground tabular-nums hidden sm:block">
-                        avg cost <span className="font-mono">{nfInt.format(avg)}</span> IRR
-                      </div>
-                    )}
-                    <div className="text-[11px] text-muted-foreground shrink-0 hidden sm:block tabular-nums">
-                      ≈ {nfInt.format(toAED(g.total, g.ccy))} AED
-                    </div>
-                    <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform shrink-0 ${open ? "rotate-180" : ""}`} />
-                  </button>
-                  {open && (
-                    <ul className="bg-muted/20 divide-y">
-                      {g.list.map((r: any) => (
-                        <li key={r.id} className="flex items-center gap-3 px-6 py-2.5 text-sm">
-                          <span className={`h-1.5 w-1.5 rounded-full ${r.type === "cash_box" ? "bg-emerald-500" : r.type === "bank" ? "bg-sky-500" : r.type === "person_holding" ? "bg-amber-500" : "bg-muted-foreground"}`} />
-                          <div className="flex-1 min-w-0 truncate">{r.label}</div>
-                          <div className="font-mono tabular-nums">{nfSmart(r.balance)} <span className="text-[10px] text-muted-foreground uppercase">{g.ccy}</span></div>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              );
-            })}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {currencyPositions.map((p) => (
+              <CurrencyPositionCard
+                key={p.ccy}
+                position={p}
+                open={expanded[p.ccy] ?? false}
+                onToggle={() => setExpanded((e) => ({ ...e, [p.ccy]: !(e[p.ccy] ?? false) }))}
+              />
+            ))}
           </div>
         )}
       </section>
