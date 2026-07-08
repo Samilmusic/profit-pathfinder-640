@@ -29,6 +29,7 @@ import { Route as AuthenticatedHeldByPersonRouteImport } from './routes/_authent
 import { Route as AuthenticatedExpensesRouteImport } from './routes/_authenticated/expenses'
 import { Route as AuthenticatedDepositsRouteImport } from './routes/_authenticated/deposits'
 import { Route as AuthenticatedDealsRouteImport } from './routes/_authenticated/deals'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedDailyClosingRouteImport } from './routes/_authenticated/daily-closing'
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedCommandCenterRouteImport } from './routes/_authenticated/command-center'
@@ -152,6 +153,11 @@ const AuthenticatedDepositsRoute = AuthenticatedDepositsRouteImport.update({
 const AuthenticatedDealsRoute = AuthenticatedDealsRouteImport.update({
   id: '/deals',
   path: '/deals',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedDailyClosingRoute =
@@ -284,6 +290,7 @@ export interface FileRoutesByFullPath {
   '/command-center': typeof AuthenticatedCommandCenterRoute
   '/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/daily-closing': typeof AuthenticatedDailyClosingRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
   '/deals': typeof AuthenticatedDealsRoute
   '/deposits': typeof AuthenticatedDepositsRouteWithChildren
   '/expenses': typeof AuthenticatedExpensesRoute
@@ -324,6 +331,7 @@ export interface FileRoutesByTo {
   '/buy': typeof AuthenticatedBuyRoute
   '/command-center': typeof AuthenticatedCommandCenterRoute
   '/daily-closing': typeof AuthenticatedDailyClosingRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
   '/deals': typeof AuthenticatedDealsRoute
   '/expenses': typeof AuthenticatedExpensesRoute
   '/held-by-person': typeof AuthenticatedHeldByPersonRoute
@@ -366,6 +374,7 @@ export interface FileRoutesById {
   '/_authenticated/command-center': typeof AuthenticatedCommandCenterRoute
   '/_authenticated/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/_authenticated/daily-closing': typeof AuthenticatedDailyClosingRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/deals': typeof AuthenticatedDealsRoute
   '/_authenticated/deposits': typeof AuthenticatedDepositsRouteWithChildren
   '/_authenticated/expenses': typeof AuthenticatedExpensesRoute
@@ -410,6 +419,7 @@ export interface FileRouteTypes {
     | '/command-center'
     | '/customers'
     | '/daily-closing'
+    | '/dashboard'
     | '/deals'
     | '/deposits'
     | '/expenses'
@@ -450,6 +460,7 @@ export interface FileRouteTypes {
     | '/buy'
     | '/command-center'
     | '/daily-closing'
+    | '/dashboard'
     | '/deals'
     | '/expenses'
     | '/held-by-person'
@@ -491,6 +502,7 @@ export interface FileRouteTypes {
     | '/_authenticated/command-center'
     | '/_authenticated/customers'
     | '/_authenticated/daily-closing'
+    | '/_authenticated/dashboard'
     | '/_authenticated/deals'
     | '/_authenticated/deposits'
     | '/_authenticated/expenses'
@@ -670,6 +682,13 @@ declare module '@tanstack/react-router' {
       path: '/deals'
       fullPath: '/deals'
       preLoaderRoute: typeof AuthenticatedDealsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/daily-closing': {
@@ -892,6 +911,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCommandCenterRoute: typeof AuthenticatedCommandCenterRoute
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRouteWithChildren
   AuthenticatedDailyClosingRoute: typeof AuthenticatedDailyClosingRoute
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDealsRoute: typeof AuthenticatedDealsRoute
   AuthenticatedDepositsRoute: typeof AuthenticatedDepositsRouteWithChildren
   AuthenticatedExpensesRoute: typeof AuthenticatedExpensesRoute
@@ -923,6 +943,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCommandCenterRoute: AuthenticatedCommandCenterRoute,
   AuthenticatedCustomersRoute: AuthenticatedCustomersRouteWithChildren,
   AuthenticatedDailyClosingRoute: AuthenticatedDailyClosingRoute,
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDealsRoute: AuthenticatedDealsRoute,
   AuthenticatedDepositsRoute: AuthenticatedDepositsRouteWithChildren,
   AuthenticatedExpensesRoute: AuthenticatedExpensesRoute,

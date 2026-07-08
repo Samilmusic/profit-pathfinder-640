@@ -5,9 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { fmt } from "@/lib/exchange";
 import { MarketRatesWidget } from "@/components/market-rates-widget";
 import {
-  ArrowDown, ArrowUp, ArrowRight, Wallet, TrendingUp, Briefcase,
-  ShoppingCart, ArrowLeftRight, Receipt, ArrowDownToLine, CheckCircle2,
-  AlertTriangle, Clock,
+  ArrowDown, ArrowUp, ArrowRight, TrendingUp,
+  ShoppingCart, ArrowLeftRight, Receipt, ArrowDownToLine, CheckCircle2, Clock,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
