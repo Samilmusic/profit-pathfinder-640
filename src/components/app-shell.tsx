@@ -1,5 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode, type ComponentType } from "react";
 import {
   LayoutDashboard,
   Wallet,
@@ -27,7 +27,9 @@ import {
   History,
   Target,
   BarChart3,
-  Bell,
+  ChevronDown,
+  MoreHorizontal,
+  Plus,
 } from "lucide-react";
 import { Briefcase } from "lucide-react";
 import { Sparkles } from "lucide-react";
@@ -37,45 +39,104 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { GlobalSearchTrigger } from "@/components/global-search";
 import { NotificationBell } from "@/components/notification-bell";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
-const nav = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/deals", label: "Deal Center", icon: Briefcase },
-  { to: "/trades/new", label: "+ New Trade", icon: Sparkles },
-  { to: "/command-center", label: "Command Center", icon: Target },
-  { to: "/ai-brain", label: "AI Business Brain", icon: Sparkles },
-  { to: "/market-intelligence", label: "Market Intel", icon: BarChart3 },
-  { to: "/quick-sell", label: "Quick Sell", icon: Zap },
-  { to: "/trades", label: "Trade Cycles", icon: Repeat },
-  { to: "/brought-in", label: "Brought In", icon: ArrowDownToLine },
-  { to: "/buy", label: "Buy", icon: ShoppingCart },
-  { to: "/sell", label: "Sell", icon: TrendingUp },
-  { to: "/expenses", label: "Expenses", icon: Receipt },
-  { to: "/transfers", label: "Transfers", icon: ArrowLeftRight },
-  { to: "/pending-settlements", label: "Pending Settlements", icon: ClipboardList },
-  { to: "/held-by-person", label: "Cash with People", icon: HandCoins },
-  { to: "/wallets", label: "Customer Wallets", icon: Landmark },
-  { to: "/deposits", label: "Deposits", icon: ArrowUpFromLine },
-  { to: "/payment-orders", label: "Payment Orders", icon: Send },
-  { to: "/trust", label: "Trust vs Company", icon: ShieldCheck },
-  { to: "/ali-investor", label: "Ali — Investor", icon: Radar },
-  { to: "/accounts", label: "Accounts", icon: Wallet },
-  { to: "/customers", label: "Customers", icon: Users },
-  { to: "/inventory", label: "Inventory", icon: Coins },
-  { to: "/statements", label: "Statements", icon: BookOpen },
-  { to: "/daily-closing", label: "Daily Closing", icon: CalendarCheck },
-  { to: "/audit", label: "Audit Log", icon: History },
-  { to: "/roles", label: "Roles", icon: Shield },
-  { to: "/settings", label: "Settings", icon: Shield },
-] as const;
+type NavItem = { to: string; label: string; icon: ComponentType<{ className?: string }> };
+type NavGroup = { label: string; items: NavItem[]; collapsible?: boolean; defaultOpen?: boolean };
+
+const navGroups: NavGroup[] = [
+  {
+    label: "Dashboard",
+    items: [{ to: "/dashboard", label: "Dashboard", icon: LayoutDashboard }],
+  },
+  {
+    label: "Trading",
+    items: [
+      { to: "/deals", label: "Deal Center", icon: Briefcase },
+      { to: "/pending-settlements", label: "Pending Settlements", icon: ClipboardList },
+    ],
+  },
+  {
+    label: "Money",
+    items: [
+      { to: "/accounts", label: "Accounts", icon: Wallet },
+      { to: "/held-by-person", label: "Cash with People", icon: HandCoins },
+      { to: "/customers", label: "Customers", icon: Users },
+    ],
+  },
+  {
+    label: "Treasury",
+    items: [
+      { to: "/inventory", label: "Inventory", icon: Coins },
+      { to: "/brought-in", label: "Brought In", icon: ArrowDownToLine },
+      { to: "/transfers", label: "Transfers", icon: ArrowLeftRight },
+      { to: "/expenses", label: "Expenses", icon: Receipt },
+    ],
+  },
+  {
+    label: "Intelligence",
+    items: [
+      { to: "/ai-brain", label: "AI Business Brain", icon: Sparkles },
+      { to: "/command-center", label: "Command Center", icon: Target },
+      { to: "/market-intelligence", label: "Market Intel", icon: BarChart3 },
+    ],
+  },
+  {
+    label: "Reports",
+    items: [
+      { to: "/statements", label: "Statements", icon: BookOpen },
+      { to: "/daily-closing", label: "Daily Closing", icon: CalendarCheck },
+      { to: "/audit", label: "Audit Log", icon: History },
+    ],
+  },
+  {
+    label: "Administration",
+    items: [
+      { to: "/roles", label: "Roles", icon: Shield },
+      { to: "/settings", label: "Settings", icon: Shield },
+    ],
+  },
+  {
+    label: "Advanced",
+    collapsible: true,
+    defaultOpen: false,
+    items: [
+      { to: "/quick-sell", label: "Quick Sell", icon: Zap },
+      { to: "/buy", label: "Buy", icon: ShoppingCart },
+      { to: "/sell", label: "Sell", icon: TrendingUp },
+      { to: "/trades", label: "Trade Cycles", icon: Repeat },
+      { to: "/wallets", label: "Customer Wallets", icon: Landmark },
+      { to: "/deposits", label: "Deposits", icon: ArrowUpFromLine },
+      { to: "/payment-orders", label: "Payment Orders", icon: Send },
+      { to: "/trust", label: "Trust vs Company", icon: ShieldCheck },
+      { to: "/ali-investor", label: "Ali — Investor", icon: Radar },
+    ],
+  },
+];
 
 const mobileNav = [
   { to: "/dashboard", label: "Home", icon: LayoutDashboard },
   { to: "/deals", label: "Deals", icon: Briefcase },
-  { to: "/quick-sell", label: "Sell", icon: Zap },
-  { to: "/buy", label: "Buy", icon: ShoppingCart },
-  { to: "/pending-settlements", label: "Pending", icon: ClipboardList },
+  { to: "/ai-brain", label: "AI Brain", icon: Sparkles },
 ] as const;
+
+const mobileMore: NavItem[] = [
+  { to: "/accounts", label: "Accounts", icon: Wallet },
+  { to: "/customers", label: "Customers", icon: Users },
+  { to: "/inventory", label: "Inventory", icon: Coins },
+  { to: "/pending-settlements", label: "Pending Settlements", icon: ClipboardList },
+  { to: "/held-by-person", label: "Cash with People", icon: HandCoins },
+  { to: "/brought-in", label: "Brought In", icon: ArrowDownToLine },
+  { to: "/transfers", label: "Transfers", icon: ArrowLeftRight },
+  { to: "/expenses", label: "Expenses", icon: Receipt },
+  { to: "/statements", label: "Statements", icon: BookOpen },
+  { to: "/daily-closing", label: "Daily Closing", icon: CalendarCheck },
+  { to: "/audit", label: "Audit Log", icon: History },
+  { to: "/command-center", label: "Command Center", icon: Target },
+  { to: "/market-intelligence", label: "Market Intel", icon: BarChart3 },
+  { to: "/settings", label: "Settings", icon: Shield },
+  { to: "/roles", label: "Roles", icon: Shield },
+];
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -115,26 +176,18 @@ export function AppShell({ children }: { children: ReactNode }) {
             <X className="h-5 w-5" />
           </button>
         </div>
-        <nav className="flex-1 overflow-y-auto p-3 space-y-1">
-          {nav.map((item) => {
-            const active = pathname.startsWith(item.to);
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
-                  active
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                    : "text-sidebar-foreground/75 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
-                )}
-              >
-                <Icon className="h-4 w-4" />
-                {item.label}
-              </Link>
-            );
-          })}
+        <div className="px-3 pt-3">
+          <Link
+            to="/trades/new"
+            className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold bg-sidebar-primary text-sidebar-primary-foreground hover:opacity-90 transition-opacity shadow-sm"
+          >
+            <Plus className="h-4 w-4" /> New Trade
+          </Link>
+        </div>
+        <nav className="flex-1 overflow-y-auto p-3 space-y-4">
+          {navGroups.map((group) => (
+            <NavGroupBlock key={group.label} group={group} pathname={pathname} />
+          ))}
         </nav>
         <div className="p-3 border-t border-sidebar-border">
           <div className="text-xs text-sidebar-foreground/60 px-2 pb-2 truncate">{email}</div>
@@ -161,9 +214,27 @@ export function AppShell({ children }: { children: ReactNode }) {
         </header>
         <main className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 max-w-[1600px] w-full mx-auto min-w-0 pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-8">{children}</main>
 
+        {/* Floating "New Trade" FAB (hidden on the new-trade page itself) */}
+        {!pathname.startsWith("/trades/new") && (
+          <Link
+            to="/trades/new"
+            className={cn(
+              "fixed z-40 shadow-lg rounded-full bg-primary text-primary-foreground font-semibold",
+              "flex items-center gap-2 px-5 py-3 text-sm hover:opacity-95 transition-opacity",
+              // desktop: bottom-right
+              "md:bottom-6 md:right-6",
+              // mobile: bottom-center above bottom nav
+              "bottom-[calc(4.5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0",
+            )}
+            aria-label="New Trade"
+          >
+            <Plus className="h-4 w-4" /> New Trade
+          </Link>
+        )}
+
         {/* Mobile bottom nav */}
         <nav className="fixed bottom-0 inset-x-0 z-30 bg-card border-t md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
-          <div className="grid grid-cols-5">
+          <div className="grid grid-cols-4">
             {mobileNav.map((item) => {
               const active = pathname === item.to || (item.to !== "/dashboard" && pathname.startsWith(item.to));
               const Icon = item.icon;
@@ -176,9 +247,94 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </Link>
               );
             })}
+            <MobileMoreSheet pathname={pathname} />
           </div>
         </nav>
       </div>
     </div>
+  );
+}
+
+function NavGroupBlock({ group, pathname }: { group: NavGroup; pathname: string }) {
+  const anyActive = group.items.some((i) => pathname.startsWith(i.to));
+  const [open, setOpen] = useState<boolean>(group.collapsible ? (group.defaultOpen ?? anyActive) : true);
+  const collapsible = !!group.collapsible;
+  return (
+    <div>
+      {collapsible ? (
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="w-full flex items-center justify-between px-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/50 hover:text-sidebar-foreground/80"
+        >
+          <span>{group.label}</span>
+          <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", open ? "" : "-rotate-90")} />
+        </button>
+      ) : (
+        <div className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/50">
+          {group.label}
+        </div>
+      )}
+      {open && (
+        <div className="space-y-0.5">
+          {group.items.map((item) => {
+            const active = pathname === item.to || pathname.startsWith(item.to + "/");
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
+                  active
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                    : "text-sidebar-foreground/75 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MobileMoreSheet({ pathname }: { pathname: string }) {
+  const [open, setOpen] = useState(false);
+  useEffect(() => setOpen(false), [pathname]);
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <button className="flex flex-col items-center gap-0.5 py-2 text-[10px] text-muted-foreground">
+          <MoreHorizontal className="h-5 w-5" />
+          <span>More</span>
+        </button>
+      </SheetTrigger>
+      <SheetContent side="bottom" className="max-h-[80vh] overflow-y-auto">
+        <SheetHeader><SheetTitle>More</SheetTitle></SheetHeader>
+        <div className="grid grid-cols-3 gap-2 pt-4">
+          {mobileMore.map((item) => {
+            const Icon = item.icon;
+            const active = pathname === item.to || pathname.startsWith(item.to + "/");
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={cn(
+                  "flex flex-col items-center gap-1 rounded-lg border p-3 text-xs text-center",
+                  active ? "border-primary text-primary font-semibold" : "hover:bg-muted",
+                )}
+              >
+                <Icon className="h-5 w-5" />
+                <span className="leading-tight">{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
