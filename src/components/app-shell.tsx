@@ -70,7 +70,7 @@ const nav = [
 
 const mobileNav = [
   { to: "/dashboard", label: "Home", icon: LayoutDashboard },
-  { to: "/command-center", label: "Center", icon: Target },
+  { to: "/deals", label: "Deals", icon: Briefcase },
   { to: "/quick-sell", label: "Sell", icon: Zap },
   { to: "/buy", label: "Buy", icon: ShoppingCart },
   { to: "/pending-settlements", label: "Pending", icon: ClipboardList },
