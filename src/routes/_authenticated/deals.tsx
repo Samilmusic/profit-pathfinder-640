@@ -94,16 +94,16 @@ function DealCenterPage() {
           .select("id,doc_no,entry_date,created_at,brought_by,source_name,currency,amount,converted_currency,converted_amount,conversion_rate,convert_enabled,cancel_reason")
           .is("deleted_at", null).order("entry_date", { ascending: false }).limit(500),
         supabase.from("transfers")
-          .select("id,doc_no,entry_date,created_at,currency,amount,reason,settlement_status,cancel_reason")
+          .select("id,entry_date,created_at,currency,amount,reason,settlement_status,cancel_reason")
           .is("deleted_at", null).order("entry_date", { ascending: false }).limit(500),
         supabase.from("expenses")
           .select("id,doc_no,entry_date,created_at,currency,amount,category,settlement_status,cancel_reason")
           .is("deleted_at", null).order("entry_date", { ascending: false }).limit(500),
         supabase.from("customer_deposits")
-          .select("id,doc_no,entry_date,created_at,currency,amount,settlement_status,cancel_reason")
+          .select("id,entry_date,created_at,currency,amount,settlement_status,cancel_reason")
           .is("deleted_at", null).order("entry_date", { ascending: false }).limit(500),
         supabase.from("payment_orders")
-          .select("id,doc_no,entry_date,created_at,currency,amount,settlement_status,cancel_reason,customer_id")
+          .select("id,entry_date,created_at,currency,amount,settlement_status,cancel_reason,customer_id")
           .is("deleted_at", null).order("entry_date", { ascending: false }).limit(500),
       ]);
 
@@ -291,7 +291,7 @@ function DealCenterPage() {
   }, [all, status, type, currency, q]);
 
   const setSearch = (patch: Partial<z.infer<typeof searchSchema>>) => {
-    navigate({ search: (prev) => ({ ...prev, ...patch }) });
+    navigate({ search: (prev: any) => ({ ...prev, ...patch }) });
   };
 
   const counts = useMemo(() => {
