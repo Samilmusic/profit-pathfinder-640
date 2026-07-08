@@ -255,6 +255,103 @@ function NewTradePage() {
     onError: (e: any) => toast.error(e.message ?? String(e)),
   });
 
+  // ---- Matched trade submit ----
+  const canSubmitMatched =
+    !!m.a_customer_id && !!m.b_customer_id &&
+    mAmtA > 0 && mAmtB > 0 && mRateA > 0 && mRateB > 0 &&
+    !!m.a_account_id && !!m.b_account_id;
+
+  const submitMatched = useMutation({
+    mutationFn: async () => {
+      if (!canSubmitMatched) throw new Error("Fill both sides: customers, amounts, rates and settlement accounts.");
+      const { data: u } = await supabase.auth.getUser();
+      const uid = u.user?.id;
+
+      const profitCcy = m.book_profit_in === "primary" ? m.a_currency : m.counter_currency;
+      const profitAmount = m.book_profit_in === "primary" ? mProfitInA : mProfitCounter;
+
+      const cyclePayload: any = {
+        entry_date: f.entry_date,
+        title: `Matched ${m.a_currency}↔${m.counter_currency}`,
+        customer_id: m.a_customer_id,
+        counterparty_id: m.b_customer_id,
+        base_currency: m.a_currency,
+        quote_currency: m.counter_currency,
+        initial_currency: m.counter_currency,
+        intermediate_currency: m.a_currency,
+        final_currency: m.counter_currency,
+        capital_amount: mValueA,
+        capital_currency: m.counter_currency,
+        initial_amount: mValueA,
+        expected_profit: profitAmount,
+        expected_profit_currency: profitCcy,
+        milad_share_pct: Number(f.milad_pct),
+        ali_share_pct: Number(f.ali_pct),
+        notes: [
+          "Matched trade (direct settlement)",
+          m.a_proof && `A proof: ${m.a_proof}`,
+          m.b_proof && `B proof: ${m.b_proof}`,
+          f.notes,
+        ].filter(Boolean).join(" · ") || null,
+        status: "in_progress",
+      };
+      const { data: cycle, error: cErr } = await supabase.from("trade_cycles" as any)
+        .insert(cyclePayload).select("id, code").single();
+      if (cErr) throw cErr;
+      const cycleId = (cycle as any).id as string;
+      const cycleCode = (cycle as any).code as string;
+
+      // Buy leg: from Customer A
+      const buyPayload: any = {
+        entry_date: f.entry_date,
+        bought_currency: m.a_currency,
+        bought_amount: mAmtA,
+        buy_rate: mRateA,
+        paid_currency: m.counter_currency,
+        paid_amount: mValueA,
+        paid_from_account_id: m.b_account_id, // direct settlement: B funds A
+        received_into_account_id: m.a_account_id,
+        customer_id: m.a_customer_id,
+        txn_owner: f.owner,
+        notes: `[${cycleCode}] Matched · from Customer A · direct settlement${m.a_proof ? " · proof: " + m.a_proof : ""}`,
+        created_by: uid,
+        trade_cycle_id: cycleId,
+      };
+      const { error: bErr } = await supabase.from("buy_transactions").insert(buyPayload);
+      if (bErr) throw new Error(`Buy leg (A) failed: ${bErr.message}`);
+
+      // Sell leg: to Customer B
+      const sellPayload: any = {
+        entry_date: f.entry_date,
+        sold_currency: m.a_currency,
+        sold_amount: mAmtA,
+        sell_rate: mRateB,
+        received_currency: m.counter_currency,
+        received_amount: mValueB,
+        sold_from_account_id: m.a_account_id,
+        received_into_account_id: m.b_account_id,
+        customer_id: m.b_customer_id,
+        milad_share_pct: Number(f.milad_pct),
+        ali_share_pct: Number(f.ali_pct),
+        notes: `[${cycleCode}] Matched · to Customer B · direct settlement${m.b_proof ? " · proof: " + m.b_proof : ""}`,
+        created_by: uid,
+        creates_cycle: false,
+        trade_cycle_id: cycleId,
+        deal_status: "open",
+        currency_delivered: m.b_status === "delivered",
+      };
+      const { error: sErr } = await supabase.from("sell_transactions").insert(sellPayload);
+      if (sErr) throw new Error(`Sell leg (B) failed: ${sErr.message}`);
+
+      return { cycleId, cycleCode };
+    },
+    onSuccess: (res) => {
+      toast.success(`Matched trade ${res.cycleCode} saved`);
+      navigate({ to: "/trades/$id", params: { id: res.cycleId } });
+    },
+    onError: (e: any) => toast.error(e.message ?? String(e)),
+  });
+
   return (
     <div className="space-y-4">
       <PageHeader
