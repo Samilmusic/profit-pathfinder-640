@@ -9,7 +9,7 @@ import { triggerMarketRateRefresh, useLatestMarketRates, useMarketRateHistory } 
 import { MARKET_CURRENCIES, currencyMeta } from "@/lib/market-currencies";
 import {
   ArrowDown, ArrowUp, ArrowRight, RefreshCw, Sparkles, Star, ChevronDown,
-  AlertTriangle, CheckCircle2, Clock, Wallet, TrendingUp, Activity,
+  AlertTriangle, CheckCircle2, Clock, Wallet, Activity,
 } from "lucide-react";
 import { toast } from "sonner";
 
