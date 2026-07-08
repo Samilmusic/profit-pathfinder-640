@@ -15,7 +15,7 @@ import { useCustomers } from "@/components/account-select";
 import { NumberInput } from "@/components/number-input";
 import { CURRENCIES, fmtProfit } from "@/lib/exchange";
 import { toast } from "sonner";
-import { Plus, ArrowRight } from "lucide-react";
+import { Plus, ArrowRight, Sparkles } from "lucide-react";
 import { RecordActions } from "@/components/record-actions";
 import { EDIT_FIELDS } from "@/lib/edit-fields";
 
@@ -97,6 +97,10 @@ function Page() {
         title="Trade Cycles"
         description="Multi-leg trades with third-party payments and separate profit collection."
         actions={
+          <div className="flex items-center gap-2">
+            <Button asChild variant="default">
+              <Link to="/trades/new"><Sparkles className="h-4 w-4 mr-1" />New Trade</Link>
+            </Button>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-2" />New Trade</Button></DialogTrigger>
             <DialogContent className="max-w-2xl">
@@ -155,6 +159,7 @@ function Page() {
               <div className="flex justify-end pt-2"><Button onClick={() => create.mutate()} disabled={create.isPending}>Create Trade</Button></div>
             </DialogContent>
           </Dialog>
+          </div>
         }
       />
 
