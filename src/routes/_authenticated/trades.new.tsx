@@ -15,6 +15,8 @@ import { Badge } from "@/components/ui/badge";
 import { CURRENCIES, OWNERS, fmt } from "@/lib/exchange";
 import { NumberInput } from "@/components/number-input";
 import { UseMarketRateButton } from "@/components/use-market-rate-button";
+import { SmartTradeCalculator } from "@/components/smart-trade-calculator";
+import { convertAmount } from "@/lib/trade-math";
 import { toast } from "sonner";
 import { ArrowLeft, ChevronsUpDown, TrendingUp, ArrowLeftRight, Warehouse } from "lucide-react";
 
@@ -116,8 +118,10 @@ function NewTradePage() {
   const mAmtB = Number(m.b_amount || 0);
   const mRateA = Number(m.a_rate || 0);
   const mRateB = Number(m.b_rate || 0);
-  const mValueA = mAmtA * mRateA; // counter ccy paid by/to A
-  const mValueB = mAmtB * mRateB; // counter ccy paid by B
+  // Direction-aware: rate is "counter per 1 traded ccy" when counter is IRR
+  // and traded is foreign; convertAmount handles the inverse automatically.
+  const mValueA = convertAmount(m.a_currency, m.counter_currency, mAmtA, mRateA);
+  const mValueB = convertAmount(m.b_currency, m.counter_currency, mAmtB, mRateB);
   const mProfitCounter = mValueB - mValueA;
   const mProfitInA = mRateA > 0 ? mProfitCounter / mRateA : 0;
   const mProfitInB = mRateB > 0 ? mProfitCounter / mRateB : 0;
@@ -126,8 +130,14 @@ function NewTradePage() {
   const giveAmt = Number(f.give_amount || 0);
   const buyRate = Number(f.buy_rate || 0);
   const sellRate = Number(f.sell_rate || 0);
-  const receiveAmount = useMemo(() => giveAmt * sellRate, [giveAmt, sellRate]);
-  const buyCostSettlement = giveAmt * buyRate; // e.g. IRR paid to supplier for give-currency
+  const receiveAmount = useMemo(
+    () => convertAmount(f.give_currency, f.receive_currency, giveAmt, sellRate),
+    [f.give_currency, f.receive_currency, giveAmt, sellRate],
+  );
+  const buyCostSettlement = useMemo(
+    () => convertAmount(f.give_currency, f.settlement_currency, giveAmt, buyRate),
+    [f.give_currency, f.settlement_currency, giveAmt, buyRate],
+  );
   const spread = receiveAmount - buyCostSettlement; // in receive/settlement ccy
   const sameSettleReceive = f.settlement_currency === f.receive_currency;
   // Profit expressed in the GIVE currency (e.g. AED)
