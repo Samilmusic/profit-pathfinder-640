@@ -142,138 +142,451 @@ function Page() {
   if (tradeQ.isLoading) return <div className="p-6 text-muted-foreground">Loading…</div>;
   if (!t) return <div className="p-6">Trade not found. <Link to="/trades" className="text-primary">Back</Link></div>;
 
+  const movements = movementsQ.data ?? [];
+  const profits = profitQ.data ?? [];
+  const docCounts = docsQ.data ?? {};
+
+  // ---- Derive summary
+  const giveAmount = t.initial_amount ?? t.capital_amount;
+  const giveCcy = t.initial_currency ?? t.capital_currency;
+  const receiveAmount = t.final_returned_amount ?? t.intermediate_received;
+  const receiveCcy = t.final_currency ?? t.intermediate_currency ?? t.quote_currency;
+  const userRate = t.sell_rate;
+  const marketRate = t.reference_sell_rate ?? t.reference_mid_rate;
+  const rateDiff = userRate && marketRate ? Number(userRate) - Number(marketRate) : null;
+  const spreadPct = userRate && marketRate ? ((Number(userRate) - Number(marketRate)) / Number(marketRate)) * 100 : null;
+  const profitCcy = t.realized_profit_currency || t.expected_profit_currency || giveCcy;
+  const profitAmount = t.realized_profit ?? t.received_profit ?? t.expected_profit ?? 0;
+
+  // ---- Derive progress steps
+  const sendMovs = movements.filter((m: any) => ["send_money", "pay_third_party"].includes(m.movement_type));
+  const recvMovs = movements.filter((m: any) => ["receive_money", "receive_third_party"].includes(m.movement_type));
+  const sendDone = sendMovs.some((m: any) => m.status === "completed");
+  const recvDone = recvMovs.some((m: any) => m.status === "completed");
+  const sendDocOk = sendMovs.some((m: any) => (docCounts as any)[m.id] > 0);
+  const recvDocOk = recvMovs.some((m: any) => (docCounts as any)[m.id] > 0);
+  const closed = t.status === "completed";
+  const steps = [
+    { key: "created", label: "Trade Created", done: true },
+    { key: "paid", label: "Customer Paid", done: recvDone },
+    { key: "receipt", label: "Receipt Verified", done: recvDocOk },
+    { key: "delivered", label: "Currency Delivered", done: sendDone },
+    { key: "proof", label: "Delivery Proof", done: sendDocOk },
+    { key: "closed", label: "Closed", done: closed },
+  ];
+  const currentIdx = steps.findIndex((s) => !s.done);
+
+  const statusMeta =
+    t.status === "completed" ? { dot: "bg-emerald-500", label: "Closed", cls: "text-emerald-700 bg-emerald-50 border-emerald-200" } :
+    t.status === "cancelled" ? { dot: "bg-muted-foreground", label: "Cancelled", cls: "text-muted-foreground bg-muted border-border" } :
+    t.status === "awaiting_profit" ? { dot: "bg-amber-500", label: "Awaiting Profit", cls: "text-amber-800 bg-amber-50 border-amber-200" } :
+    t.status === "awaiting_docs" ? { dot: "bg-orange-500", label: "Awaiting Docs", cls: "text-orange-800 bg-orange-50 border-orange-200" } :
+    t.status === "in_progress" ? { dot: "bg-sky-500", label: "In Progress", cls: "text-sky-800 bg-sky-50 border-sky-200" } :
+    { dot: "bg-muted-foreground", label: "Draft", cls: "text-muted-foreground bg-muted border-border" };
+
+  const settlementLabel = closed ? "Completed" : sendDone && recvDone ? "Delivered & Received" : sendDone ? "Delivered" : recvDone ? "Received" : "Pending";
+
+  return (
+    <div className="max-w-5xl mx-auto space-y-6 pb-16">
+      {/* Back / Actions strip */}
+      <div className="flex items-center justify-between gap-2">
+        <Link to="/trades" className="text-sm text-muted-foreground inline-flex items-center gap-1 hover:text-foreground">
+          <ArrowLeft className="h-3.5 w-3.5" /> All trades
+        </Link>
+        {!readOnly && (
+          <div className="flex items-center gap-2">
+            <Select value={t.status} onValueChange={(v) => setStatus.mutate(v)}>
+              <SelectTrigger className="w-40 h-9 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="draft">Draft</SelectItem>
+                <SelectItem value="in_progress">In progress</SelectItem>
+                <SelectItem value="awaiting_profit">Awaiting profit</SelectItem>
+                <SelectItem value="awaiting_docs">Awaiting docs</SelectItem>
+                <SelectItem value="cancelled">Cancel</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button size="sm" onClick={() => closeTrade.mutate()} disabled={closeTrade.isPending}>
+              <Lock className="h-4 w-4 mr-2" />Close Trade
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* ============ DEAL SUMMARY ============ */}
+      <Card className="border-none shadow-sm">
+        <CardContent className="p-6 sm:p-8">
+          <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+            <div>
+              <div className="text-xs uppercase tracking-wider text-muted-foreground">Deal</div>
+              <div className="text-2xl font-semibold mt-0.5">#{t.code}</div>
+            </div>
+            <Badge variant="outline" className={cn("gap-1.5 py-1 px-3 text-xs font-medium", statusMeta.cls)}>
+              <span className={cn("h-2 w-2 rounded-full", statusMeta.dot)} />
+              {statusMeta.label}
+            </Badge>
+          </div>
+
+          {/* Customer + Trade flow */}
+          <div className="grid gap-6 sm:grid-cols-[minmax(0,1fr)_auto] items-center mb-6">
+            <div className="space-y-4">
+              <SummaryLine label="Customer" value={t.customer?.name ?? "—"} icon={<User className="h-3.5 w-3.5" />} />
+              <div>
+                <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Trade</div>
+                <div className="flex flex-col gap-1">
+                  <div className="text-2xl font-semibold tabular-nums">
+                    {fmt(giveAmount, giveCcy)} <span className="text-muted-foreground text-lg font-normal">{giveCcy}</span>
+                  </div>
+                  <ArrowDown className="h-4 w-4 text-muted-foreground my-0.5" />
+                  <div className="text-2xl font-semibold tabular-nums">
+                    {fmt(receiveAmount, receiveCcy)} <span className="text-muted-foreground text-lg font-normal">{receiveCcy}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Rate / Market / Diff / Profit / Settlement / Created */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-4 pt-6 border-t">
+            <SummaryField label="Rate" value={userRate ? `${fmt(userRate)}` : "—"} sub={userRate && giveCcy && receiveCcy ? `${giveCcy}/${receiveCcy}` : ""} />
+            <SummaryField label="Market" value={marketRate ? fmt(marketRate) : "—"} />
+            <SummaryField
+              label="Difference"
+              value={rateDiff != null ? `${rateDiff > 0 ? "+" : ""}${fmt(rateDiff)}` : "—"}
+              sub={rateDiff != null && giveCcy && receiveCcy ? `${giveCcy} per ${receiveCcy}` : ""}
+              tone={rateDiff == null ? undefined : rateDiff <= 0 ? "good" : "warn"}
+            />
+            <SummaryField
+              label="Gross Profit"
+              value={fmtProfit(profitAmount, profitCcy)}
+              tone={Number(profitAmount) > 0 ? "good" : Number(profitAmount) < 0 ? "bad" : undefined}
+            />
+            <SummaryField label="Settlement" value={settlementLabel} />
+            <SummaryField label="Created" value={new Date(t.created_at || t.entry_date).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })} />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ============ PROGRESS ============ */}
+      <div>
+        <div className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Progress</div>
+        <ol className="flex items-center gap-2 overflow-x-auto pb-1">
+          {steps.map((s, i) => {
+            const isCurrent = i === currentIdx;
+            const isDone = s.done;
+            return (
+              <li key={s.key} className="flex items-center gap-2 shrink-0">
+                <div className={cn(
+                  "flex items-center gap-2 rounded-full px-3.5 py-2 text-xs font-medium border transition-colors",
+                  isDone && "bg-emerald-50 border-emerald-200 text-emerald-800",
+                  !isDone && isCurrent && "bg-sky-50 border-sky-200 text-sky-800",
+                  !isDone && !isCurrent && "bg-muted/50 border-border text-muted-foreground",
+                )}>
+                  <span className={cn(
+                    "flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold",
+                    isDone && "bg-emerald-500 text-white",
+                    !isDone && isCurrent && "bg-sky-500 text-white",
+                    !isDone && !isCurrent && "bg-muted-foreground/30 text-white",
+                  )}>
+                    {isDone ? "✓" : i + 1}
+                  </span>
+                  {s.label}
+                </div>
+                {i < steps.length - 1 && <div className={cn("h-px w-4 sm:w-6", isDone ? "bg-emerald-300" : "bg-border")} />}
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+
+      {/* ============ PAYMENTS ============ */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <PaymentCard
+          direction="out"
+          currency={giveCcy}
+          amount={giveAmount}
+          party={t.customer?.name ?? t.counterparty?.name ?? "—"}
+          partyLabel="Destination"
+          done={sendDone}
+        />
+        <PaymentCard
+          direction="in"
+          currency={receiveCcy}
+          amount={receiveAmount}
+          party={"—"}
+          partyLabel="Received into"
+          done={recvDone}
+          accountId={t.final_account_id ?? t.intermediate_account_id}
+        />
+      </div>
+
+      {/* ============ PROFIT ============ */}
+      <Card className={cn("border-none shadow-sm", Number(profitAmount) > 0 && "bg-emerald-50/40")}>
+        <CardContent className="p-8 text-center space-y-2">
+          <div className="flex items-center justify-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
+            <TrendingUp className="h-3.5 w-3.5" /> Gross Profit
+          </div>
+          <div className={cn(
+            "text-4xl sm:text-5xl font-bold tabular-nums",
+            Number(profitAmount) > 0 ? "text-emerald-600" : Number(profitAmount) < 0 ? "text-rose-600" : "text-foreground",
+          )}>
+            {fmtProfit(profitAmount, profitCcy)}
+          </div>
+          {spreadPct != null && (
+            <div className="text-sm text-muted-foreground pt-2">
+              Spread <span className="font-medium text-foreground">{Math.abs(spreadPct).toFixed(2)}%</span>
+              {" · "}
+              <span className={cn(spreadPct <= -0.5 ? "text-emerald-600" : spreadPct >= 0.5 ? "text-rose-600" : "")}>
+                {spreadPct <= -1 ? "Excellent Buy" : spreadPct <= -0.2 ? "Good Buy" : spreadPct >= 1 ? "Expensive" : spreadPct >= 0.2 ? "Above Market" : "At Market"}
+              </span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ============ TIMELINE ============ */}
+      <div>
+        <div className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Timeline</div>
+        <Card className="border-none shadow-sm"><CardContent className="p-6">
+          <TimelineList
+            createdAt={t.created_at}
+            closedAt={closed ? (t.closed_at ?? t.updated_at) : null}
+            movements={movements}
+            profits={profits}
+            docCounts={docCounts as any}
+          />
+        </CardContent></Card>
+      </div>
+
+      {/* ============ DOCUMENTS ============ */}
+      <div>
+        <div className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Documents</div>
+        <Card className="border-none shadow-sm"><CardContent className="p-6">
+          <DocumentsPanel refType="trade_cycle" refId={id} compact />
+        </CardContent></Card>
+      </div>
+
+      {t.notes && (
+        <div>
+          <div className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Notes</div>
+          <Card className="border-none shadow-sm"><CardContent className="p-6 text-sm whitespace-pre-wrap">{t.notes}</CardContent></Card>
+        </div>
+      )}
+
+      {/* ============ ADVANCED (collapsed) ============ */}
+      <AdvancedSection
+        tradeId={id}
+        readOnly={readOnly}
+        baseCurrency={t.base_currency}
+        profitCurrency={t.expected_profit_currency || t.base_currency}
+        movements={movements}
+        profits={profits}
+        docCounts={docCounts as any}
+        milad={{ pct: t.milad_share_pct, profit: t.milad_profit }}
+        ali={{ pct: t.ali_share_pct, profit: t.ali_profit }}
+        profitConfirmed={t.final_profit_confirmed}
+        onConfirmProfit={(v) => confirmProfit.mutate(v)}
+        profitCcyDisplay={t.expected_profit_currency}
+        audit={auditQ.data ?? []}
+      />
+    </div>
+  );
+}
+
+function SummaryLine({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
   return (
     <div>
-      <div className="mb-3"><Link to="/trades" className="text-sm text-muted-foreground inline-flex items-center gap-1"><ArrowLeft className="h-3 w-3" /> All trades</Link></div>
-      <PageHeader
-        title={`Trade ${t.code}`}
-        description={t.title || `${t.base_currency}${t.quote_currency ? "/" + t.quote_currency : ""}`}
-        actions={
-          <>
-            {!readOnly && (
-              <>
-                <Select value={t.status} onValueChange={(v) => setStatus.mutate(v)}>
-                  <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="in_progress">In progress</SelectItem>
-                    <SelectItem value="awaiting_profit">Awaiting profit</SelectItem>
-                    <SelectItem value="awaiting_docs">Awaiting docs</SelectItem>
-                    <SelectItem value="cancelled">Cancel</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button onClick={() => closeTrade.mutate()} disabled={closeTrade.isPending}><Lock className="h-4 w-4 mr-2" />Close Trade</Button>
-              </>
-            )}
-          </>
-        }
-      />
+      <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">{label}</div>
+      <div className="inline-flex items-center gap-1.5 text-lg font-medium">{icon}{value}</div>
+    </div>
+  );
+}
 
-      {/* KPI row */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
-        <Kpi label="Capital" value={fmtProfit(t.capital_amount, t.capital_currency)} />
-        <Kpi label="Expected profit" value={fmtProfit(t.expected_profit, t.expected_profit_currency)} />
-        <Kpi label="Received profit" value={fmtProfit(t.received_profit, t.expected_profit_currency)} tone="good" />
-        <Kpi label="Pending profit" value={fmtProfit(t.pending_profit, t.expected_profit_currency)} tone="warn" />
-        <Kpi label="Expenses" value={fmtProfit(t.related_expenses, t.expected_profit_currency)} />
-        <Kpi label="Net profit" value={fmtProfit(t.net_profit, t.expected_profit_currency)} tone="good" />
-      </div>
+function SummaryField({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: "good" | "warn" | "bad" }) {
+  const cls =
+    tone === "good" ? "text-emerald-600" :
+    tone === "warn" ? "text-amber-600" :
+    tone === "bad"  ? "text-rose-600" : "";
+  return (
+    <div>
+      <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">{label}</div>
+      <div className={cn("text-base font-semibold tabular-nums", cls)}>{value}</div>
+      {sub && <div className="text-[11px] text-muted-foreground mt-0.5">{sub}</div>}
+    </div>
+  );
+}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
-        <Card><CardContent className="p-4">
-          <div className="text-xs uppercase text-muted-foreground mb-1">Customer</div>
-          <div className="font-medium">{t.customer?.name ?? "—"}</div>
-          {t.counterparty && <div className="text-sm text-muted-foreground mt-1">Counterparty: {t.counterparty.name}</div>}
-        </CardContent></Card>
-        <Card><CardContent className="p-4">
-          <div className="text-xs uppercase text-muted-foreground mb-1">Profit share</div>
-          <div className="text-sm">Milad {t.milad_share_pct}% · <span className="font-medium">{fmtProfit(t.milad_profit, t.expected_profit_currency)}</span></div>
-          <div className="text-sm">Ali {t.ali_share_pct}% · <span className="font-medium">{fmtProfit(t.ali_profit, t.expected_profit_currency)}</span></div>
-        </CardContent></Card>
-        <Card><CardContent className="p-4">
-          <div className="text-xs uppercase text-muted-foreground mb-1">Closing checklist</div>
-          <label className="flex items-center gap-2 text-sm">
-            <Checkbox checked={t.final_profit_confirmed} onCheckedChange={(v) => confirmProfit.mutate(!!v)} disabled={readOnly} />
-            Final profit confirmed
-          </label>
-          <div className="text-xs text-muted-foreground mt-2">Status: <b>{t.status}</b></div>
-        </CardContent></Card>
-      </div>
+function PaymentCard({
+  direction, currency, amount, party, partyLabel, done, accountId,
+}: { direction: "in" | "out"; currency?: string | null; amount?: number | null; party: string; partyLabel: string; done: boolean; accountId?: string | null }) {
+  const accountName = useQuery({
+    queryKey: ["account_name", accountId],
+    enabled: !!accountId,
+    queryFn: async () => {
+      const { data } = await supabase.from("accounts").select("name").eq("id", accountId!).maybeSingle();
+      return (data as any)?.name as string | undefined;
+    },
+  });
+  const displayParty = accountId ? (accountName.data ?? "—") : party;
+  return (
+    <Card className="border-none shadow-sm">
+      <CardContent className="p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="text-sm font-medium">{direction === "out" ? "Money Out" : "Money In"}</div>
+          <Badge variant="outline" className={cn(
+            "text-[11px] gap-1.5 border",
+            done ? "bg-emerald-50 border-emerald-200 text-emerald-800" : "bg-muted/50 border-border text-muted-foreground",
+          )}>
+            <span className={cn("h-1.5 w-1.5 rounded-full", done ? "bg-emerald-500" : "bg-muted-foreground/50")} />
+            {done ? (direction === "out" ? "Delivered" : "Received") : "Pending"}
+          </Badge>
+        </div>
+        <div>
+          <div className="text-3xl font-semibold tabular-nums">
+            {fmt(amount ?? 0, currency ?? "")}
+          </div>
+          <div className="text-sm text-muted-foreground mt-0.5">{currency ?? "—"}</div>
+        </div>
+        <div>
+          <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-0.5">{partyLabel}</div>
+          <div className="text-sm font-medium">{displayParty}</div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
-      <Tabs defaultValue="matrix" className="mb-4">
-        <TabsList className="flex-wrap h-auto">
-          <TabsTrigger value="matrix">Settlement Matrix</TabsTrigger>
-          <TabsTrigger value="movements">Movements ({(movementsQ.data ?? []).length})</TabsTrigger>
-          <TabsTrigger value="profits">Profits ({(profitQ.data ?? []).length})</TabsTrigger>
-          <TabsTrigger value="timeline">Timeline</TabsTrigger>
-          <TabsTrigger value="audit">Audit</TabsTrigger>
-        </TabsList>
+function TimelineList({
+  createdAt, closedAt, movements, profits, docCounts,
+}: { createdAt: string; closedAt: string | null; movements: any[]; profits: any[]; docCounts: Record<string, number> }) {
+  type Ev = { at: string; title: string; sub?: string };
+  const events: Ev[] = [];
+  if (createdAt) events.push({ at: createdAt, title: "Trade Created" });
+  for (const m of movements) {
+    const label = MOVEMENT_LABELS[m.movement_type] ?? m.movement_type;
+    events.push({
+      at: m.created_at,
+      title: `${label} · ${m.status === "completed" ? "Completed" : m.status}`,
+      sub: `${fmt(m.amount, m.currency)} ${m.currency}`,
+    });
+    if (docCounts[m.id]) {
+      events.push({ at: m.updated_at || m.created_at, title: `Receipt Uploaded`, sub: label });
+    }
+  }
+  for (const p of profits) {
+    events.push({
+      at: p.created_at,
+      title: `Profit ${p.status}`,
+      sub: `${fmt(p.amount, p.currency)} ${p.currency}`,
+    });
+  }
+  if (closedAt) events.push({ at: closedAt, title: "Trade Closed" });
+  events.sort((a, b) => (a.at || "").localeCompare(b.at || ""));
+  if (events.length === 0) return <div className="text-sm text-muted-foreground">No activity yet.</div>;
+  return (
+    <ol className="space-y-4">
+      {events.map((e, i) => (
+        <li key={i} className="grid grid-cols-[80px_1fr] gap-4 items-start">
+          <div className="text-sm text-muted-foreground tabular-nums pt-0.5">
+            {new Date(e.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+          </div>
+          <div>
+            <div className="text-sm font-medium">{e.title}</div>
+            {e.sub && <div className="text-xs text-muted-foreground mt-0.5 tabular-nums">{e.sub}</div>}
+          </div>
+        </li>
+      ))}
+    </ol>
+  );
+}
 
-        <TabsContent value="matrix" className="mt-4">
-          <SettlementMatrix rows={movementsQ.data ?? []} docCounts={docsQ.data ?? {}} />
-        </TabsContent>
-
-        <TabsContent value="movements" className="mt-4 space-y-3">
-          {!readOnly && <AddMovement tradeId={id} defaultCurrency={t.base_currency} />}
-          {(movementsQ.data ?? []).map((m: any) => (
-            <MovementCard key={m.id} m={m} docCount={(docsQ.data as any)?.[m.id] ?? 0} readOnly={readOnly} />
-          ))}
-          {(movementsQ.data ?? []).length === 0 && <div className="text-sm text-muted-foreground">No movements yet.</div>}
-        </TabsContent>
-
-        <TabsContent value="profits" className="mt-4 space-y-3">
-          {!readOnly && <AddProfit tradeId={id} defaultCurrency={t.expected_profit_currency || t.base_currency} />}
-          <Card><CardContent className="p-0 overflow-x-auto">
-            <Table>
-              <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Amount</TableHead><TableHead>Account</TableHead><TableHead>Received by</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
-              <TableBody>
-                {(profitQ.data ?? []).map((p: any) => (
-                  <TableRow key={p.id}>
-                    <TableCell>{p.entry_date}</TableCell>
-                    <TableCell>{fmtProfit(p.amount, p.currency)}</TableCell>
-                    <TableCell className="text-xs">{p.account_id ?? "—"}</TableCell>
-                    <TableCell>{p.received_by ?? "—"}</TableCell>
-                    <TableCell>{p.status}</TableCell>
-                  </TableRow>
-                ))}
-                {(profitQ.data ?? []).length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">No profit collections.</TableCell></TableRow>}
-              </TableBody>
-            </Table>
+function AdvancedSection({
+  tradeId, readOnly, baseCurrency, profitCurrency, movements, profits, docCounts,
+  milad, ali, profitConfirmed, onConfirmProfit, profitCcyDisplay, audit,
+}: {
+  tradeId: string; readOnly: boolean; baseCurrency: string; profitCurrency: string;
+  movements: any[]; profits: any[]; docCounts: Record<string, number>;
+  milad: { pct: number; profit: number }; ali: { pct: number; profit: number };
+  profitConfirmed: boolean; onConfirmProfit: (v: boolean) => void; profitCcyDisplay: string; audit: any[];
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground py-2"
+      >
+        Advanced · movements, profits, share, audit
+        {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+      </button>
+      {open && (
+        <div className="space-y-4 mt-2">
+          {/* Profit share + confirm */}
+          <Card className="border-none shadow-sm"><CardContent className="p-6 grid gap-4 sm:grid-cols-2">
+            <div>
+              <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Profit share</div>
+              <div className="text-sm">Milad {milad.pct}% · <span className="font-medium">{fmtProfit(milad.profit, profitCcyDisplay)}</span></div>
+              <div className="text-sm">Ali {ali.pct}% · <span className="font-medium">{fmtProfit(ali.profit, profitCcyDisplay)}</span></div>
+            </div>
+            <label className="flex items-center gap-2 text-sm">
+              <Checkbox checked={profitConfirmed} onCheckedChange={(v) => onConfirmProfit(!!v)} disabled={readOnly} />
+              Final profit confirmed
+            </label>
           </CardContent></Card>
-        </TabsContent>
 
-        <TabsContent value="timeline" className="mt-4">
-          <Card><CardContent className="p-4">
-            <ol className="relative border-l border-border pl-4 space-y-4">
-              {[...(movementsQ.data ?? []), ...(profitQ.data ?? []).map((p: any) => ({ ...p, movement_type: "profit_collection", is_profit: true }))]
-                .sort((a: any, b: any) => (a.created_at || "").localeCompare(b.created_at || ""))
-                .map((e: any) => (
-                  <li key={e.id} className="ml-2">
-                    <div className="absolute -left-1.5 w-3 h-3 rounded-full bg-primary" />
-                    <div className="text-xs text-muted-foreground">{new Date(e.created_at).toLocaleString()}</div>
-                    <div className="text-sm"><b>{MOVEMENT_LABELS[e.movement_type] ?? e.movement_type}</b> · {fmtProfit(e.amount, e.currency)} · {e.status}</div>
-                    {e.notes && <div className="text-xs text-muted-foreground">{e.notes}</div>}
-                  </li>
-                ))}
-            </ol>
-          </CardContent></Card>
-        </TabsContent>
+          {/* Movements */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-medium">Movements ({movements.length})</div>
+              {!readOnly && <AddMovement tradeId={tradeId} defaultCurrency={baseCurrency} />}
+            </div>
+            {movements.map((m: any) => (
+              <MovementCard key={m.id} m={m} docCount={docCounts[m.id] ?? 0} readOnly={readOnly} />
+            ))}
+            {movements.length === 0 && <div className="text-sm text-muted-foreground">No movements.</div>}
+          </div>
 
-        <TabsContent value="audit" className="mt-4">
-          <Card><CardContent className="p-0 overflow-x-auto">
-            <Table>
-              <TableHeader><TableRow><TableHead>When</TableHead><TableHead>Entity</TableHead><TableHead>Action</TableHead></TableRow></TableHeader>
-              <TableBody>
-                {(auditQ.data ?? []).map((a: any) => (
-                  <TableRow key={a.id}><TableCell className="text-xs">{new Date(a.created_at).toLocaleString()}</TableCell><TableCell className="text-xs">{a.entity_type}</TableCell><TableCell className="text-xs">{a.action}</TableCell></TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent></Card>
-        </TabsContent>
-      </Tabs>
+          {/* Profits */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-medium">Profit Collections ({profits.length})</div>
+              {!readOnly && <AddProfit tradeId={tradeId} defaultCurrency={profitCurrency} />}
+            </div>
+            <Card><CardContent className="p-0 overflow-x-auto">
+              <Table>
+                <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Amount</TableHead><TableHead>Received by</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+                <TableBody>
+                  {profits.map((p: any) => (
+                    <TableRow key={p.id}>
+                      <TableCell>{p.entry_date}</TableCell>
+                      <TableCell>{fmtProfit(p.amount, p.currency)}</TableCell>
+                      <TableCell>{p.received_by ?? "—"}</TableCell>
+                      <TableCell>{p.status}</TableCell>
+                    </TableRow>
+                  ))}
+                  {profits.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-6">No profit collections.</TableCell></TableRow>}
+                </TableBody>
+              </Table>
+            </CardContent></Card>
+          </div>
 
-      {t.notes && <Card className="mt-4"><CardContent className="p-4"><div className="text-xs uppercase text-muted-foreground mb-1">Notes</div><div className="text-sm whitespace-pre-wrap">{t.notes}</div></CardContent></Card>}
+          {/* Audit */}
+          <div className="space-y-3">
+            <div className="text-sm font-medium">Audit</div>
+            <Card><CardContent className="p-0 overflow-x-auto">
+              <Table>
+                <TableHeader><TableRow><TableHead>When</TableHead><TableHead>Entity</TableHead><TableHead>Action</TableHead></TableRow></TableHeader>
+                <TableBody>
+                  {audit.map((a: any) => (
+                    <TableRow key={a.id}><TableCell className="text-xs">{new Date(a.created_at).toLocaleString()}</TableCell><TableCell className="text-xs">{a.entity_type}</TableCell><TableCell className="text-xs">{a.action}</TableCell></TableRow>
+                  ))}
+                  {audit.length === 0 && <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-6">No audit records.</TableCell></TableRow>}
+                </TableBody>
+              </Table>
+            </CardContent></Card>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
