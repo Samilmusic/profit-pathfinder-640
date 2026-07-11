@@ -1006,3 +1006,30 @@ function Row({ label, value, strong, tone }: { label: string; value: string; str
     </div>
   );
 }
+
+function ValidationPanel({ checks }: { checks: { key: string; label: string; ok: boolean; hint?: string }[] }) {
+  if (checks.length === 0) return null;
+  const missing = checks.filter((c) => !c.ok);
+  const ready = missing.length === 0;
+  return (
+    <div className={`mt-3 rounded-lg border p-3 ${ready ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}`}>
+      <div className={`flex items-center gap-2 text-sm font-semibold ${ready ? "text-emerald-700" : "text-amber-800"}`}>
+        {ready ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+        {ready ? "Ready to Close" : `Cannot close trade — ${missing.length} missing`}
+      </div>
+      <ul className="mt-2 space-y-1 text-[12px]">
+        {checks.map((c) => (
+          <li key={c.key} className="flex items-start gap-2">
+            {c.ok
+              ? <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 text-emerald-600 shrink-0" />
+              : <XCircle className="h-3.5 w-3.5 mt-0.5 text-destructive shrink-0" />}
+            <div className={c.ok ? "text-muted-foreground line-through" : "text-foreground"}>
+              {c.label}
+              {!c.ok && c.hint ? <div className="text-[11px] text-muted-foreground no-underline">{c.hint}</div> : null}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
