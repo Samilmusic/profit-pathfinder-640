@@ -8,6 +8,7 @@ import {
   compareToMarket,
   convertAmount,
   detectDirection,
+  deriveOperation,
   pivotCurrency,
   scoreTrade,
   type ScoreInput,
@@ -33,17 +34,21 @@ export type CalcProps = {
 
 export function SmartTradeCalculator(props: CalcProps) {
   const rates = useLatestMarketRates();
-  const pivot = pivotCurrency(props.giveCurrency, props.receiveCurrency);
   const direction = detectDirection(props.giveCurrency, props.receiveCurrency);
+  // Operation direction is derived from currency flow — NOT from the form's Sell/Buy label.
+  // Give IRR + receive foreign = BUY that foreign; give foreign + receive IRR = SELL that foreign.
+  const op = deriveOperation(props.giveCurrency, props.receiveCurrency);
+  const effectiveSide = op.side;
+  const pivot = op.pivot || pivotCurrency(props.giveCurrency, props.receiveCurrency);
 
   const pivotPick = pickDisplayRate(rates.data, pivot);
   const marketRow = pivotPick.row;
   const marketMid = marketRow?.mid_rate ? Number(marketRow.mid_rate) : null;
   const marketBuy = marketRow?.buy_rate ? Number(marketRow.buy_rate) : null;
   const marketSell = marketRow?.sell_rate ? Number(marketRow.sell_rate) : null;
-  // side-adjusted reference: when we're SELLING we compare against market's buy (what a customer would pay us);
-  // when we're BUYING we compare against market's sell (what we'd pay in the market).
-  const marketRef = props.side === "sell" ? marketBuy ?? marketMid : marketSell ?? marketMid;
+  // When we BUY the foreign currency, compare our rate to Bonbast BUY rate.
+  // When we SELL the foreign currency, compare to Bonbast SELL rate.
+  const marketRef = effectiveSide === "buy" ? marketBuy ?? marketMid : marketSell ?? marketMid;
 
   // For cross-trades, we also need the receive-side market rate to convert.
   const receivePick = pickDisplayRate(rates.data, props.receiveCurrency);
@@ -75,18 +80,17 @@ export function SmartTradeCalculator(props: CalcProps) {
     [props.giveCurrency, props.receiveCurrency, props.giveAmount, marketRef, receiveMarketMid],
   );
 
-  const cmp = compareToMarket(props.side, props.userRate, marketRef);
+  const cmp = compareToMarket(effectiveSide, props.userRate, marketRef);
 
-  // Profit vs market — expressed in the receive currency ("what you gain or lose vs. doing this at market")
-  const profitVsMarket = receiveAmount && marketReceive
-    ? (props.side === "sell" ? receiveAmount - marketReceive : marketReceive - receiveAmount)
-    : 0;
+  // Advantage in receive currency: for both BUY and SELL, a favourable rate simply means
+  // we end up with more of the receive currency than the market would have given us.
+  const profitVsMarket = receiveAmount && marketReceive ? receiveAmount - marketReceive : 0;
 
   const freshness = rateFreshness(marketRow?.fetched_at);
 
   const score = useMemo(() => {
     const input: ScoreInput = {
-      side: props.side,
+      side: effectiveSide,
       userRate: props.userRate || 0,
       marketRate: marketRef,
       buyRate: props.buyRate ?? null,
@@ -99,7 +103,7 @@ export function SmartTradeCalculator(props: CalcProps) {
     };
     return scoreTrade(input);
   }, [
-    props.side,
+    effectiveSide,
     props.userRate,
     marketRef,
     props.buyRate,
@@ -132,6 +136,9 @@ export function SmartTradeCalculator(props: CalcProps) {
             Smart trade calculator
           </CardTitle>
           <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="text-[10px] uppercase tracking-wider">
+              {op.verb}
+            </Badge>
             <Badge variant="outline" className="font-mono text-[10px]">
               {rateLabel}
             </Badge>
@@ -170,7 +177,7 @@ export function SmartTradeCalculator(props: CalcProps) {
             hint={rateLabel}
           />
           <MetricBox
-            label={`Market ${props.side === "sell" ? "buy" : "sell"}`}
+            label={`Bonbast ${effectiveSide === "buy" ? "buy" : "sell"} (${pivot})`}
             value={marketRef ? marketRef.toLocaleString() : "—"}
             hint={marketRow?.source ? `Source: ${marketRow.source}` : "No data"}
           />
@@ -199,9 +206,9 @@ export function SmartTradeCalculator(props: CalcProps) {
             <div className="flex-1">
               <div className="font-medium">{cmp.label}</div>
               <div className="text-[11px] opacity-80">
-                {props.side === "sell"
-                  ? "You are selling — a higher rate than market is favourable."
-                  : "You are buying — a lower rate than market is favourable."}
+                {effectiveSide === "sell"
+                  ? `You are selling ${pivot} — a higher rate than market is favourable.`
+                  : `You are buying ${pivot} — a lower rate than market is favourable.`}
               </div>
             </div>
             {profitVsMarket !== 0 && canCompute && (
