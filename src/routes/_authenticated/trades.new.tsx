@@ -17,6 +17,7 @@ import { NumberInput } from "@/components/number-input";
 import { UseMarketRateButton } from "@/components/use-market-rate-button";
 import { SmartTradeCalculator } from "@/components/smart-trade-calculator";
 import { convertAmount } from "@/lib/trade-math";
+import { useLatestMarketRates, pickDisplayRate } from "@/lib/market-rates";
 import { toast } from "sonner";
 import { ArrowLeft, ChevronsUpDown, TrendingUp, ArrowLeftRight, Warehouse, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 
@@ -97,7 +98,6 @@ function NewTradePage() {
     a_currency: "AED",
     a_amount: "",
     a_rate: "",
-    a_account_id: "",
     a_status: "not_received" as "not_received" | "received" | "later",
     a_proof: "",
     // Customer B (buyer)
@@ -105,13 +105,10 @@ function NewTradePage() {
     b_currency: "AED",
     b_amount: "",
     b_rate: "",
-    b_account_id: "",
     b_status: "not_delivered" as "not_delivered" | "delivered" | "later",
     b_proof: "",
     // Rates are quoted in this "counter" currency (e.g. IRR)
     counter_currency: "IRR",
-    // Which currency to book the company profit in
-    book_profit_in: "counter" as "counter" | "primary",
   });
 
   const mAmtA = Number(m.a_amount || 0);
@@ -357,8 +354,20 @@ function NewTradePage() {
   // ---- Matched trade submit ----
   const canSubmitMatched =
     !!m.a_customer_id && !!m.b_customer_id &&
-    mAmtA > 0 && mAmtB > 0 && mRateA > 0 && mRateB > 0 &&
-    !!m.a_account_id && !!m.b_account_id;
+    mAmtA > 0 && mAmtB > 0 && mRateA > 0 && mRateB > 0;
+
+  // Live AED rate (IRR per 1 AED) for owner-earnings conversion.
+  const marketRatesQ = useLatestMarketRates();
+  const aedRateRow = pickDisplayRate(marketRatesQ.data, "AED").row;
+  const aedRateIRR = aedRateRow?.mid_rate ?? aedRateRow?.sell_rate ?? aedRateRow?.buy_rate ?? 0;
+  // Convert profit (in counter currency) to AED. If counter is already AED, pass through.
+  const profitAED =
+    m.counter_currency === "AED"
+      ? mProfitCounter
+      : m.counter_currency === "IRR" && aedRateIRR > 0
+        ? mProfitCounter / aedRateIRR
+        : 0;
+  const spreadPerUnit = mRateB - mRateA;
 
   const submitMatched = useMutation({
     mutationFn: async () => {
@@ -366,8 +375,10 @@ function NewTradePage() {
       const { data: u } = await supabase.auth.getUser();
       const uid = u.user?.id;
 
-      const profitCcy = m.book_profit_in === "primary" ? m.a_currency : m.counter_currency;
-      const profitAmount = m.book_profit_in === "primary" ? mProfitInA : mProfitCounter;
+      // Direct settlement: profit is always booked in the counter currency
+      // (rates are quoted in it). Money never touches our accounts.
+      const profitCcy = m.counter_currency;
+      const profitAmount = mProfitCounter;
 
       const cyclePayload: any = {
         entry_date: f.entry_date,
@@ -400,47 +411,9 @@ function NewTradePage() {
       const cycleId = (cycle as any).id as string;
       const cycleCode = (cycle as any).code as string;
 
-      // Buy leg: from Customer A
-      const buyPayload: any = {
-        entry_date: f.entry_date,
-        bought_currency: m.a_currency,
-        bought_amount: mAmtA,
-        buy_rate: mRateA,
-        paid_currency: m.counter_currency,
-        paid_amount: mValueA,
-        paid_from_account_id: m.b_account_id, // direct settlement: B funds A
-        received_into_account_id: m.a_account_id,
-        customer_id: m.a_customer_id,
-        txn_owner: f.owner,
-        notes: `[${cycleCode}] Matched · from Customer A · direct settlement${m.a_proof ? " · proof: " + m.a_proof : ""}`,
-        created_by: uid,
-        trade_cycle_id: cycleId,
-      };
-      const { error: bErr } = await supabase.from("buy_transactions").insert(buyPayload);
-      if (bErr) throw new Error(`Buy leg (A) failed: ${bErr.message}`);
-
-      // Sell leg: to Customer B
-      const sellPayload: any = {
-        entry_date: f.entry_date,
-        sold_currency: m.a_currency,
-        sold_amount: mAmtA,
-        sell_rate: mRateB,
-        received_currency: m.counter_currency,
-        received_amount: mValueB,
-        sold_from_account_id: m.a_account_id,
-        received_into_account_id: m.b_account_id,
-        customer_id: m.b_customer_id,
-        milad_share_pct: Number(f.milad_pct),
-        ali_share_pct: Number(f.ali_pct),
-        notes: `[${cycleCode}] Matched · to Customer B · direct settlement${m.b_proof ? " · proof: " + m.b_proof : ""}`,
-        created_by: uid,
-        creates_cycle: false,
-        trade_cycle_id: cycleId,
-        deal_status: "open",
-        currency_delivered: m.b_status === "delivered",
-      };
-      const { error: sErr } = await supabase.from("sell_transactions").insert(sellPayload);
-      if (sErr) throw new Error(`Sell leg (B) failed: ${sErr.message}`);
+      // Direct settlement: money never enters our books, inventory is untouched.
+      // We only record the trade cycle for reporting — no buy/sell legs.
+      void uid;
 
       return { cycleId, cycleCode };
     },
@@ -688,126 +661,88 @@ function NewTradePage() {
 
           {f.trade_type === "matched" && (
           <>
-          {/* Smart calculator for the sell leg (Customer B side) */}
-          <SmartTradeCalculator
-            giveCurrency={m.a_currency}
-            giveAmount={mAmtB}
-            receiveCurrency={m.counter_currency}
-            userRate={mRateB}
-            side="sell"
-            buyRate={mRateA > 0 ? mRateA : null}
-            sellRate={mRateB > 0 ? mRateB : null}
-            customerKnown={!!m.b_customer_id}
-          />
-
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Rate quoting</CardTitle>
-                <div className="text-[11px] text-muted-foreground">Both rates are expressed in this counter currency (e.g. IRR per 1 AED).</div>
+                <CardTitle className="text-sm">Direct settlement</CardTitle>
+                <div className="text-[11px] text-muted-foreground">
+                  Customer A delivers currency directly to Customer B. Money never enters our accounts,
+                  inventory is not affected. We only earn the spread.
+                </div>
               </CardHeader>
               <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <F label="Counter currency (rates quoted in)">
-                  <Select value={m.counter_currency} onValueChange={(v) => setM({ ...m, counter_currency: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>{CURRENCIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                  </Select>
-                </F>
-              </CardContent>
-            </Card>
-
-            <StepCard step={1} title="Customer A · Supplier" subtitle="Who is supplying the currency?">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <F label="Customer">
+                <F label="Customer A · Supplier">
                   <Select value={m.a_customer_id} onValueChange={(v) => setM({ ...m, a_customer_id: v })}>
                     <SelectTrigger><SelectValue placeholder="Select supplier" /></SelectTrigger>
                     <SelectContent>{(customers.data ?? []).map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                   </Select>
                 </F>
-                <F label="Currency">
+                <F label="Customer B · Buyer">
+                  <Select value={m.b_customer_id} onValueChange={(v) => setM({ ...m, b_customer_id: v })}>
+                    <SelectTrigger><SelectValue placeholder="Select buyer" /></SelectTrigger>
+                    <SelectContent>{(customers.data ?? []).map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                  </Select>
+                </F>
+                <F label="Currency traded">
                   <Select value={m.a_currency} onValueChange={(v) => setM({ ...m, a_currency: v, b_currency: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>{CURRENCIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                   </Select>
                 </F>
                 <F label={`Amount (${m.a_currency})`}>
-                  <NumberInput currency={m.a_currency} value={m.a_amount} onChange={(e) => setM({ ...m, a_amount: e.target.value, b_amount: m.b_amount || e.target.value })} placeholder="e.g. 70,000" />
+                  <NumberInput
+                    currency={m.a_currency}
+                    value={m.a_amount}
+                    onChange={(e) => setM({ ...m, a_amount: e.target.value, b_amount: e.target.value })}
+                    placeholder="e.g. 70,000"
+                  />
                 </F>
-                <F label={`Rate A (${m.counter_currency} per 1 ${m.a_currency})`}>
+                <F label="Settlement currency (rates quoted in)">
+                  <Select value={m.counter_currency} onValueChange={(v) => setM({ ...m, counter_currency: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{CURRENCIES.filter((c) => c !== m.a_currency).map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                  </Select>
+                </F>
+                <div className="hidden sm:block" />
+                <F label={`Buy rate (${m.counter_currency} per 1 ${m.a_currency})`} hint="Rate at which A supplies.">
                   <div className="flex gap-2 items-center">
                     <NumberInput rate value={m.a_rate} onChange={(e) => setM({ ...m, a_rate: e.target.value })} />
                     <UseMarketRateButton currency={m.a_currency} which="buy" onApply={(r) => setM({ ...m, a_rate: String(r) })} />
                   </div>
                 </F>
-                <F label={`Settlement account (A's ${m.counter_currency} account)`} hint="Where A receives the counter currency.">
-                  <AccountSelect value={m.a_account_id} onChange={(v) => setM({ ...m, a_account_id: v })} currency={m.counter_currency} holderCustomerId={m.a_customer_id || undefined} />
+                <F label={`Sell rate (${m.counter_currency} per 1 ${m.a_currency})`} hint="Rate at which B buys.">
+                  <div className="flex gap-2 items-center">
+                    <NumberInput rate value={m.b_rate} onChange={(e) => setM({ ...m, b_rate: e.target.value })} />
+                    <UseMarketRateButton currency={m.a_currency} which="sell" onApply={(r) => setM({ ...m, b_rate: String(r) })} />
+                  </div>
                 </F>
-                <F label="Payment status">
+                <F label="A payment status">
                   <Select value={m.a_status} onValueChange={(v: any) => setM({ ...m, a_status: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="not_received">A has not been paid</SelectItem>
+                      <SelectItem value="not_received">Not settled yet</SelectItem>
                       <SelectItem value="received">A confirmed payment received</SelectItem>
                       <SelectItem value="later">Will settle later</SelectItem>
                     </SelectContent>
                   </Select>
                 </F>
-                <div className="sm:col-span-2">
-                  <F label="Proof / reference (optional)">
-                    <Input value={m.a_proof} onChange={(e) => setM({ ...m, a_proof: e.target.value })} placeholder="Transfer ref, screenshot ID, etc." />
-                  </F>
-                </div>
-                <div className="sm:col-span-2 text-[11px] text-muted-foreground">
-                  A supplies <span className="font-mono">{mAmtA ? fmt(mAmtA, m.a_currency) : "—"}</span> · receives <span className="font-mono">{mValueA ? fmt(mValueA, m.counter_currency) : "—"}</span>
-                </div>
-              </div>
-            </StepCard>
-
-            <StepCard step={2} title="Customer B · Buyer" subtitle="Who is receiving the currency?">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <F label="Customer">
-                  <Select value={m.b_customer_id} onValueChange={(v) => setM({ ...m, b_customer_id: v })}>
-                    <SelectTrigger><SelectValue placeholder="Select buyer" /></SelectTrigger>
-                    <SelectContent>{(customers.data ?? []).map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-                  </Select>
-                </F>
-                <F label="Currency">
-                  <Select value={m.b_currency} onValueChange={(v) => setM({ ...m, b_currency: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>{CURRENCIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                  </Select>
-                </F>
-                <F label={`Amount (${m.b_currency})`}>
-                  <NumberInput currency={m.b_currency} value={m.b_amount} onChange={(e) => setM({ ...m, b_amount: e.target.value })} placeholder="e.g. 70,000" />
-                </F>
-                <F label={`Rate B (${m.counter_currency} per 1 ${m.b_currency})`}>
-                  <div className="flex gap-2 items-center">
-                    <NumberInput rate value={m.b_rate} onChange={(e) => setM({ ...m, b_rate: e.target.value })} />
-                    <UseMarketRateButton currency={m.b_currency} which="sell" onApply={(r) => setM({ ...m, b_rate: String(r) })} />
-                  </div>
-                </F>
-                <F label={`Settlement account (B's ${m.counter_currency} account)`} hint="Where B pays the counter currency from.">
-                  <AccountSelect value={m.b_account_id} onChange={(v) => setM({ ...m, b_account_id: v })} currency={m.counter_currency} holderCustomerId={m.b_customer_id || undefined} />
-                </F>
-                <F label="Delivery status">
+                <F label="B delivery status">
                   <Select value={m.b_status} onValueChange={(v: any) => setM({ ...m, b_status: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="not_delivered">B has not received currency</SelectItem>
+                      <SelectItem value="not_delivered">Not delivered yet</SelectItem>
                       <SelectItem value="delivered">B confirmed currency received</SelectItem>
                       <SelectItem value="later">Will deliver later</SelectItem>
                     </SelectContent>
                   </Select>
                 </F>
-                <div className="sm:col-span-2">
-                  <F label="Proof / reference (optional)">
-                    <Input value={m.b_proof} onChange={(e) => setM({ ...m, b_proof: e.target.value })} placeholder="Transfer ref, screenshot ID, etc." />
-                  </F>
-                </div>
-                <div className="sm:col-span-2 text-[11px] text-muted-foreground">
-                  B pays <span className="font-mono">{mValueB ? fmt(mValueB, m.counter_currency) : "—"}</span> · receives <span className="font-mono">{mAmtB ? fmt(mAmtB, m.b_currency) : "—"}</span>
-                </div>
-              </div>
-            </StepCard>
+                <F label="A proof / reference (optional)">
+                  <Input value={m.a_proof} onChange={(e) => setM({ ...m, a_proof: e.target.value })} placeholder="Transfer ref, screenshot ID, etc." />
+                </F>
+                <F label="B proof / reference (optional)">
+                  <Input value={m.b_proof} onChange={(e) => setM({ ...m, b_proof: e.target.value })} placeholder="Transfer ref, screenshot ID, etc." />
+                </F>
+              </CardContent>
+            </Card>
           </>
           )}
         </div>
@@ -892,40 +827,55 @@ function NewTradePage() {
           )}
 
           {f.trade_type === "matched" && (
-          <Card className="lg:sticky lg:top-4">
+          <Card className="lg:sticky lg:top-4 border-emerald-200">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="h-4 w-4" />Broker profit</CardTitle>
+              <CardTitle className="text-sm flex items-center gap-2">
+                <TrendingUp className="h-4 w-4" />Profit Summary
+              </CardTitle>
+              <div className="text-[11px] text-muted-foreground">
+                Direct settlement · no ledger routing · updates live.
+              </div>
             </CardHeader>
-            <CardContent className="text-sm space-y-2">
-              <Row label="Rate A" value={mRateA ? `${fmt(mRateA)} ${m.counter_currency}` : "—"} />
-              <Row label="Rate B" value={mRateB ? `${fmt(mRateB)} ${m.counter_currency}` : "—"} />
-              <Row label={`A receives`} value={mValueA ? `${fmt(mValueA, m.counter_currency)}` : "—"} />
-              <Row label={`B pays`} value={mValueB ? `${fmt(mValueB, m.counter_currency)}` : "—"} />
-              <div className="border-t pt-2">
-                <Row
-                  label={`Spread (${m.counter_currency})`}
-                  value={mProfitCounter ? `${fmt(mProfitCounter, m.counter_currency)}` : "—"}
-                  strong
-                  tone={mProfitCounter >= 0 ? "pos" : "neg"}
-                />
-                <Row
-                  label={`≈ in ${m.a_currency}`}
-                  value={mProfitInA ? `${fmt(mProfitInA, m.a_currency)}` : "—"}
-                  tone={mProfitInA >= 0 ? "pos" : "neg"}
-                />
-                <Row label="Margin" value={`${mMarginPct.toFixed(2)}%`} tone={mMarginPct >= 0 ? "pos" : "neg"} />
+            <CardContent className="text-sm space-y-3">
+              <div className="grid grid-cols-2 gap-y-2">
+                <div className="text-muted-foreground text-xs">Buy Rate</div>
+                <div className="font-mono text-right">{mRateA ? fmt(mRateA) : "—"}</div>
+                <div className="text-muted-foreground text-xs">Sell Rate</div>
+                <div className="font-mono text-right">{mRateB ? fmt(mRateB) : "—"}</div>
+                <div className="text-muted-foreground text-xs">Spread / unit</div>
+                <div className="font-mono text-right">
+                  {spreadPerUnit ? `${fmt(spreadPerUnit)} ${m.counter_currency}/${m.a_currency}` : "—"}
+                </div>
+                <div className="text-muted-foreground text-xs">Amount</div>
+                <div className="font-mono text-right">{mAmtA ? `${fmt(mAmtA)} ${m.a_currency}` : "—"}</div>
               </div>
-              <div className="border-t pt-2">
-                <F label="Book profit in">
-                  <Select value={m.book_profit_in} onValueChange={(v: any) => setM({ ...m, book_profit_in: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="counter">{m.counter_currency} (counter)</SelectItem>
-                      <SelectItem value="primary">{m.a_currency} (traded currency)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </F>
+
+              <div className="rounded-lg border bg-muted/40 p-3 text-center">
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Total Profit
+                </div>
+                <div className={`font-mono text-lg font-semibold ${mProfitCounter >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+                  {mProfitCounter ? `${fmt(mProfitCounter)} ${m.counter_currency}` : "—"}
+                </div>
+                <div className="mt-2 text-[11px] uppercase tracking-wide text-muted-foreground">
+                  ≈ Owner earnings (AED)
+                </div>
+                <div className={`font-mono text-3xl font-bold leading-tight ${profitAED >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+                  {profitAED ? fmt(profitAED, "AED") : "—"}
+                  <span className="text-sm font-medium ml-1">AED</span>
+                </div>
+                {!profitAED && mProfitCounter > 0 && m.counter_currency !== "AED" && (
+                  <div className="text-[11px] text-amber-700 mt-1">
+                    Waiting for live AED rate to convert.
+                  </div>
+                )}
+                {mMarginPct !== 0 && (
+                  <div className={`text-[11px] mt-1 ${mMarginPct >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+                    Margin {mMarginPct.toFixed(2)}%
+                  </div>
+                )}
               </div>
+
               <div className="border-t pt-2 grid grid-cols-2 gap-2">
                 <F label={`Milad %`}>
                   <Input type="number" value={f.milad_pct}
@@ -933,15 +883,22 @@ function NewTradePage() {
                 </F>
                 <F label="Ali %"><Input type="number" value={f.ali_pct} disabled /></F>
               </div>
+
               <div className="flex flex-col gap-2 pt-3 border-t">
                 <Button
-                  disabled={!canSubmitMatched || submitMatched.isPending}
-                  onClick={() => submitMatched.mutate()}
+                  disabled={submitMatched.isPending}
+                  onClick={() => {
+                    if (!canSubmitMatched) {
+                      toast.error("Fill both customers, amount, buy rate and sell rate.");
+                      return;
+                    }
+                    submitMatched.mutate();
+                  }}
                 >
-                  Save Matched Trade
+                  Close Trade
                 </Button>
                 <div className="text-[11px] text-muted-foreground">
-                  Creates a trade cycle with a buy leg from A and a sell leg to B. Neither side moves through our balances — profit is booked as your spread.
+                  Records the deal for reporting. No accounts are debited or credited — profit is your spread.
                 </div>
               </div>
             </CardContent>
