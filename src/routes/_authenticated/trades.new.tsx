@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,7 @@ import { UseMarketRateButton } from "@/components/use-market-rate-button";
 import { SmartTradeCalculator } from "@/components/smart-trade-calculator";
 import { convertAmount } from "@/lib/trade-math";
 import { toast } from "sonner";
-import { ArrowLeft, ChevronsUpDown, TrendingUp, ArrowLeftRight, Warehouse } from "lucide-react";
+import { ArrowLeft, ChevronsUpDown, TrendingUp, ArrowLeftRight, Warehouse, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/trades/new")({ component: NewTradePage });
 
@@ -153,12 +153,102 @@ function NewTradePage() {
   const findCustomerAcct = (customerId: string, currency: string) =>
     accounts.find((a: any) => a.holder_customer_id === customerId && a.currency === currency && (a.account_type === "person_holding" || a.account_type === "customer_wallet"))?.id ?? "";
 
-  const canSubmit =
-    giveAmt > 0 && sellRate > 0 &&
-    (!isBuyNow || buyRate > 0) &&
-    !!f.give_from_account_id &&
-    !!f.receive_into_account_id &&
-    (!isBuyNow || (!!f.settlement_paid_from_account_id && !!f.settlement_paid_to_account_id));
+  // Auto-select ledger accounts based on trade context so the user rarely
+  // needs to open the Advanced section.
+  const pickAccount = (opts: {
+    currency: string;
+    holderCustomerId?: string;
+    ownerFallback?: string;
+    prefer?: string[]; // account_type preference order
+  }) => {
+    const { currency, holderCustomerId, ownerFallback, prefer } = opts;
+    const pool = accounts.filter((a: any) => a.currency === currency);
+    if (holderCustomerId) {
+      const found = pool.find((a: any) => a.holder_customer_id === holderCustomerId);
+      if (found) return found.id as string;
+    }
+    if (prefer?.length) {
+      for (const t of prefer) {
+        const found = pool.find((a: any) => a.account_type === t && (!ownerFallback || !a.owner || a.owner === ownerFallback));
+        if (found) return found.id as string;
+      }
+    }
+    if (ownerFallback) {
+      const found = pool.find((a: any) => a.owner === ownerFallback);
+      if (found) return found.id as string;
+    }
+    return pool[0]?.id ?? "";
+  };
+
+  useEffect(() => {
+    if (f.trade_type !== "inventory" || accounts.length === 0) return;
+    const patch: Partial<typeof f> = {};
+    if (!f.give_from_account_id) {
+      const id = pickAccount({
+        currency: f.give_currency,
+        ownerFallback: f.owner === "ali" ? "ali" : f.owner === "milad" ? "milad" : undefined,
+        prefer: ["cash", "person_holding", "bank"],
+      });
+      if (id) patch.give_from_account_id = id;
+    }
+    if (!f.receive_into_account_id) {
+      const id = pickAccount({
+        currency: f.receive_currency,
+        holderCustomerId: f.receive_from_customer_id || undefined,
+        ownerFallback: f.owner === "ali" ? "ali" : f.owner === "milad" ? "milad" : undefined,
+        prefer: ["bank", "cash", "customer_wallet", "person_holding"],
+      });
+      if (id) patch.receive_into_account_id = id;
+    }
+    if (isBuyNow) {
+      if (!f.settlement_paid_from_account_id) {
+        const path = f.settlement_path;
+        const owner =
+          path === "ali_pays_supplier" ? "ali" :
+          path === "milad_pays_supplier" ? "milad" :
+          undefined;
+        const holder =
+          path === "customer_pays_supplier" ? (f.give_to_customer_id || undefined) : undefined;
+        const id = pickAccount({
+          currency: f.settlement_currency,
+          holderCustomerId: holder,
+          ownerFallback: owner,
+          prefer: owner ? ["person_holding", "cash"] : ["bank", "cash"],
+        });
+        if (id) patch.settlement_paid_from_account_id = id;
+      }
+      if (!f.settlement_paid_to_account_id && f.bought_from_customer_id) {
+        const id = findCustomerAcct(f.bought_from_customer_id, f.settlement_currency);
+        if (id) patch.settlement_paid_to_account_id = id;
+      }
+    }
+    if (Object.keys(patch).length) setF((cur) => ({ ...cur, ...patch }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    f.trade_type, f.give_currency, f.receive_currency, f.settlement_currency,
+    f.owner, f.settlement_path, f.give_to_customer_id, f.receive_from_customer_id,
+    f.bought_from_customer_id, isBuyNow, accounts.length,
+  ]);
+
+  // Validation checklist — every item shown to the user with a clear reason.
+  type Check = { key: string; label: string; ok: boolean; hint?: string };
+  const checks: Check[] = f.trade_type !== "inventory" ? [] : [
+    { key: "give_currency", label: "Currency given selected", ok: !!f.give_currency },
+    { key: "give_amount", label: "Give amount entered", ok: giveAmt > 0, hint: "Enter the amount you are handing over." },
+    { key: "receive_currency", label: "Currency received selected", ok: !!f.receive_currency },
+    { key: "sell_rate", label: "Sell rate entered", ok: sellRate > 0, hint: "Enter the rate at which you sell." },
+    ...(isBuyNow ? [{ key: "buy_rate", label: "Buy rate entered", ok: buyRate > 0, hint: "Enter the rate at which you bought." } as Check] : []),
+    { key: "give_from_account_id", label: "Give-from account set", ok: !!f.give_from_account_id, hint: `We couldn't find a ${f.give_currency} account — open Advanced Accounting and select one.` },
+    { key: "receive_into_account_id", label: "Receive-into account set", ok: !!f.receive_into_account_id, hint: `No ${f.receive_currency} account found — open Advanced Accounting.` },
+    ...(isBuyNow ? [
+      { key: "settlement_paid_from_account_id", label: "Settlement paid-from account set", ok: !!f.settlement_paid_from_account_id, hint: "Choose whose account pays the supplier in Advanced Accounting." } as Check,
+      { key: "settlement_paid_to_account_id", label: "Settlement paid-to account set", ok: !!f.settlement_paid_to_account_id, hint: "Select the supplier's receiving account (or free-text supplier name + create their account)." } as Check,
+    ] : []),
+    { key: "profit", label: "Profit calculated", ok: !isBuyNow || (sellRate > 0 && buyRate > 0), hint: "Profit needs both buy and sell rates." },
+    { key: "split", label: "Milad + Ali % = 100", ok: Math.abs(Number(f.milad_pct) + Number(f.ali_pct) - 100) < 0.01 },
+  ];
+  const missing = checks.filter((c) => !c.ok);
+  const canSubmit = missing.length === 0;
 
   const previewCode = useMemo(() => {
     const y = new Date(f.entry_date).getFullYear();
@@ -167,8 +257,7 @@ function NewTradePage() {
 
   const submit = useMutation({
     mutationFn: async (opts: { closeNow: boolean }) => {
-      if (!canSubmit) throw new Error("Fill all required fields (amounts, rates, and accounts in Advanced Accounts).");
-      if (Math.abs(Number(f.milad_pct) + Number(f.ali_pct) - 100) > 0.01) throw new Error("Milad % + Ali % must equal 100");
+      if (!canSubmit) throw new Error(`Cannot close trade — missing: ${missing.map((m) => m.label).join(", ")}`);
 
       const { data: u } = await supabase.auth.getUser();
       const uid = u.user?.id;
@@ -561,13 +650,13 @@ function NewTradePage() {
           </StepCard>
 
           {/* Advanced accounts */}
-          <Collapsible>
+          <Collapsible defaultOpen={false}>
             <Card>
               <CardHeader className="pb-3">
                 <CollapsibleTrigger className="flex w-full items-center justify-between text-left">
                   <div>
-                    <CardTitle className="text-sm">Advanced — accounts &amp; ledger routing</CardTitle>
-                    <div className="text-[11px] text-muted-foreground">Where do the funds physically move? Required to save.</div>
+                    <CardTitle className="text-sm">Advanced Accounting — ledger routing</CardTitle>
+                    <div className="text-[11px] text-muted-foreground">Auto-selected from the trade. Only open this if the accounts below are wrong.</div>
                   </div>
                   <ChevronsUpDown className="h-4 w-4 opacity-60" />
                 </CollapsibleTrigger>
