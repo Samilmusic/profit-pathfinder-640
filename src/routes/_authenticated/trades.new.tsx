@@ -661,126 +661,88 @@ function NewTradePage() {
 
           {f.trade_type === "matched" && (
           <>
-          {/* Smart calculator for the sell leg (Customer B side) */}
-          <SmartTradeCalculator
-            giveCurrency={m.a_currency}
-            giveAmount={mAmtB}
-            receiveCurrency={m.counter_currency}
-            userRate={mRateB}
-            side="sell"
-            buyRate={mRateA > 0 ? mRateA : null}
-            sellRate={mRateB > 0 ? mRateB : null}
-            customerKnown={!!m.b_customer_id}
-          />
-
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Rate quoting</CardTitle>
-                <div className="text-[11px] text-muted-foreground">Both rates are expressed in this counter currency (e.g. IRR per 1 AED).</div>
+                <CardTitle className="text-sm">Direct settlement</CardTitle>
+                <div className="text-[11px] text-muted-foreground">
+                  Customer A delivers currency directly to Customer B. Money never enters our accounts,
+                  inventory is not affected. We only earn the spread.
+                </div>
               </CardHeader>
               <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <F label="Counter currency (rates quoted in)">
-                  <Select value={m.counter_currency} onValueChange={(v) => setM({ ...m, counter_currency: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>{CURRENCIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                  </Select>
-                </F>
-              </CardContent>
-            </Card>
-
-            <StepCard step={1} title="Customer A · Supplier" subtitle="Who is supplying the currency?">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <F label="Customer">
+                <F label="Customer A · Supplier">
                   <Select value={m.a_customer_id} onValueChange={(v) => setM({ ...m, a_customer_id: v })}>
                     <SelectTrigger><SelectValue placeholder="Select supplier" /></SelectTrigger>
                     <SelectContent>{(customers.data ?? []).map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                   </Select>
                 </F>
-                <F label="Currency">
+                <F label="Customer B · Buyer">
+                  <Select value={m.b_customer_id} onValueChange={(v) => setM({ ...m, b_customer_id: v })}>
+                    <SelectTrigger><SelectValue placeholder="Select buyer" /></SelectTrigger>
+                    <SelectContent>{(customers.data ?? []).map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                  </Select>
+                </F>
+                <F label="Currency traded">
                   <Select value={m.a_currency} onValueChange={(v) => setM({ ...m, a_currency: v, b_currency: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>{CURRENCIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                   </Select>
                 </F>
                 <F label={`Amount (${m.a_currency})`}>
-                  <NumberInput currency={m.a_currency} value={m.a_amount} onChange={(e) => setM({ ...m, a_amount: e.target.value, b_amount: m.b_amount || e.target.value })} placeholder="e.g. 70,000" />
+                  <NumberInput
+                    currency={m.a_currency}
+                    value={m.a_amount}
+                    onChange={(e) => setM({ ...m, a_amount: e.target.value, b_amount: e.target.value })}
+                    placeholder="e.g. 70,000"
+                  />
                 </F>
-                <F label={`Rate A (${m.counter_currency} per 1 ${m.a_currency})`}>
+                <F label="Settlement currency (rates quoted in)">
+                  <Select value={m.counter_currency} onValueChange={(v) => setM({ ...m, counter_currency: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{CURRENCIES.filter((c) => c !== m.a_currency).map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                  </Select>
+                </F>
+                <div className="hidden sm:block" />
+                <F label={`Buy rate (${m.counter_currency} per 1 ${m.a_currency})`} hint="Rate at which A supplies.">
                   <div className="flex gap-2 items-center">
                     <NumberInput rate value={m.a_rate} onChange={(e) => setM({ ...m, a_rate: e.target.value })} />
                     <UseMarketRateButton currency={m.a_currency} which="buy" onApply={(r) => setM({ ...m, a_rate: String(r) })} />
                   </div>
                 </F>
-                <F label={`Settlement account (A's ${m.counter_currency} account)`} hint="Where A receives the counter currency.">
-                  <AccountSelect value={m.a_account_id} onChange={(v) => setM({ ...m, a_account_id: v })} currency={m.counter_currency} holderCustomerId={m.a_customer_id || undefined} />
+                <F label={`Sell rate (${m.counter_currency} per 1 ${m.a_currency})`} hint="Rate at which B buys.">
+                  <div className="flex gap-2 items-center">
+                    <NumberInput rate value={m.b_rate} onChange={(e) => setM({ ...m, b_rate: e.target.value })} />
+                    <UseMarketRateButton currency={m.a_currency} which="sell" onApply={(r) => setM({ ...m, b_rate: String(r) })} />
+                  </div>
                 </F>
-                <F label="Payment status">
+                <F label="A payment status">
                   <Select value={m.a_status} onValueChange={(v: any) => setM({ ...m, a_status: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="not_received">A has not been paid</SelectItem>
+                      <SelectItem value="not_received">Not settled yet</SelectItem>
                       <SelectItem value="received">A confirmed payment received</SelectItem>
                       <SelectItem value="later">Will settle later</SelectItem>
                     </SelectContent>
                   </Select>
                 </F>
-                <div className="sm:col-span-2">
-                  <F label="Proof / reference (optional)">
-                    <Input value={m.a_proof} onChange={(e) => setM({ ...m, a_proof: e.target.value })} placeholder="Transfer ref, screenshot ID, etc." />
-                  </F>
-                </div>
-                <div className="sm:col-span-2 text-[11px] text-muted-foreground">
-                  A supplies <span className="font-mono">{mAmtA ? fmt(mAmtA, m.a_currency) : "—"}</span> · receives <span className="font-mono">{mValueA ? fmt(mValueA, m.counter_currency) : "—"}</span>
-                </div>
-              </div>
-            </StepCard>
-
-            <StepCard step={2} title="Customer B · Buyer" subtitle="Who is receiving the currency?">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <F label="Customer">
-                  <Select value={m.b_customer_id} onValueChange={(v) => setM({ ...m, b_customer_id: v })}>
-                    <SelectTrigger><SelectValue placeholder="Select buyer" /></SelectTrigger>
-                    <SelectContent>{(customers.data ?? []).map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-                  </Select>
-                </F>
-                <F label="Currency">
-                  <Select value={m.b_currency} onValueChange={(v) => setM({ ...m, b_currency: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>{CURRENCIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                  </Select>
-                </F>
-                <F label={`Amount (${m.b_currency})`}>
-                  <NumberInput currency={m.b_currency} value={m.b_amount} onChange={(e) => setM({ ...m, b_amount: e.target.value })} placeholder="e.g. 70,000" />
-                </F>
-                <F label={`Rate B (${m.counter_currency} per 1 ${m.b_currency})`}>
-                  <div className="flex gap-2 items-center">
-                    <NumberInput rate value={m.b_rate} onChange={(e) => setM({ ...m, b_rate: e.target.value })} />
-                    <UseMarketRateButton currency={m.b_currency} which="sell" onApply={(r) => setM({ ...m, b_rate: String(r) })} />
-                  </div>
-                </F>
-                <F label={`Settlement account (B's ${m.counter_currency} account)`} hint="Where B pays the counter currency from.">
-                  <AccountSelect value={m.b_account_id} onChange={(v) => setM({ ...m, b_account_id: v })} currency={m.counter_currency} holderCustomerId={m.b_customer_id || undefined} />
-                </F>
-                <F label="Delivery status">
+                <F label="B delivery status">
                   <Select value={m.b_status} onValueChange={(v: any) => setM({ ...m, b_status: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="not_delivered">B has not received currency</SelectItem>
+                      <SelectItem value="not_delivered">Not delivered yet</SelectItem>
                       <SelectItem value="delivered">B confirmed currency received</SelectItem>
                       <SelectItem value="later">Will deliver later</SelectItem>
                     </SelectContent>
                   </Select>
                 </F>
-                <div className="sm:col-span-2">
-                  <F label="Proof / reference (optional)">
-                    <Input value={m.b_proof} onChange={(e) => setM({ ...m, b_proof: e.target.value })} placeholder="Transfer ref, screenshot ID, etc." />
-                  </F>
-                </div>
-                <div className="sm:col-span-2 text-[11px] text-muted-foreground">
-                  B pays <span className="font-mono">{mValueB ? fmt(mValueB, m.counter_currency) : "—"}</span> · receives <span className="font-mono">{mAmtB ? fmt(mAmtB, m.b_currency) : "—"}</span>
-                </div>
-              </div>
-            </StepCard>
+                <F label="A proof / reference (optional)">
+                  <Input value={m.a_proof} onChange={(e) => setM({ ...m, a_proof: e.target.value })} placeholder="Transfer ref, screenshot ID, etc." />
+                </F>
+                <F label="B proof / reference (optional)">
+                  <Input value={m.b_proof} onChange={(e) => setM({ ...m, b_proof: e.target.value })} placeholder="Transfer ref, screenshot ID, etc." />
+                </F>
+              </CardContent>
+            </Card>
           </>
           )}
         </div>
