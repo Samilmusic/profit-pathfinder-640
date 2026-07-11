@@ -32,6 +32,27 @@ export function pivotCurrency(giveCcy: string, receiveCcy: string): string {
 }
 
 /**
+ * Derive the real operation from currency direction, ignoring UI labels.
+ *
+ *   Give IRR, receive foreign  → BUY that foreign currency
+ *   Give foreign, receive IRR  → SELL that foreign currency
+ *   Cross (no IRR side)        → treat as SELL of the give side
+ */
+export function deriveOperation(
+  giveCcy: string,
+  receiveCcy: string,
+): { side: "buy" | "sell"; pivot: string; verb: string } {
+  if (giveCcy === "IRR" && receiveCcy !== "IRR") {
+    return { side: "buy", pivot: receiveCcy, verb: `Buying ${receiveCcy}` };
+  }
+  if (receiveCcy === "IRR" && giveCcy !== "IRR") {
+    return { side: "sell", pivot: giveCcy, verb: `Selling ${giveCcy}` };
+  }
+  // Cross-currency (rare here): treat as selling the give side for the receive side.
+  return { side: "sell", pivot: giveCcy, verb: `Selling ${giveCcy} for ${receiveCcy}` };
+}
+
+/**
  * Convert giveAmount into the receive currency using the entered rate.
  * userRate is IRR-per-foreign for the pivot currency.
  * For cross-trades a second market rate for the receive side is required.
@@ -89,12 +110,12 @@ export function compareToMarket(
     return { diff, pct, tone: "neutral", label: "At market", emoji: "⚪" };
   }
   if (favourable) {
-    if (abs >= 1.5) return { diff, pct, tone: "excellent", label: side === "sell" ? "Excellent sale" : "Excellent buy", emoji: "🟢" };
-    if (abs >= 0.5) return { diff, pct, tone: "good", label: side === "sell" ? "Good sale" : "Good buy", emoji: "🟢" };
+    if (abs >= 1.5) return { diff, pct, tone: "excellent", label: side === "sell" ? "Excellent Sale" : "Excellent Buy", emoji: "🟢" };
+    if (abs >= 0.5) return { diff, pct, tone: "good", label: side === "sell" ? "Good Sale" : "Good Buy", emoji: "🟢" };
     return { diff, pct, tone: "good", label: "Slight edge", emoji: "🟢" };
   }
-  if (abs >= 1.5) return { diff, pct, tone: "terrible", label: side === "sell" ? "Bad sale" : "Bad buy", emoji: "🔴" };
-  if (abs >= 0.5) return { diff, pct, tone: "bad", label: "Below market", emoji: "🟠" };
+  if (abs >= 1.5) return { diff, pct, tone: "terrible", label: side === "sell" ? "Bad Sale" : "Bad Buy", emoji: "🔴" };
+  if (abs >= 0.5) return { diff, pct, tone: "bad", label: side === "sell" ? "Cheap Sale" : "Expensive Buy", emoji: "🟠" };
   return { diff, pct, tone: "bad", label: "Slightly off", emoji: "🟠" };
 }
 
