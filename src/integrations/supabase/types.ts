@@ -23,7 +23,7 @@ export type Database = {
           card_number: string | null
           created_at: string
           created_by: string | null
-          currency: string
+          currency: string | null
           deleted_at: string | null
           holder_customer_id: string | null
           holder_name: string | null
@@ -34,9 +34,11 @@ export type Database = {
           is_active: boolean
           low_balance_threshold: number | null
           name: string
+          node_type: Database["public"]["Enums"]["account_node_type"]
           notes: string | null
           opening_balance: number
           owner: Database["public"]["Enums"]["account_owner"]
+          parent_id: string | null
           updated_at: string
         }
         Insert: {
@@ -47,7 +49,7 @@ export type Database = {
           card_number?: string | null
           created_at?: string
           created_by?: string | null
-          currency: string
+          currency?: string | null
           deleted_at?: string | null
           holder_customer_id?: string | null
           holder_name?: string | null
@@ -58,9 +60,11 @@ export type Database = {
           is_active?: boolean
           low_balance_threshold?: number | null
           name: string
+          node_type?: Database["public"]["Enums"]["account_node_type"]
           notes?: string | null
           opening_balance?: number
           owner?: Database["public"]["Enums"]["account_owner"]
+          parent_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -71,7 +75,7 @@ export type Database = {
           card_number?: string | null
           created_at?: string
           created_by?: string | null
-          currency?: string
+          currency?: string | null
           deleted_at?: string | null
           holder_customer_id?: string | null
           holder_name?: string | null
@@ -82,9 +86,11 @@ export type Database = {
           is_active?: boolean
           low_balance_threshold?: number | null
           name?: string
+          node_type?: Database["public"]["Enums"]["account_node_type"]
           notes?: string | null
           opening_balance?: number
           owner?: Database["public"]["Enums"]["account_owner"]
+          parent_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -94,6 +100,34 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "accounts_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "accounts_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
           },
         ]
       }
@@ -2757,6 +2791,14 @@ export type Database = {
         }
         Relationships: []
       }
+      account_hierarchy_balances: {
+        Row: {
+          account_id: string | null
+          balance: number | null
+          currency: string | null
+        }
+        Relationships: []
+      }
       company_vs_customer_funds: {
         Row: {
           balance: number | null
@@ -3343,6 +3385,7 @@ export type Database = {
       sync_sell_received_lot: { Args: { _sell_id: string }; Returns: undefined }
     }
     Enums: {
+      account_node_type: "box" | "location" | "currency_account"
       account_owner: "milad" | "ali" | "shared" | "other"
       account_type:
         | "cash"
@@ -3601,6 +3644,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      account_node_type: ["box", "location", "currency_account"],
       account_owner: ["milad", "ali", "shared", "other"],
       account_type: [
         "cash",

@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,11 +11,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { NumberInput } from "@/components/number-input";
 import { CURRENCIES, OWNERS, fmt } from "@/lib/exchange";
 import { toast } from "sonner";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Package, MapPin, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/accounts/new")({
   component: NewAccountPage,
+  validateSearch: (s: Record<string, unknown>) => ({
+    mode: (s.mode as "box" | "location" | "currency") || undefined,
+    parent: (s.parent as string) || undefined,
+    box: (s.box as string) || undefined,
+  }),
 });
 
 /** User-facing type kinds → mapped to DB `account_type` values on save */
@@ -52,6 +57,31 @@ function mapDbType(kind: Kind, currency: string): string {
 function NewAccountPage() {
   const nav = useNavigate();
   const qc = useQueryClient();
+  const search = Route.useSearch();
+
+  const [nodeType, setNodeType] = useState<"box" | "location" | "currency">(
+    search.mode === "box" ? "box" : search.mode === "location" ? "location" : "currency",
+  );
+  const [parentId, setParentId] = useState<string>(search.parent ?? "");
+
+  // Load existing boxes/locations for parent picker
+  const treeQ = useQuery({
+    queryKey: ["accounts_picker_tree"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("accounts")
+        .select("id, name, node_type, parent_id")
+        .is("deleted_at", null)
+        .eq("is_active", true)
+        .in("node_type", ["box", "location"])
+        .order("name");
+      if (error) throw error;
+      return data as { id: string; name: string; node_type: string; parent_id: string | null }[];
+    },
+  });
+
+  const boxes = useMemo(() => (treeQ.data ?? []).filter((n) => n.node_type === "box"), [treeQ.data]);
+  const locations = useMemo(() => (treeQ.data ?? []).filter((n) => n.node_type === "location"), [treeQ.data]);
 
   const [kind, setKind] = useState<Kind>("cash");
   const [name, setName] = useState("");
@@ -75,6 +105,13 @@ function NewAccountPage() {
   // Person
   const [person, setPerson] = useState("ali");
   const [personName, setPersonName] = useState(""); // e.g. customer name for "customer"/"other"
+
+  const parentBoxForLocation = useMemo(() => {
+    if (nodeType !== "currency") return "";
+    if (!parentId) return "";
+    const loc = locations.find((l) => l.id === parentId);
+    return loc?.parent_id ?? "";
+  }, [nodeType, parentId, locations]);
 
   const personLabel = useMemo(() => {
     if (person === "ali") return "Ali";
@@ -100,17 +137,62 @@ function NewAccountPage() {
 
   const create = useMutation({
     mutationFn: async () => {
+      const { data: u } = await supabase.auth.getUser();
+
+      // BOX ------------------------------------------------------------
+      if (nodeType === "box") {
+        const finalName = name.trim();
+        if (!finalName) throw new Error("Box name is required (e.g. Milad Box)");
+        const { error } = await supabase.from("accounts").insert({
+          name: finalName,
+          node_type: "box" as any,
+          account_type: "other" as any,
+          currency: null,
+          owner: (owner as any) || "shared",
+          opening_balance: 0,
+          notes: notes || null,
+          created_by: u.user?.id,
+        } as any);
+        if (error) throw error;
+        return;
+      }
+
+      // LOCATION -------------------------------------------------------
+      if (nodeType === "location") {
+        const finalName = name.trim();
+        if (!finalName) throw new Error("Location name is required (e.g. Cash, ENBD, Wio)");
+        if (!parentId) throw new Error("Pick which Box this location belongs to");
+        const { error } = await supabase.from("accounts").insert({
+          name: finalName,
+          node_type: "location" as any,
+          parent_id: parentId,
+          account_type: kind === "bank" ? "aed_bank" : "other" as any,
+          currency: null,
+          owner: (owner as any) || "shared",
+          opening_balance: 0,
+          bank_name: bankName || null,
+          holder_name: holderName || null,
+          notes: notes || null,
+          created_by: u.user?.id,
+        } as any);
+        if (error) throw error;
+        return;
+      }
+
+      // CURRENCY ACCOUNT (leaf) ---------------------------------------
       const finalName = (kind === "person" && !name.trim()) ? autoName : name.trim();
       if (!finalName) throw new Error("Account name is required");
+      if (!parentId) throw new Error("Pick which Location this currency account belongs to");
       if (kind === "bank" && !bankName.trim()) throw new Error("Bank name is required");
       if (kind === "crypto" && !walletAddress.trim()) throw new Error("Wallet address is required");
 
-      const { data: u } = await supabase.auth.getUser();
       const account_type = mapDbType(kind, currency);
       const finalOwner = kind === "person" ? person : owner;
 
       const payload: any = {
         name: finalName,
+        node_type: "currency_account",
+        parent_id: parentId,
         account_type,
         currency,
         owner: finalOwner as any,
@@ -144,7 +226,10 @@ function NewAccountPage() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Account created");
+      toast.success(
+        nodeType === "box" ? "Box created" :
+        nodeType === "location" ? "Location created" : "Account created",
+      );
       qc.invalidateQueries();
       nav({ to: "/accounts" });
     },
@@ -162,13 +247,125 @@ function NewAccountPage() {
             <Link to="/accounts" aria-label="Back"><ArrowLeft className="h-5 w-5" /></Link>
           </Button>
           <div className="min-w-0 flex-1">
-            <h1 className="truncate text-lg font-semibold">New Account</h1>
-            <p className="truncate text-xs text-muted-foreground">Cash box, bank account, crypto wallet, or cash with a person</p>
+            <h1 className="truncate text-lg font-semibold">
+              {nodeType === "box" ? "New Box" : nodeType === "location" ? "New Location" : "New Currency Account"}
+            </h1>
+            <p className="truncate text-xs text-muted-foreground">
+              Box → Location → Currency. Balances roll up automatically.
+            </p>
           </div>
         </div>
       </div>
 
       <div className="mx-auto max-w-2xl px-4 py-4 space-y-5">
+        {/* What are you creating? */}
+        <section className="space-y-2">
+          <Label className="text-xs uppercase tracking-wide text-muted-foreground">What are you creating?</Label>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { k: "box" as const, icon: <Package className="h-4 w-4" />, label: "Box", hint: "Milad Box, Ali Box…" },
+              { k: "location" as const, icon: <MapPin className="h-4 w-4" />, label: "Location", hint: "Cash, ENBD, Safe…" },
+              { k: "currency" as const, icon: <Wallet className="h-4 w-4" />, label: "Currency", hint: "AED, USD, IRR…" },
+            ].map((o) => (
+              <button
+                key={o.k}
+                type="button"
+                onClick={() => setNodeType(o.k)}
+                className={cn(
+                  "flex flex-col items-start gap-1 rounded-lg border bg-card p-3 text-left transition",
+                  nodeType === o.k ? "border-primary ring-2 ring-primary/30" : "hover:bg-accent",
+                )}
+              >
+                <div className="flex items-center gap-1.5">{o.icon}<span className="text-sm font-medium">{o.label}</span></div>
+                <div className="text-[10px] text-muted-foreground">{o.hint}</div>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* Parent picker */}
+        {nodeType === "location" && (
+          <F label="Parent Box *">
+            <Select value={parentId} onValueChange={setParentId}>
+              <SelectTrigger className="h-11 text-base"><SelectValue placeholder={boxes.length ? "Pick a Box" : "No boxes yet — create one first"} /></SelectTrigger>
+              <SelectContent>
+                {boxes.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </F>
+        )}
+        {nodeType === "currency" && (
+          <F label="Parent Location *">
+            <Select value={parentId} onValueChange={setParentId}>
+              <SelectTrigger className="h-11 text-base"><SelectValue placeholder={locations.length ? "Pick a location" : "No locations yet — create one first"} /></SelectTrigger>
+              <SelectContent>
+                {locations.map((l) => {
+                  const box = boxes.find((b) => b.id === l.parent_id);
+                  return <SelectItem key={l.id} value={l.id}>{box ? `${box.name} → ${l.name}` : l.name}</SelectItem>;
+                })}
+              </SelectContent>
+            </Select>
+            {parentBoxForLocation && <p className="text-[11px] text-muted-foreground">Rolls up into <b>{boxes.find(b => b.id === parentBoxForLocation)?.name}</b></p>}
+          </F>
+        )}
+
+        {/* BOX form */}
+        {nodeType === "box" && (
+          <section className="space-y-3">
+            <F label="Box name *">
+              <Input value={name} onChange={(e) => setName(e.target.value)} className="h-11 text-base" placeholder="e.g. Milad Box, Ali Box, Company Box" required />
+            </F>
+            <F label="Owner">
+              <Select value={owner} onValueChange={setOwner}>
+                <SelectTrigger className="h-11 text-base"><SelectValue /></SelectTrigger>
+                <SelectContent>{OWNERS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
+              </Select>
+            </F>
+            <F label="Notes"><Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} className="text-base" placeholder="Optional" /></F>
+          </section>
+        )}
+
+        {/* LOCATION form */}
+        {nodeType === "location" && (
+          <section className="space-y-3">
+            <F label="Location name *">
+              <Input value={name} onChange={(e) => setName(e.target.value)} className="h-11 text-base" placeholder="e.g. Cash, ENBD, Wio, Safe, Office Drawer" required />
+            </F>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <F label="Kind">
+                <Select value={kind} onValueChange={(v) => setKind(v as Kind)}>
+                  <SelectTrigger className="h-11 text-base"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">Cash</SelectItem>
+                    <SelectItem value="bank">Bank</SelectItem>
+                    <SelectItem value="crypto">Crypto Wallet</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </F>
+              <F label="Owner">
+                <Select value={owner} onValueChange={setOwner}>
+                  <SelectTrigger className="h-11 text-base"><SelectValue /></SelectTrigger>
+                  <SelectContent>{OWNERS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
+                </Select>
+              </F>
+            </div>
+            {kind === "bank" && (
+              <div className="grid gap-3 sm:grid-cols-2 rounded-lg border bg-card p-3">
+                <F label="Bank name">
+                  <Input list="acc-bank-suggestions" value={bankName} onChange={(e) => setBankName(e.target.value)} className="h-11 text-base" placeholder="ENBD, Mashreq…" />
+                  <datalist id="acc-bank-suggestions">{BANK_SUGGESTIONS.map((b) => <option key={b} value={b} />)}</datalist>
+                </F>
+                <F label="Account holder"><Input value={holderName} onChange={(e) => setHolderName(e.target.value)} className="h-11 text-base" /></F>
+              </div>
+            )}
+            <F label="Notes"><Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} className="text-base" placeholder="Optional" /></F>
+            <p className="text-[11px] text-muted-foreground">Locations don't hold balance themselves — add one or more currencies inside.</p>
+          </section>
+        )}
+
+        {/* CURRENCY ACCOUNT (leaf) form */}
+        {nodeType === "currency" && (<>
         {/* Type picker */}
         <section className="space-y-2">
           <Label className="text-xs uppercase tracking-wide text-muted-foreground">Account type</Label>
@@ -309,6 +506,7 @@ function NewAccountPage() {
             </div>
           </CardContent>
         </Card>
+        </>)}
       </div>
 
       {/* Sticky action bar */}
@@ -319,7 +517,7 @@ function NewAccountPage() {
         <div className="mx-auto flex max-w-2xl items-center gap-2 px-3 py-2">
           <Button asChild variant="ghost" className="h-11 px-3 shrink-0"><Link to="/accounts">Cancel</Link></Button>
           <Button className="h-11 flex-1" disabled={create.isPending} onClick={() => create.mutate()}>
-            {create.isPending ? "Saving…" : "Save Account"}
+            {create.isPending ? "Saving…" : nodeType === "box" ? "Create Box" : nodeType === "location" ? "Create Location" : "Save Account"}
           </Button>
         </div>
       </div>
