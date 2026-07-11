@@ -432,6 +432,18 @@ function NewTradePage() {
 
           {f.trade_type === "inventory" && (
           <>
+          {/* Smart calculator — direction-aware, market compare, AI score */}
+          <SmartTradeCalculator
+            giveCurrency={f.give_currency}
+            giveAmount={giveAmt}
+            receiveCurrency={f.receive_currency}
+            userRate={sellRate}
+            side="sell"
+            buyRate={isBuyNow && buyRate > 0 ? buyRate : null}
+            sellRate={sellRate > 0 ? sellRate : null}
+            customerKnown={!!f.give_to_customer_id}
+          />
+
           {/* STEP 1 — Give */}
           <StepCard step={1} title="Currency we give" subtitle="What are we handing over?">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -587,6 +599,18 @@ function NewTradePage() {
 
           {f.trade_type === "matched" && (
           <>
+          {/* Smart calculator for the sell leg (Customer B side) */}
+          <SmartTradeCalculator
+            giveCurrency={m.a_currency}
+            giveAmount={mAmtB}
+            receiveCurrency={m.counter_currency}
+            userRate={mRateB}
+            side="sell"
+            buyRate={mRateA > 0 ? mRateA : null}
+            sellRate={mRateB > 0 ? mRateB : null}
+            customerKnown={!!m.b_customer_id}
+          />
+
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm">Rate quoting</CardTitle>
