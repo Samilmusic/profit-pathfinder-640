@@ -827,40 +827,55 @@ function NewTradePage() {
           )}
 
           {f.trade_type === "matched" && (
-          <Card className="lg:sticky lg:top-4">
+          <Card className="lg:sticky lg:top-4 border-emerald-200">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="h-4 w-4" />Broker profit</CardTitle>
+              <CardTitle className="text-sm flex items-center gap-2">
+                <TrendingUp className="h-4 w-4" />Profit Summary
+              </CardTitle>
+              <div className="text-[11px] text-muted-foreground">
+                Direct settlement · no ledger routing · updates live.
+              </div>
             </CardHeader>
-            <CardContent className="text-sm space-y-2">
-              <Row label="Rate A" value={mRateA ? `${fmt(mRateA)} ${m.counter_currency}` : "—"} />
-              <Row label="Rate B" value={mRateB ? `${fmt(mRateB)} ${m.counter_currency}` : "—"} />
-              <Row label={`A receives`} value={mValueA ? `${fmt(mValueA, m.counter_currency)}` : "—"} />
-              <Row label={`B pays`} value={mValueB ? `${fmt(mValueB, m.counter_currency)}` : "—"} />
-              <div className="border-t pt-2">
-                <Row
-                  label={`Spread (${m.counter_currency})`}
-                  value={mProfitCounter ? `${fmt(mProfitCounter, m.counter_currency)}` : "—"}
-                  strong
-                  tone={mProfitCounter >= 0 ? "pos" : "neg"}
-                />
-                <Row
-                  label={`≈ in ${m.a_currency}`}
-                  value={mProfitInA ? `${fmt(mProfitInA, m.a_currency)}` : "—"}
-                  tone={mProfitInA >= 0 ? "pos" : "neg"}
-                />
-                <Row label="Margin" value={`${mMarginPct.toFixed(2)}%`} tone={mMarginPct >= 0 ? "pos" : "neg"} />
+            <CardContent className="text-sm space-y-3">
+              <div className="grid grid-cols-2 gap-y-2">
+                <div className="text-muted-foreground text-xs">Buy Rate</div>
+                <div className="font-mono text-right">{mRateA ? fmt(mRateA) : "—"}</div>
+                <div className="text-muted-foreground text-xs">Sell Rate</div>
+                <div className="font-mono text-right">{mRateB ? fmt(mRateB) : "—"}</div>
+                <div className="text-muted-foreground text-xs">Spread / unit</div>
+                <div className="font-mono text-right">
+                  {spreadPerUnit ? `${fmt(spreadPerUnit)} ${m.counter_currency}/${m.a_currency}` : "—"}
+                </div>
+                <div className="text-muted-foreground text-xs">Amount</div>
+                <div className="font-mono text-right">{mAmtA ? `${fmt(mAmtA)} ${m.a_currency}` : "—"}</div>
               </div>
-              <div className="border-t pt-2">
-                <F label="Book profit in">
-                  <Select value={m.book_profit_in} onValueChange={(v: any) => setM({ ...m, book_profit_in: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="counter">{m.counter_currency} (counter)</SelectItem>
-                      <SelectItem value="primary">{m.a_currency} (traded currency)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </F>
+
+              <div className="rounded-lg border bg-muted/40 p-3 text-center">
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Total Profit
+                </div>
+                <div className={`font-mono text-lg font-semibold ${mProfitCounter >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+                  {mProfitCounter ? `${fmt(mProfitCounter)} ${m.counter_currency}` : "—"}
+                </div>
+                <div className="mt-2 text-[11px] uppercase tracking-wide text-muted-foreground">
+                  ≈ Owner earnings (AED)
+                </div>
+                <div className={`font-mono text-3xl font-bold leading-tight ${profitAED >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+                  {profitAED ? fmt(profitAED, "AED") : "—"}
+                  <span className="text-sm font-medium ml-1">AED</span>
+                </div>
+                {!profitAED && mProfitCounter > 0 && m.counter_currency !== "AED" && (
+                  <div className="text-[11px] text-amber-700 mt-1">
+                    Waiting for live AED rate to convert.
+                  </div>
+                )}
+                {mMarginPct !== 0 && (
+                  <div className={`text-[11px] mt-1 ${mMarginPct >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+                    Margin {mMarginPct.toFixed(2)}%
+                  </div>
+                )}
               </div>
+
               <div className="border-t pt-2 grid grid-cols-2 gap-2">
                 <F label={`Milad %`}>
                   <Input type="number" value={f.milad_pct}
@@ -868,15 +883,22 @@ function NewTradePage() {
                 </F>
                 <F label="Ali %"><Input type="number" value={f.ali_pct} disabled /></F>
               </div>
+
               <div className="flex flex-col gap-2 pt-3 border-t">
                 <Button
-                  disabled={!canSubmitMatched || submitMatched.isPending}
-                  onClick={() => submitMatched.mutate()}
+                  disabled={submitMatched.isPending}
+                  onClick={() => {
+                    if (!canSubmitMatched) {
+                      toast.error("Fill both customers, amount, buy rate and sell rate.");
+                      return;
+                    }
+                    submitMatched.mutate();
+                  }}
                 >
-                  Save Matched Trade
+                  Close Trade
                 </Button>
                 <div className="text-[11px] text-muted-foreground">
-                  Creates a trade cycle with a buy leg from A and a sell leg to B. Neither side moves through our balances — profit is booked as your spread.
+                  Records the deal for reporting. No accounts are debited or credited — profit is your spread.
                 </div>
               </div>
             </CardContent>
