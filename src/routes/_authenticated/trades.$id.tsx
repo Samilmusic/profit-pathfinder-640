@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useMemo, useState } from "react";
-import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,14 +10,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AccountSelect, useCustomers } from "@/components/account-select";
 import { NumberInput } from "@/components/number-input";
-import { CURRENCIES, fmtProfit } from "@/lib/exchange";
+import { CURRENCIES, fmt, fmtProfit } from "@/lib/exchange";
 import { DocumentsPanel } from "@/components/documents-panel";
 import { toast } from "sonner";
-import { Plus, CheckCircle2, XCircle, Clock, ArrowLeft, Lock, DollarSign } from "lucide-react";
+import { Plus, CheckCircle2, XCircle, Clock, ArrowLeft, Lock, DollarSign, ArrowDown, ChevronDown, ChevronRight, User, TrendingUp } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/trades/$id")({ component: Page });
 
