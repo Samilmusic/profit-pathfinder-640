@@ -856,17 +856,30 @@ function NewTradePage() {
                 </>
               )}
 
+              <ValidationPanel checks={checks} />
               <div className="flex flex-col gap-2 pt-3 border-t">
                 <Button
                   variant="secondary"
-                  disabled={!canSubmit || submit.isPending}
-                  onClick={() => submit.mutate({ closeNow: false })}
+                  disabled={submit.isPending}
+                  onClick={() => {
+                    if (!canSubmit) {
+                      toast.error(`Cannot save — missing: ${missing.map((m) => m.label).join(", ")}`);
+                      return;
+                    }
+                    submit.mutate({ closeNow: false });
+                  }}
                 >
                   Save Open Trade
                 </Button>
                 <Button
-                  disabled={!canSubmit || submit.isPending}
-                  onClick={() => submit.mutate({ closeNow: true })}
+                  disabled={submit.isPending}
+                  onClick={() => {
+                    if (!canSubmit) {
+                      toast.error(`Cannot close trade — missing: ${missing.map((m) => m.label).join(", ")}`);
+                      return;
+                    }
+                    submit.mutate({ closeNow: true });
+                  }}
                 >
                   Close Trade Now
                 </Button>
