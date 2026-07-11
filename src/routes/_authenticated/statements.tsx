@@ -61,9 +61,9 @@ function Page() {
                 <TableCell>{r.entry_date}</TableCell>
                 <TableCell className="text-sm">{r.description || "—"}</TableCell>
                 <TableCell className="text-xs text-muted-foreground capitalize">{r.source_type?.replace("_", " ")}</TableCell>
-                <TableCell className="text-right font-mono text-accent">{r.debit ? fmt(r.debit, acct?.currency) : ""}</TableCell>
-                <TableCell className="text-right font-mono text-destructive">{r.credit ? fmt(r.credit, acct?.currency) : ""}</TableCell>
-                <TableCell className="text-right font-mono font-medium">{fmt(r.running, acct?.currency)}</TableCell>
+                <TableCell className="text-right font-mono text-accent">{r.debit ? fmt(r.debit, acct?.currency ?? undefined) : ""}</TableCell>
+                <TableCell className="text-right font-mono text-destructive">{r.credit ? fmt(r.credit, acct?.currency ?? undefined) : ""}</TableCell>
+                <TableCell className="text-right font-mono font-medium">{fmt(r.running, acct?.currency ?? undefined)}</TableCell>
               </TableRow>
             ))}
             {accountId && rows.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">No ledger entries.</TableCell></TableRow>}
