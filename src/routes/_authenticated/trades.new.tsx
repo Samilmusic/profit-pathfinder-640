@@ -17,6 +17,7 @@ import { NumberInput } from "@/components/number-input";
 import { UseMarketRateButton } from "@/components/use-market-rate-button";
 import { SmartTradeCalculator } from "@/components/smart-trade-calculator";
 import { convertAmount } from "@/lib/trade-math";
+import { useLatestMarketRates, pickDisplayRate } from "@/lib/market-rates";
 import { toast } from "sonner";
 import { ArrowLeft, ChevronsUpDown, TrendingUp, ArrowLeftRight, Warehouse, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 
