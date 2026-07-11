@@ -98,7 +98,6 @@ function NewTradePage() {
     a_currency: "AED",
     a_amount: "",
     a_rate: "",
-    a_account_id: "",
     a_status: "not_received" as "not_received" | "received" | "later",
     a_proof: "",
     // Customer B (buyer)
@@ -106,13 +105,10 @@ function NewTradePage() {
     b_currency: "AED",
     b_amount: "",
     b_rate: "",
-    b_account_id: "",
     b_status: "not_delivered" as "not_delivered" | "delivered" | "later",
     b_proof: "",
     // Rates are quoted in this "counter" currency (e.g. IRR)
     counter_currency: "IRR",
-    // Which currency to book the company profit in
-    book_profit_in: "counter" as "counter" | "primary",
   });
 
   const mAmtA = Number(m.a_amount || 0);
