@@ -88,6 +88,7 @@ function NewTradePage() {
     counter_currency: "IRR",
     a_proof: "",
     b_proof: "",
+    profit_destination_account_id: "",
   });
 
   const accounts = accountsQ.data ?? [];
@@ -161,6 +162,19 @@ function NewTradePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, s.sold_currency, s.received_currency, s.customer_id, owner, accounts.length]);
 
+  // Auto-select profit destination for matched trade (in counter currency)
+  useEffect(() => {
+    if (mode !== "matched" || accounts.length === 0) return;
+    if (m.profit_destination_account_id) return;
+    const id = pickAccount({
+      currency: m.counter_currency,
+      ownerFallback: owner === "ali" || owner === "milad" ? owner : undefined,
+      prefer: ["bank", "cash", "person_holding"],
+    });
+    if (id) setM((c) => ({ ...c, profit_destination_account_id: id }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, m.counter_currency, owner, accounts.length]);
+
   // ---------- Live math ----------
   const bAmt = Number(b.bought_amount || 0);
   const bRate = Number(b.buy_rate || 0);
@@ -215,6 +229,7 @@ function NewTradePage() {
     { key: "amt", label: "Amount entered", ok: mAmt > 0 },
     { key: "ra", label: "Buy rate entered", ok: mRateA > 0 },
     { key: "rb", label: "Sell rate entered", ok: mRateB > 0 },
+    { key: "profit_acc", label: `Profit destination (${m.counter_currency}) selected`, ok: !!m.profit_destination_account_id, hint: `Where the ${m.counter_currency} spread lands.` },
   ];
   const checks = mode === "buy" ? buyChecks : mode === "sell" ? sellChecks : matchedChecks;
   const missing = checks.filter((c) => !c.ok);
@@ -344,6 +359,7 @@ function NewTradePage() {
         initial_amount: mValueA,
         expected_profit: mProfitCounter,
         expected_profit_currency: m.counter_currency,
+        profit_destination_account_id: m.profit_destination_account_id || null,
         notes: [
           "Matched trade (direct settlement)",
           m.a_proof && `A proof: ${m.a_proof}`,
@@ -591,6 +607,19 @@ function NewTradePage() {
                 <F label="B proof / reference (optional)">
                   <Input value={m.b_proof} onChange={(e) => setM({ ...m, b_proof: e.target.value })} placeholder="Transfer ref, screenshot ID, etc." />
                 </F>
+                <div className="sm:col-span-2">
+                  <F
+                    label={`Profit destination account (${m.counter_currency})`}
+                    hint={`The spread profit (${m.counter_currency}) will be credited to this account.`}
+                  >
+                    <AccountSelect
+                      value={m.profit_destination_account_id}
+                      onChange={(v) => setM({ ...m, profit_destination_account_id: v })}
+                      currency={m.counter_currency}
+                      placeholder={`Select ${m.counter_currency} account`}
+                    />
+                  </F>
+                </div>
               </CardContent>
             </Card>
           )}
