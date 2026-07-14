@@ -357,8 +357,17 @@ function NewTradePage() {
         capital_amount: mValueA,
         capital_currency: m.counter_currency,
         initial_amount: mValueA,
+        intermediate_currency: m.traded_currency,
+        intermediate_received: mAmt,
+        final_returned_amount: mValueB,
+        sell_rate: mRateB,
         expected_profit: mProfitCounter,
         expected_profit_currency: m.counter_currency,
+        realized_profit: mProfitCounter,
+        realized_profit_currency: m.counter_currency,
+        received_profit: opts.closeNow ? mProfitCounter : 0,
+        final_profit_confirmed: opts.closeNow,
+        status: opts.closeNow ? "completed" : "in_progress",
         profit_destination_account_id: m.profit_destination_account_id || null,
         notes: [
           "Matched trade (direct settlement)",
@@ -725,7 +734,7 @@ function NewTradePage() {
               <ValidationPanel checks={checks} />
 
               <div className="flex flex-col gap-2 pt-3 border-t">
-                {mode === "sell" && (
+                {(mode === "sell" || mode === "matched") && (
                   <Button
                     variant="secondary"
                     disabled={submit.isPending}
@@ -741,10 +750,10 @@ function NewTradePage() {
                   disabled={submit.isPending}
                   onClick={() => {
                     if (!canSubmit) return toast.error(`Missing: ${missing.map((x) => x.label).join(", ")}`);
-                    submit.mutate({ closeNow: mode === "sell" });
+                    submit.mutate({ closeNow: mode === "sell" || mode === "matched" });
                   }}
                 >
-                  {submit.isPending ? "Saving…" : mode === "buy" ? "Record Buy" : mode === "sell" ? "Close Deal Now" : "Record Matched Trade"}
+                  {submit.isPending ? "Saving…" : mode === "buy" ? "Record Buy" : mode === "sell" ? "Close Deal Now" : "Save & Close Trade"}
                 </Button>
                 <div className="text-[11px] text-muted-foreground">
                   {mode === "buy" && "Adds a new inventory lot at this cost basis."}
