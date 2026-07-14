@@ -197,6 +197,35 @@ function DealPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  // Live close-validation checklist from the database (never lies about state)
+  const validateQ = useQuery({
+    queryKey: ["validate_close", id],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).rpc("validate_close", { _sell_id: id });
+      if (error) throw error;
+      return data as {
+        found: boolean;
+        can_close: boolean;
+        items: Array<{ key: string; label: string; ok: boolean; detail?: string }>;
+        paid: number;
+        required: number;
+      };
+    },
+  });
+
+  const forceClose = useMutation({
+    mutationFn: async () => {
+      if (!diffReason.trim()) throw new Error("Reason required for admin override");
+      const { error } = await (supabase as any).rpc("admin_force_close", {
+        _sell_id: id, _reason: diffReason.trim(),
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Deal force-closed · audit logged"); qc.invalidateQueries(); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const cancelDeal = useMutation({
     mutationFn: async () => {
       if (!cancelReason.trim()) throw new Error("Reason required");
