@@ -127,12 +127,11 @@ function DashboardPage() {
     queryKey: ["dash_profit_range", mISO, today],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("sell_transactions")
-        .select("received_currency,gross_profit,closed_at")
+        .from("trade_cycles" as any)
+        .select("realized_profit,realized_profit_currency,closed_at,entry_date,status")
         .is("deleted_at", null)
-        .eq("deal_status", "closed")
-        .gte("closed_at", `${mISO}T00:00:00`)
-        .lte("closed_at", `${today}T23:59:59.999`);
+        .not("realized_profit", "is", null)
+        .gte("entry_date", mISO);
       if (error) throw error;
       return data ?? [];
     },
@@ -211,17 +210,22 @@ function DashboardPage() {
   // ── Section 1: Profit today/week/month by dominant currency
   const profitBuckets = useMemo(() => {
     const rows = (profitQ.data ?? []) as any[];
-    const bucket = (fromIso: string) => {
-      const m = new Map<string, number>();
+    const bucket = (fromIso: string): [string, number] | null => {
+      let total = 0;
       for (const r of rows) {
-        if (!r.closed_at || r.closed_at < `${fromIso}T00:00:00`) continue;
-        m.set(r.received_currency, (m.get(r.received_currency) ?? 0) + Number(r.gross_profit || 0));
+        const when = (r.closed_at ? String(r.closed_at).slice(0, 10) : r.entry_date) ?? null;
+        if (!when || when < fromIso) continue;
+        const amt = Number(r.realized_profit || 0);
+        if (!amt) continue;
+        const ccy = r.realized_profit_currency || "AED";
+        total += toAED(amt, ccy);
       }
-      const entries = Array.from(m.entries()).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
-      return entries[0] ?? null;
+      if (Math.abs(total) < 0.01) return null;
+      return ["AED", total];
     };
     return { today: bucket(today), week: bucket(wISO), month: bucket(mISO) };
-  }, [profitQ.data, today, wISO, mISO]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profitQ.data, today, wISO, mISO, midByCcy, aedPerIRR]);
 
   // ── Section 1: Open deals breakdown
   const dealCounts = useMemo(() => {
