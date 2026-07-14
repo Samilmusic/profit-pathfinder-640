@@ -726,14 +726,26 @@ function NewTradePage() {
                   <Row label="Sell rate" value={mRateB ? fmt(mRateB) : "—"} />
                   <Row label="Amount" value={mAmt ? `${fmt(mAmt)} ${m.traded_currency}` : "—"} />
                   <div className="rounded-lg border bg-muted/40 p-3 text-center">
-                    <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Spread profit</div>
-                    <div className={`font-mono text-lg font-semibold ${mProfitCounter >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-                      {mProfitCounter ? `${fmt(mProfitCounter)} ${m.counter_currency}` : "—"}
+                    <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                      Profit in {profitCcy}
+                      {profitDestAccount ? ` · ${profitDestAccount.name}` : ""}
                     </div>
-                    <div className="mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">≈ AED</div>
-                    <div className={`font-mono text-2xl font-bold ${mProfitAED >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-                      {mProfitAED ? fmt(mProfitAED, "AED") : "—"}
+                    <div className={`font-mono text-2xl font-bold ${mProfitInDest >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+                      {mProfitInDest ? `${fmt(mProfitInDest, profitCcy)} ${profitCcy}` : "—"}
                     </div>
+                    {profitCcy !== "AED" && (
+                      <>
+                        <div className="mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">≈ AED equivalent</div>
+                        <div className={`font-mono text-sm ${mProfitAED >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+                          {mProfitAED ? fmt(mProfitAED, "AED") : "—"}
+                        </div>
+                      </>
+                    )}
+                    {profitCcy !== m.counter_currency && mProfitCounter !== 0 && (
+                      <div className="mt-1 text-[10px] text-muted-foreground">
+                        Spread {fmt(mProfitCounter)} {m.counter_currency} converted at market
+                      </div>
+                    )}
                     {mMarginPct !== 0 && (
                       <div className={`text-[11px] mt-1 ${mMarginPct >= 0 ? "text-emerald-600" : "text-destructive"}`}>
                         Margin {mMarginPct.toFixed(2)}%
