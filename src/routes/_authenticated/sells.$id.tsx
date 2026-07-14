@@ -83,10 +83,10 @@ function DealPage() {
 
   function jumpToUploadDeliveryProof() {
     setDocType("currency_handover_proof");
+    documentsPanelRef.current?.openFilePicker("currency_handover_proof");
     setTimeout(() => {
       const el = document.getElementById("documents-section");
       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-      documentsPanelRef.current?.openFilePicker("currency_handover_proof");
     }, 50);
   }
 
