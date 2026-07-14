@@ -64,6 +64,44 @@ function NewAccountPage() {
   );
   const [parentId, setParentId] = useState<string>(search.parent ?? "");
 
+  // Inline "quick create" for Box / Location so users are never stuck on an empty parent picker.
+  const [quickOpen, setQuickOpen] = useState<null | "box" | "location">(null);
+  const [quickName, setQuickName] = useState("");
+  const [quickParentBox, setQuickParentBox] = useState<string>("");
+
+  const quickCreate = useMutation({
+    mutationFn: async (kind: "box" | "location") => {
+      const { data: u } = await supabase.auth.getUser();
+      const finalName = quickName.trim();
+      if (!finalName) throw new Error("Name is required");
+      if (kind === "location" && !quickParentBox) throw new Error("Pick which Box this Location belongs to");
+      const { data, error } = await supabase.from("accounts").insert({
+        name: finalName,
+        node_type: kind as any,
+        parent_id: kind === "location" ? quickParentBox : null,
+        account_type: "other" as any,
+        currency: null,
+        owner: "shared" as any,
+        opening_balance: 0,
+        created_by: u.user?.id,
+      } as any).select("id").single();
+      if (error) throw error;
+      return { kind, id: (data as any).id };
+    },
+    onSuccess: async ({ kind, id }) => {
+      toast.success(kind === "box" ? "Box created" : "Location created");
+      setQuickName("");
+      setQuickOpen(null);
+      setQuickParentBox("");
+      await qc.invalidateQueries({ queryKey: ["accounts_picker_tree"] });
+      // Auto-select the newly created parent so the user can continue.
+      if ((kind === "box" && nodeType === "location") || (kind === "location" && nodeType === "currency")) {
+        setParentId(id);
+      }
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   // Load existing boxes/locations for parent picker
   const treeQ = useQuery({
     queryKey: ["accounts_picker_tree"],
@@ -286,26 +324,87 @@ function NewAccountPage() {
         {/* Parent picker */}
         {nodeType === "location" && (
           <F label="Parent Box *">
-            <Select value={parentId} onValueChange={setParentId}>
-              <SelectTrigger className="h-11 text-base"><SelectValue placeholder={boxes.length ? "Pick a Box" : "No boxes yet — create one first"} /></SelectTrigger>
-              <SelectContent>
-                {boxes.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            {boxes.length ? (
+              <Select value={parentId} onValueChange={setParentId}>
+                <SelectTrigger className="h-11 text-base"><SelectValue placeholder="Pick a Box" /></SelectTrigger>
+                <SelectContent>
+                  {boxes.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            ) : (
+              <div className="rounded-lg border border-dashed bg-muted/30 p-3 space-y-2">
+                <p className="text-sm text-muted-foreground">No boxes yet. Create one now:</p>
+                <div className="flex gap-2">
+                  <Input
+                    value={quickOpen === "box" ? quickName : ""}
+                    onChange={(e) => { setQuickOpen("box"); setQuickName(e.target.value); }}
+                    placeholder="e.g. Milad Box, Ali Box, Company Box"
+                    className="h-10 text-base"
+                  />
+                  <Button type="button" onClick={() => quickCreate.mutate("box")} disabled={quickCreate.isPending || !(quickOpen === "box" && quickName.trim())}>
+                    Create Box
+                  </Button>
+                </div>
+              </div>
+            )}
           </F>
         )}
         {nodeType === "currency" && (
           <F label="Parent Location *">
-            <Select value={parentId} onValueChange={setParentId}>
-              <SelectTrigger className="h-11 text-base"><SelectValue placeholder={locations.length ? "Pick a location" : "No locations yet — create one first"} /></SelectTrigger>
-              <SelectContent>
-                {locations.map((l) => {
-                  const box = boxes.find((b) => b.id === l.parent_id);
-                  return <SelectItem key={l.id} value={l.id}>{box ? `${box.name} → ${l.name}` : l.name}</SelectItem>;
-                })}
-              </SelectContent>
-            </Select>
-            {parentBoxForLocation && <p className="text-[11px] text-muted-foreground">Rolls up into <b>{boxes.find(b => b.id === parentBoxForLocation)?.name}</b></p>}
+            {locations.length ? (
+              <>
+                <Select value={parentId} onValueChange={setParentId}>
+                  <SelectTrigger className="h-11 text-base"><SelectValue placeholder="Pick a location" /></SelectTrigger>
+                  <SelectContent>
+                    {locations.map((l) => {
+                      const box = boxes.find((b) => b.id === l.parent_id);
+                      return <SelectItem key={l.id} value={l.id}>{box ? `${box.name} → ${l.name}` : l.name}</SelectItem>;
+                    })}
+                  </SelectContent>
+                </Select>
+                {parentBoxForLocation && <p className="text-[11px] text-muted-foreground">Rolls up into <b>{boxes.find(b => b.id === parentBoxForLocation)?.name}</b></p>}
+              </>
+            ) : (
+              <div className="rounded-lg border border-dashed bg-muted/30 p-3 space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  {boxes.length ? "No locations yet. Create one now:" : "You need a Box first, then a Location."}
+                </p>
+                {boxes.length === 0 && (
+                  <div className="flex gap-2">
+                    <Input
+                      value={quickOpen === "box" ? quickName : ""}
+                      onChange={(e) => { setQuickOpen("box"); setQuickName(e.target.value); }}
+                      placeholder="Box name — e.g. Milad Box"
+                      className="h-10 text-base"
+                    />
+                    <Button type="button" onClick={() => quickCreate.mutate("box")} disabled={quickCreate.isPending || !(quickOpen === "box" && quickName.trim())}>
+                      Create Box
+                    </Button>
+                  </div>
+                )}
+                {boxes.length > 0 && (
+                  <div className="space-y-2">
+                    <Select value={quickParentBox} onValueChange={setQuickParentBox}>
+                      <SelectTrigger className="h-10 text-base"><SelectValue placeholder="Pick which Box this Location belongs to" /></SelectTrigger>
+                      <SelectContent>
+                        {boxes.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <div className="flex gap-2">
+                      <Input
+                        value={quickOpen === "location" ? quickName : ""}
+                        onChange={(e) => { setQuickOpen("location"); setQuickName(e.target.value); }}
+                        placeholder="Location name — e.g. Cash, ENBD, Safe"
+                        className="h-10 text-base"
+                      />
+                      <Button type="button" onClick={() => quickCreate.mutate("location")} disabled={quickCreate.isPending || !quickParentBox || !(quickOpen === "location" && quickName.trim())}>
+                        Create Location
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </F>
         )}
 
