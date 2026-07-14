@@ -607,6 +607,19 @@ function NewTradePage() {
                 <F label="B proof / reference (optional)">
                   <Input value={m.b_proof} onChange={(e) => setM({ ...m, b_proof: e.target.value })} placeholder="Transfer ref, screenshot ID, etc." />
                 </F>
+                <div className="sm:col-span-2">
+                  <F
+                    label={`Profit destination account (${m.counter_currency})`}
+                    hint={`The spread profit (${m.counter_currency}) will be credited to this account.`}
+                  >
+                    <AccountSelect
+                      value={m.profit_destination_account_id}
+                      onChange={(v) => setM({ ...m, profit_destination_account_id: v })}
+                      currency={m.counter_currency}
+                      placeholder={`Select ${m.counter_currency} account`}
+                    />
+                  </F>
+                </div>
               </CardContent>
             </Card>
           )}
