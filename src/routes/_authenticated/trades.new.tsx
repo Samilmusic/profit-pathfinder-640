@@ -735,7 +735,7 @@ function NewTradePage() {
               <ValidationPanel checks={checks} />
 
               <div className="flex flex-col gap-2 pt-3 border-t">
-                {mode === "sell" && (
+                {(mode === "sell" || mode === "matched") && (
                   <Button
                     variant="secondary"
                     disabled={submit.isPending}
@@ -751,10 +751,10 @@ function NewTradePage() {
                   disabled={submit.isPending}
                   onClick={() => {
                     if (!canSubmit) return toast.error(`Missing: ${missing.map((x) => x.label).join(", ")}`);
-                    submit.mutate({ closeNow: mode === "sell" });
+                    submit.mutate({ closeNow: mode === "sell" || mode === "matched" });
                   }}
                 >
-                  {submit.isPending ? "Saving…" : mode === "buy" ? "Record Buy" : mode === "sell" ? "Close Deal Now" : "Record Matched Trade"}
+                  {submit.isPending ? "Saving…" : mode === "buy" ? "Record Buy" : mode === "sell" ? "Close Deal Now" : "Save & Close Trade"}
                 </Button>
                 <div className="text-[11px] text-muted-foreground">
                   {mode === "buy" && "Adds a new inventory lot at this cost basis."}
