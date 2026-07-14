@@ -69,6 +69,39 @@ function NewAccountPage() {
   const [quickName, setQuickName] = useState("");
   const [quickParentBox, setQuickParentBox] = useState<string>("");
 
+  const quickCreate = useMutation({
+    mutationFn: async (kind: "box" | "location") => {
+      const { data: u } = await supabase.auth.getUser();
+      const finalName = quickName.trim();
+      if (!finalName) throw new Error("Name is required");
+      if (kind === "location" && !quickParentBox) throw new Error("Pick which Box this Location belongs to");
+      const { data, error } = await supabase.from("accounts").insert({
+        name: finalName,
+        node_type: kind as any,
+        parent_id: kind === "location" ? quickParentBox : null,
+        account_type: "other" as any,
+        currency: null,
+        owner: "shared" as any,
+        opening_balance: 0,
+        created_by: u.user?.id,
+      } as any).select("id").single();
+      if (error) throw error;
+      return { kind, id: (data as any).id };
+    },
+    onSuccess: async ({ kind, id }) => {
+      toast.success(kind === "box" ? "Box created" : "Location created");
+      setQuickName("");
+      setQuickOpen(null);
+      setQuickParentBox("");
+      await qc.invalidateQueries({ queryKey: ["accounts_picker_tree"] });
+      // Auto-select the newly created parent so the user can continue.
+      if ((kind === "box" && nodeType === "location") || (kind === "location" && nodeType === "currency")) {
+        setParentId(id);
+      }
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   // Load existing boxes/locations for parent picker
   const treeQ = useQuery({
     queryKey: ["accounts_picker_tree"],
