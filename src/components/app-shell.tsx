@@ -84,6 +84,7 @@ const navGroups: NavGroup[] = [
   {
     label: "Reports",
     items: [
+      { to: "/profits", label: "Profits", icon: TrendingUp },
       { to: "/statements", label: "Statements", icon: BookOpen },
       { to: "/daily-closing", label: "Daily Closing", icon: CalendarCheck },
       { to: "/audit", label: "Audit Log", icon: History },

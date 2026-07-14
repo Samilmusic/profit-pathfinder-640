@@ -21,6 +21,7 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedSellRouteImport } from './routes/_authenticated/sell'
 import { Route as AuthenticatedRolesRouteImport } from './routes/_authenticated/roles'
 import { Route as AuthenticatedQuickSellRouteImport } from './routes/_authenticated/quick-sell'
+import { Route as AuthenticatedProfitsRouteImport } from './routes/_authenticated/profits'
 import { Route as AuthenticatedPendingSettlementsRouteImport } from './routes/_authenticated/pending-settlements'
 import { Route as AuthenticatedPaymentOrdersRouteImport } from './routes/_authenticated/payment-orders'
 import { Route as AuthenticatedMarketIntelligenceRouteImport } from './routes/_authenticated/market-intelligence'
@@ -109,6 +110,11 @@ const AuthenticatedRolesRoute = AuthenticatedRolesRouteImport.update({
 const AuthenticatedQuickSellRoute = AuthenticatedQuickSellRouteImport.update({
   id: '/quick-sell',
   path: '/quick-sell',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedProfitsRoute = AuthenticatedProfitsRouteImport.update({
+  id: '/profits',
+  path: '/profits',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedPendingSettlementsRoute =
@@ -299,6 +305,7 @@ export interface FileRoutesByFullPath {
   '/market-intelligence': typeof AuthenticatedMarketIntelligenceRoute
   '/payment-orders': typeof AuthenticatedPaymentOrdersRoute
   '/pending-settlements': typeof AuthenticatedPendingSettlementsRoute
+  '/profits': typeof AuthenticatedProfitsRoute
   '/quick-sell': typeof AuthenticatedQuickSellRoute
   '/roles': typeof AuthenticatedRolesRoute
   '/sell': typeof AuthenticatedSellRoute
@@ -339,6 +346,7 @@ export interface FileRoutesByTo {
   '/market-intelligence': typeof AuthenticatedMarketIntelligenceRoute
   '/payment-orders': typeof AuthenticatedPaymentOrdersRoute
   '/pending-settlements': typeof AuthenticatedPendingSettlementsRoute
+  '/profits': typeof AuthenticatedProfitsRoute
   '/quick-sell': typeof AuthenticatedQuickSellRoute
   '/roles': typeof AuthenticatedRolesRoute
   '/sell': typeof AuthenticatedSellRoute
@@ -383,6 +391,7 @@ export interface FileRoutesById {
   '/_authenticated/market-intelligence': typeof AuthenticatedMarketIntelligenceRoute
   '/_authenticated/payment-orders': typeof AuthenticatedPaymentOrdersRoute
   '/_authenticated/pending-settlements': typeof AuthenticatedPendingSettlementsRoute
+  '/_authenticated/profits': typeof AuthenticatedProfitsRoute
   '/_authenticated/quick-sell': typeof AuthenticatedQuickSellRoute
   '/_authenticated/roles': typeof AuthenticatedRolesRoute
   '/_authenticated/sell': typeof AuthenticatedSellRoute
@@ -428,6 +437,7 @@ export interface FileRouteTypes {
     | '/market-intelligence'
     | '/payment-orders'
     | '/pending-settlements'
+    | '/profits'
     | '/quick-sell'
     | '/roles'
     | '/sell'
@@ -468,6 +478,7 @@ export interface FileRouteTypes {
     | '/market-intelligence'
     | '/payment-orders'
     | '/pending-settlements'
+    | '/profits'
     | '/quick-sell'
     | '/roles'
     | '/sell'
@@ -511,6 +522,7 @@ export interface FileRouteTypes {
     | '/_authenticated/market-intelligence'
     | '/_authenticated/payment-orders'
     | '/_authenticated/pending-settlements'
+    | '/_authenticated/profits'
     | '/_authenticated/quick-sell'
     | '/_authenticated/roles'
     | '/_authenticated/sell'
@@ -626,6 +638,13 @@ declare module '@tanstack/react-router' {
       path: '/quick-sell'
       fullPath: '/quick-sell'
       preLoaderRoute: typeof AuthenticatedQuickSellRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/profits': {
+      id: '/_authenticated/profits'
+      path: '/profits'
+      fullPath: '/profits'
+      preLoaderRoute: typeof AuthenticatedProfitsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/pending-settlements': {
@@ -920,6 +939,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMarketIntelligenceRoute: typeof AuthenticatedMarketIntelligenceRoute
   AuthenticatedPaymentOrdersRoute: typeof AuthenticatedPaymentOrdersRoute
   AuthenticatedPendingSettlementsRoute: typeof AuthenticatedPendingSettlementsRoute
+  AuthenticatedProfitsRoute: typeof AuthenticatedProfitsRoute
   AuthenticatedQuickSellRoute: typeof AuthenticatedQuickSellRoute
   AuthenticatedRolesRoute: typeof AuthenticatedRolesRoute
   AuthenticatedSellRoute: typeof AuthenticatedSellRoute
@@ -952,6 +972,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMarketIntelligenceRoute: AuthenticatedMarketIntelligenceRoute,
   AuthenticatedPaymentOrdersRoute: AuthenticatedPaymentOrdersRoute,
   AuthenticatedPendingSettlementsRoute: AuthenticatedPendingSettlementsRoute,
+  AuthenticatedProfitsRoute: AuthenticatedProfitsRoute,
   AuthenticatedQuickSellRoute: AuthenticatedQuickSellRoute,
   AuthenticatedRolesRoute: AuthenticatedRolesRoute,
   AuthenticatedSellRoute: AuthenticatedSellRoute,
