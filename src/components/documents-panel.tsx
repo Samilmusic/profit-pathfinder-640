@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useRef, useState } from "react";
+import { forwardRef, useImperativeHandle, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,24 +11,30 @@ import { Paperclip, Upload, ExternalLink, Trash2, Camera } from "lucide-react";
 
 export type RefType = "buy" | "sell" | "expense" | "transfer" | "brought_in" | "customer" | "account" | "deposit" | "payment_order" | "trade_movement" | "trade_cycle" | "other";
 
-export function DocumentsPanel({
-  refType,
-  refId,
-  compact,
-  docType: docTypeProp,
-  onDocTypeChange,
-  defaultDocType,
-}: {
+export type DocumentsPanelHandle = {
+  openFilePicker: (docType?: DocType) => void;
+  openCamera: (docType?: DocType) => void;
+};
+
+export const DocumentsPanel = forwardRef<DocumentsPanelHandle, {
   refType: RefType;
   refId: string | null | undefined;
   compact?: boolean;
   docType?: DocType;
   onDocTypeChange?: (v: DocType) => void;
   defaultDocType?: DocType;
-}) {
+}>(function DocumentsPanel({
+  refType,
+  refId,
+  compact,
+  docType: docTypeProp,
+  onDocTypeChange,
+  defaultDocType,
+}, ref) {
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
+  const forcedDocTypeRef = useRef<DocType | null>(null);
   const [docTypeInner, setDocTypeInner] = useState<DocType>(defaultDocType ?? "payment_receipt");
   const docType = docTypeProp ?? docTypeInner;
   const setDocType = (v: DocType) => {
@@ -37,6 +43,31 @@ export function DocumentsPanel({
   };
   const [notes, setNotes] = useState("");
   const [uploading, setUploading] = useState(false);
+
+  useImperativeHandle(ref, () => ({
+    openFilePicker: (nextDocType) => {
+      if (!refId) {
+        toast.error("Save the record first, then attach documents.");
+        return;
+      }
+      if (nextDocType) {
+        forcedDocTypeRef.current = nextDocType;
+        setDocType(nextDocType);
+      }
+      fileRef.current?.click();
+    },
+    openCamera: (nextDocType) => {
+      if (!refId) {
+        toast.error("Save the record first, then attach documents.");
+        return;
+      }
+      if (nextDocType) {
+        forcedDocTypeRef.current = nextDocType;
+        setDocType(nextDocType);
+      }
+      cameraRef.current?.click();
+    },
+  }), [refId]);
 
   const q = useQuery({
     queryKey: ["documents", refType, refId],
@@ -68,6 +99,8 @@ export function DocumentsPanel({
   });
 
   async function handleUpload(file: File) {
+    const uploadDocType = forcedDocTypeRef.current ?? docType;
+    forcedDocTypeRef.current = null;
     if (!refId) {
       toast.error("Save the record first, then attach documents.");
       return;
@@ -82,7 +115,7 @@ export function DocumentsPanel({
       });
       if (up.error) throw up.error;
       const { error } = await supabase.from("documents").insert({
-        doc_type: docType,
+        doc_type: uploadDocType,
         storage_path: path,
         file_name: file.name,
         mime_type: file.type || null,
@@ -95,6 +128,7 @@ export function DocumentsPanel({
       if (error) throw error;
       setNotes("");
       if (fileRef.current) fileRef.current.value = "";
+      if (cameraRef.current) cameraRef.current.value = "";
       qc.invalidateQueries({ queryKey: ["documents", refType, refId] });
       qc.invalidateQueries({ queryKey: ["action_center"] });
       toast.success("Document attached");
@@ -196,4 +230,6 @@ export function DocumentsPanel({
       </div>
     </div>
   );
-}
+});
+
+DocumentsPanel.displayName = "DocumentsPanel";

@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AccountSelect } from "@/components/account-select";
-import { DocumentsPanel } from "@/components/documents-panel";
+import { DocumentsPanel, type DocumentsPanelHandle } from "@/components/documents-panel";
 import { DealStatusBadge } from "@/components/deal-status-badge";
 import { NumberInput } from "@/components/number-input";
 import { fmt, parseMoneyInput } from "@/lib/exchange";
@@ -79,9 +79,11 @@ function DealPage() {
   const [showDeliver, setShowDeliver] = useState(false);
   const [df, setDf] = useState({ method: "cash_handover", delivered_to: "", notes: "", account_id: "" });
   const [docType, setDocType] = useState<any>("payment_receipt");
+  const documentsPanelRef = useRef<DocumentsPanelHandle>(null);
 
   function jumpToUploadDeliveryProof() {
     setDocType("currency_handover_proof");
+    documentsPanelRef.current?.openFilePicker("currency_handover_proof");
     setTimeout(() => {
       const el = document.getElementById("documents-section");
       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -488,7 +490,7 @@ function DealPage() {
 
           <Card id="documents-section">
             <CardHeader className="pb-2"><CardTitle className="text-sm">Documents</CardTitle></CardHeader>
-            <CardContent><DocumentsPanel refType="sell" refId={id} docType={docType} onDocTypeChange={setDocType} /></CardContent>
+            <CardContent><DocumentsPanel ref={documentsPanelRef} refType="sell" refId={id} docType={docType} onDocTypeChange={setDocType} /></CardContent>
           </Card>
         </div>
 
