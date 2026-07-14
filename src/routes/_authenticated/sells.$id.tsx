@@ -15,7 +15,7 @@ import { DealStatusBadge } from "@/components/deal-status-badge";
 import { NumberInput } from "@/components/number-input";
 import { fmt, parseMoneyInput } from "@/lib/exchange";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowLeft, CheckCircle2, Plus, XCircle, Truck } from "lucide-react";
+import { AlertTriangle, ArrowLeft, CheckCircle2, Plus, XCircle, Truck, Paperclip } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/_authenticated/sells/$id")({
