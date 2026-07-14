@@ -197,6 +197,35 @@ function DealPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  // Live close-validation checklist from the database (never lies about state)
+  const validateQ = useQuery({
+    queryKey: ["validate_close", id],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).rpc("validate_close", { _sell_id: id });
+      if (error) throw error;
+      return data as {
+        found: boolean;
+        can_close: boolean;
+        items: Array<{ key: string; label: string; ok: boolean; detail?: string }>;
+        paid: number;
+        required: number;
+      };
+    },
+  });
+
+  const forceClose = useMutation({
+    mutationFn: async () => {
+      if (!diffReason.trim()) throw new Error("Reason required for admin override");
+      const { error } = await (supabase as any).rpc("admin_force_close", {
+        _sell_id: id, _reason: diffReason.trim(),
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Deal force-closed · audit logged"); qc.invalidateQueries(); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const cancelDeal = useMutation({
     mutationFn: async () => {
       if (!cancelReason.trim()) throw new Error("Reason required");
@@ -513,17 +542,50 @@ function DealPage() {
           {s.deal_status !== "closed" && s.deal_status !== "cancelled" && (
             <Card>
               <CardContent className="p-4 space-y-2">
-                {remaining > 0.0001 && (
-                  <div className="text-xs">
-                    <label className="flex items-center gap-2"><input type="checkbox" checked={overrideClose} onChange={(e) => setOverrideClose(e.target.checked)} /> Admin override (partial / missing receipt)</label>
-                    {overrideClose && (
-                      <Textarea className="mt-2" placeholder="Reason for closing with a difference" value={diffReason} onChange={(e) => setDiffReason(e.target.value)} />
-                    )}
+                {/* Close checklist — always visible, never silent */}
+                {validateQ.data?.items && (
+                  <div className="rounded-md border bg-muted/30 p-3 space-y-1.5">
+                    <div className="text-xs font-semibold mb-1">Close checklist</div>
+                    {validateQ.data.items.map((it) => (
+                      <div key={it.key} className="flex items-start gap-2 text-xs">
+                        {it.ok ? (
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" />
+                        ) : (
+                          <XCircle className="h-3.5 w-3.5 text-destructive mt-0.5 shrink-0" />
+                        )}
+                        <div>
+                          <div className={it.ok ? "text-foreground" : "text-destructive font-medium"}>{it.label}</div>
+                          {it.detail && <div className="text-muted-foreground">{it.detail}</div>}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
-                <Button className="w-full" disabled={!canClose || closeDeal.isPending} onClick={() => closeDeal.mutate()}>
+                <Button
+                  className="w-full"
+                  disabled={closeDeal.isPending || (validateQ.data && !validateQ.data.can_close && !overrideClose)}
+                  onClick={() => {
+                    if (validateQ.data && !validateQ.data.can_close && !overrideClose) {
+                      const missing = validateQ.data.items.filter((i) => !i.ok).map((i) => i.label).join(", ");
+                      toast.error(`Cannot close: ${missing}`);
+                      return;
+                    }
+                    closeDeal.mutate();
+                  }}
+                >
                   <CheckCircle2 className="h-4 w-4 mr-1" /> Close Deal
                 </Button>
+                {validateQ.data && !validateQ.data.can_close && (
+                  <details className="text-xs mt-1">
+                    <summary className="cursor-pointer text-muted-foreground hover:text-foreground">Admin override (requires reason, audited)</summary>
+                    <div className="mt-2 space-y-2">
+                      <Textarea placeholder="Why is this being force-closed?" value={diffReason} onChange={(e) => setDiffReason(e.target.value)} />
+                      <Button variant="destructive" className="w-full" size="sm" disabled={forceClose.isPending || !diffReason.trim()} onClick={() => forceClose.mutate()}>
+                        Force close (admin)
+                      </Button>
+                    </div>
+                  </details>
+                )}
                 {!showCancel ? (
                   <Button variant="ghost" className="w-full text-destructive" onClick={() => setShowCancel(true)}>
                     <XCircle className="h-4 w-4 mr-1" /> Cancel deal
