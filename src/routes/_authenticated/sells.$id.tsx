@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,6 @@ import { fmt, parseMoneyInput } from "@/lib/exchange";
 import { toast } from "sonner";
 import { AlertTriangle, ArrowLeft, CheckCircle2, Plus, XCircle, Truck, Paperclip } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useRef } from "react";
 
 export const Route = createFileRoute("/_authenticated/sells/$id")({
   component: DealPage,
