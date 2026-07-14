@@ -78,6 +78,15 @@ function DealPage() {
   const [showPay, setShowPay] = useState(false);
   const [showDeliver, setShowDeliver] = useState(false);
   const [df, setDf] = useState({ method: "cash_handover", delivered_to: "", notes: "", account_id: "" });
+  const [docType, setDocType] = useState<any>("payment_receipt");
+
+  function jumpToUploadDeliveryProof() {
+    setDocType("currency_handover_proof");
+    setTimeout(() => {
+      const el = document.getElementById("documents-section");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+  }
 
   useEffect(() => {
     if (!showPay || !s || remaining <= 0) return;
