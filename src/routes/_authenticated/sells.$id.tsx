@@ -10,13 +10,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AccountSelect } from "@/components/account-select";
-import { DocumentsPanel } from "@/components/documents-panel";
+import { DocumentsPanel, type DocumentsPanelHandle } from "@/components/documents-panel";
 import { DealStatusBadge } from "@/components/deal-status-badge";
 import { NumberInput } from "@/components/number-input";
 import { fmt, parseMoneyInput } from "@/lib/exchange";
 import { toast } from "sonner";
 import { AlertTriangle, ArrowLeft, CheckCircle2, Plus, XCircle, Truck, Paperclip } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useRef } from "react";
 
 export const Route = createFileRoute("/_authenticated/sells/$id")({
   component: DealPage,
@@ -79,12 +80,14 @@ function DealPage() {
   const [showDeliver, setShowDeliver] = useState(false);
   const [df, setDf] = useState({ method: "cash_handover", delivered_to: "", notes: "", account_id: "" });
   const [docType, setDocType] = useState<any>("payment_receipt");
+  const documentsPanelRef = useRef<DocumentsPanelHandle>(null);
 
   function jumpToUploadDeliveryProof() {
     setDocType("currency_handover_proof");
     setTimeout(() => {
       const el = document.getElementById("documents-section");
       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      documentsPanelRef.current?.openFilePicker("currency_handover_proof");
     }, 50);
   }
 
@@ -488,7 +491,7 @@ function DealPage() {
 
           <Card id="documents-section">
             <CardHeader className="pb-2"><CardTitle className="text-sm">Documents</CardTitle></CardHeader>
-            <CardContent><DocumentsPanel refType="sell" refId={id} docType={docType} onDocTypeChange={setDocType} /></CardContent>
+            <CardContent><DocumentsPanel ref={documentsPanelRef} refType="sell" refId={id} docType={docType} onDocTypeChange={setDocType} /></CardContent>
           </Card>
         </div>
 
