@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { AccountSelect } from "@/components/account-select";
 import { DocumentsPanel } from "@/components/documents-panel";
 import { DealStatusBadge } from "@/components/deal-status-badge";
-import { fmt } from "@/lib/exchange";
+import { NumberInput } from "@/components/number-input";
+import { fmt, parseMoneyInput } from "@/lib/exchange";
 import { toast } from "sonner";
 import { AlertTriangle, ArrowLeft, CheckCircle2, Plus, XCircle, Truck } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -78,39 +79,56 @@ function DealPage() {
   const [showDeliver, setShowDeliver] = useState(false);
   const [df, setDf] = useState({ method: "cash_handover", delivered_to: "", notes: "", account_id: "" });
 
+  useEffect(() => {
+    if (!showPay || !s || remaining <= 0) return;
+    setPf((p) => ({
+      ...p,
+      currency: p.currency || s.received_currency || "",
+      amount: p.amount || String(remaining),
+    }));
+  }, [showPay, remaining, s?.received_currency]);
+
   const addPayment = useMutation({
     mutationFn: async () => {
-      if (!pf.amount || Number(pf.amount) <= 0) throw new Error("Amount is required");
+      const amountRaw = parseMoneyInput(pf.amount);
+      const amountValue = Number(amountRaw);
+      if (!amountRaw || !Number.isFinite(amountValue) || amountValue <= 0) throw new Error("Amount is required");
       if (!pf.account_id) throw new Error("Receiving account is required");
-      if (!receiptFile) throw new Error("Receipt upload is required");
+      if (!receiptFile && !hasPaymentReceipt) throw new Error("Receipt upload is required");
       const currency = pf.currency || s.received_currency;
       const { data: u } = await supabase.auth.getUser();
 
-      // 1. Upload receipt to storage
-      const ext = receiptFile.name.split(".").pop() ?? "bin";
-      const path = `sell/${id}/${crypto.randomUUID()}.${ext}`;
-      const up = await supabase.storage.from("documents").upload(path, receiptFile, {
-        contentType: receiptFile.type || "application/octet-stream",
-      });
-      if (up.error) throw up.error;
-      const publicUrl = supabase.storage.from("documents").getPublicUrl(path).data.publicUrl;
+      // 1. Upload receipt to storage when a new file is attached.
+      let receiptUrl: string | null = null;
+      let path: string | null = null;
+      if (receiptFile) {
+        const ext = receiptFile.name.split(".").pop() ?? "bin";
+        path = `sell/${id}/${crypto.randomUUID()}.${ext}`;
+        const up = await supabase.storage.from("documents").upload(path, receiptFile, {
+          contentType: receiptFile.type || "application/octet-stream",
+        });
+        if (up.error) throw up.error;
+        receiptUrl = supabase.storage.from("documents").getPublicUrl(path).data.publicUrl;
+      }
 
       // 2. Insert the payment (triggers post ledger + inventory lot via sync_sell_received_lot)
       const { error: pErr } = await supabase.from("sell_payments").insert({
         sell_id: id, entry_date: pf.entry_date, currency,
-        amount: Number(pf.amount), received_into_account_id: pf.account_id,
-        receipt_url: publicUrl,
+        amount: amountValue, received_into_account_id: pf.account_id,
+        receipt_url: receiptUrl,
         notes: pf.notes || null, created_by: u.user?.id,
       });
       if (pErr) throw pErr;
 
-      // 3. Register the receipt in documents so status gates recognise it
-      await supabase.from("documents").insert({
-        doc_type: "payment_receipt", storage_path: path, file_name: receiptFile.name,
-        mime_type: receiptFile.type || null, size_bytes: receiptFile.size,
-        ref_type: "sell", ref_id: id, uploaded_by: u.user?.id,
-        notes: pf.notes || null,
-      });
+      // 3. Register a newly uploaded receipt in documents so status gates recognise it.
+      if (receiptFile && path) {
+        await supabase.from("documents").insert({
+          doc_type: "payment_receipt", storage_path: path, file_name: receiptFile.name,
+          mime_type: receiptFile.type || null, size_bytes: receiptFile.size,
+          ref_type: "sell", ref_id: id, uploaded_by: u.user?.id,
+          notes: pf.notes || null,
+        });
+      }
 
       // 4. Point the deal's receiving account at the one the user just paid into
       //    so the inventory lot lands in the right place.
@@ -208,6 +226,16 @@ function DealPage() {
   const doneCount = steps.filter(s => s.done).length;
 
   const events = buildTimeline(s, paymentsQ.data ?? [], hasPaymentReceipt, hasDeliveryProof);
+  const paymentAmountRaw = parseMoneyInput(pf.amount);
+  const paymentAmountNumber = Number(paymentAmountRaw);
+  const hasReceiptForPayment = !!receiptFile || hasPaymentReceipt;
+  const paymentSubmitReason = !paymentAmountRaw || !Number.isFinite(paymentAmountNumber) || paymentAmountNumber <= 0
+    ? "Enter a payment amount."
+    : !pf.account_id
+      ? "Select the receiving account."
+      : !hasReceiptForPayment
+        ? "Upload a receipt."
+        : "";
 
   return (
     <>
@@ -391,7 +419,7 @@ function DealPage() {
                     </div>
                     <div>
                       <Label className="text-xs">Amount ({activeCurrency})</Label>
-                      <Input inputMode="decimal" value={pf.amount} onChange={(e) => setPf({ ...pf, amount: e.target.value })} placeholder={fmt(remaining, s.received_currency)} />
+                      <NumberInput currency={activeCurrency} value={pf.amount} onChange={(e) => setPf({ ...pf, amount: e.target.value })} placeholder={fmt(remaining, s.received_currency)} />
                     </div>
                     <div className="md:col-span-2">
                       <Label className="text-xs">Receiving account · {activeCurrency}</Label>
@@ -407,6 +435,7 @@ function DealPage() {
                       <Label className="text-xs">Receipt upload <span className="text-red-600">*</span></Label>
                       <Input type="file" accept="image/*,application/pdf" onChange={(e) => setReceiptFile(e.target.files?.[0] ?? null)} />
                       {receiptFile && <div className="text-[11px] text-muted-foreground mt-1">{receiptFile.name}</div>}
+                      {!receiptFile && hasPaymentReceipt && <div className="text-[11px] text-emerald-700 mt-1">Receipt already uploaded.</div>}
                     </div>
                     <div className="md:col-span-4">
                       <Label className="text-xs">Notes</Label>
@@ -414,10 +443,11 @@ function DealPage() {
                     </div>
                     <div className="md:col-span-4 flex justify-end gap-2">
                       <Button variant="ghost" onClick={() => { setShowPay(false); setReceiptFile(null); }}>Cancel</Button>
-                      <Button onClick={() => addPayment.mutate()} disabled={addPayment.isPending || !receiptFile || !pf.account_id || !pf.amount}>
+                      <Button onClick={() => addPayment.mutate()} disabled={addPayment.isPending || !!paymentSubmitReason} title={paymentSubmitReason || undefined}>
                         Receive payment
                       </Button>
                     </div>
+                    {paymentSubmitReason && <div className="md:col-span-4 text-right text-[11px] text-amber-700">{paymentSubmitReason}</div>}
                   </div>
                 );
               })()}
