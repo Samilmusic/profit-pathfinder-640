@@ -1,81 +1,65 @@
-# Responsive Overhaul — Full App Audit
 
-Goal: make every page work natively on iPhone / Android / iPad / small laptops without breaking desktop. Fix the Sell page scroll bug first, then apply the same pattern across the app.
+# Exchange Portal — Simplification & Accounting Repair
 
-## Approach
+This is a large, multi-phase upgrade. To keep it safe (no data loss, no schema resets, no auth rebuild) and reviewable, I will ship it in **3 phases across multiple turns**, not all at once. Each phase ends in a working, testable state.
 
-Rather than editing every page individually with bespoke CSS (slow, inconsistent, easy to regress), I will:
+Before I start, I need you to confirm the plan and a few key decisions. Everything is additive — old records, migrations, triggers, and pages stay intact.
 
-1. **Fix the root causes in shared layout** — `AppShell`, `Dialog`, `Table`, `Card`, `PageHeader`, `styles.css`. Most "not responsive" symptoms in this codebase come from a few shared containers with `overflow-hidden`, fixed heights, or desktop-only paddings.
-2. **Introduce 3 small primitives** used across pages:
-   - `<ResponsiveTable>` — renders `<table>` on `md+`, stacked cards on mobile from the same column config.
-   - `<StickyActionBar>` — bottom-anchored action bar with iOS safe-area padding; becomes inline on `md+`.
-   - `<CollapsibleSection>` — collapsed by default on mobile, always-open on desktop. Used for Sell/Buy/Brought-In form sections and AI Score.
-3. **Fix the Sell page** end-to-end as the reference implementation, then propagate the same patterns to Buy, Brought-In, Quick Sell, Transfers, Expenses, Dashboard, Command Center, AI Brain, Market Intel, and list pages.
+---
 
-## Concrete changes
+## Phase 1 — Financial integrity (backend, invisible to daily users)
 
-### Global / shared
-- `src/styles.css`
-  - Add `--sat-bottom: env(safe-area-inset-bottom)` and `--sat-top` tokens; apply to sticky bars and mobile bottom nav (already partially there).
-  - Add `.no-scroll-lock` utility, `.table-as-cards` responsive utility, `.text-fit` (clamped font-size with `clamp()`), `.stack-md` (grid-cols-1 md:grid-cols-2), `.stack-lg` (up to 3 cols).
-  - Ensure `html, body { overflow-x: hidden }` is NOT set to `hidden` on any vertical axis; remove any leftover `overflow: hidden` on `#root`.
-- `src/components/app-shell.tsx`
-  - Verify `<main>` uses `min-h-0` and no `overflow-hidden`; add extra `pb-[calc(6rem+env(safe-area-inset-bottom))]` on mobile so sticky bars never cover content.
-  - Header: shrink padding on mobile, hide search label, keep bell + search compact.
-- `src/components/ui/dialog.tsx`
-  - Content: `max-h-[100dvh]`, `overflow-y-auto`, `w-[calc(100vw-1rem)]`, `sm:max-w-lg`, padding scales down on mobile, rounded-none on <sm for full-sheet feel on phones. Body scroll not locked by nested overflow.
-- `src/components/ui/table.tsx` — keep as-is but wrapper switches to `overflow-x-auto` only on `md+`; on mobile it's the caller's job to render cards (via ResponsiveTable).
-- `src/components/page-header.tsx` — allow title to wrap, actions stack full-width on mobile.
+Goal: one source of truth, correct math, safe closing.
 
-### New primitives
-- `src/components/responsive-table.tsx`
-  - Props: `columns: { key, header, cell, mobileLabel?, primary? }[]`, `data`, `getRowKey`, `onRowClick?`, `emptyState?`.
-  - `md+`: renders `<Table>`. `<md`: renders a list of Cards with label/value rows.
-- `src/components/sticky-action-bar.tsx`
-  - Fixed bottom on mobile with safe-area padding, background blur, top border; static/inline on `md+`. Children are the action buttons.
-- `src/components/collapsible-section.tsx`
-  - Wraps a Card with a header button that toggles open/closed on mobile; `alwaysOpen` prop or `md+` breakpoint forces open on tablet/desktop.
+1. **Unified deal codes** via one Postgres sequence per prefix (`BUY`, `SELL`, `MATCH`, `BR`, `TRF`, `EXP`). Reuse existing `doc_counters` / `next_doc_no`. Backfill missing codes for existing rows; never regenerate existing ones.
+2. **Three trade modes** stored on `trade_cycles.cycle_kind`: `buy_only`, `sell_from_inventory`, `matched_direct`. Existing rows keep their current kind.
+3. **Buy-only mode**: creates inventory lot + ledger for payment source only. No sell record, no realized profit. (Already mostly works via `buy_transactions` — I'll expose it as its own mode instead of forcing the New Trade combo.)
+4. **Sell-from-inventory**: FIFO stays as-is; add AED-equivalent profit column computed from stored reference rate; expose lot allocation under Advanced only.
+5. **Matched-direct**: new posting rules — no company IRR movement, only profit ledger to a **mandatory profit destination account** (or a new `profit_receivables` row if unpaid). Fixes the current bug where matched trades don't appear in dashboard profit / open deals.
+6. **Close rules**: remove silent failures. New RPC `validate_close(deal_id)` returns a JSON checklist. UI shows exact missing items. `_override` becomes a separate admin RPC `admin_force_close(deal_id, reason)` that writes to `audit_events`.
+7. **Reconciliation**: new view `v_balance_reconciliation` comparing ledger vs inventory vs account. New admin RPC `admin_reconcile(reason)` that logs corrections — never silently rewrites history.
+8. **Currency-agnostic rate model**: helper `compute_received(paid_amount, paid_ccy, received_ccy, rate, base_ccy, quote_ccy)` used by all three modes.
+9. **Bonbast normalization**: audit the fetcher; ensure Toman→IRR ×10 happens exactly once (already fixed previously — I'll add a unit test guard).
+10. **Automated tests**: Vitest suite hitting the DB via server functions for the 18 scenarios you listed. Runs in CI on every migration.
 
-### Sell page (`src/routes/_authenticated/sell.tsx`) — reference fix
-- Remove any `h-screen` / `overflow-hidden` from the form container.
-- Wrap the form in a normal flow div, no fixed heights.
-- Split form into `CollapsibleSection`s: Customer, Currency & Rate, Market, Accounts, AI Score (collapsed by default), Documents, Notes.
-- Actions moved into `<StickyActionBar>` containing "Save Open Deal" and "Close Deal".
-- Existing list view swapped to `<ResponsiveTable>` (already has an EmptyState).
-- AI Score card: pass `defaultOpen={false}` on mobile; compact summary row visible when collapsed.
+Deliverable: one forward-only migration + a `tests/accounting/` folder. No UI changes yet.
 
-### Buy / Brought-In / Quick Sell / Transfers / Expenses
-- Same section-collapse + sticky action bar treatment.
-- Lists → `ResponsiveTable`.
+---
 
-### Dashboard (`dashboard.tsx`)
-- Grid: `grid-cols-1 md:grid-cols-2 xl:grid-cols-3` for KPI cards.
-- Bonbast/Inventory/Quick actions blocks each get `min-w-0` and `truncate` on numbers; large amounts use `.text-fit`.
-- Recent Activity table → `ResponsiveTable`.
+## Phase 2 — Daily simplicity (UI)
 
-### Command Center, Market Intelligence, AI Brain
-- Convert multi-column grids to `grid-cols-1 md:grid-cols-2` where they currently force wider columns.
-- Chat input area: sticky bottom with safe-area on mobile.
+1. **New Trade** rewritten as **3-card mode picker** → focused form per mode. All accounting fields hidden by default; only "What did we pay / receive / rate / who / where / where's the profit / proof".
+2. **Deal Details** simplified to Summary → Timeline → Advanced (collapsed). Uses the validation checklist from Phase 1.
+3. **Milad Box** — rename the user-facing string "Ali Cash Box" → "Milad Box" in code + a soft migration (`UPDATE accounts SET name = replace(name, 'Ali Cash Box', 'Milad Box')` only for auto-created rows; no ID changes). The Box→Location→Currency hierarchy already exists.
+4. **Number formatting**: audit every money input, replace stragglers with `<NumberInput />`.
+5. **Documents**: verify camera/gallery/PDF upload works on iOS Safari across all three modes.
 
-### List pages (accounts, customers, inventory, statements, audit, pending-settlements, held-by-person, wallets, deposits, payment-orders, trust, ali-investor, trades, daily-closing, roles, settings)
-- Swap tables to `ResponsiveTable`.
-- Filter bars: `flex flex-wrap gap-2`, each control `min-w-0 flex-1 md:flex-none`.
+---
 
-### Detail pages (`sells.$id`, `customers.$id`, `trades.$id`)
-- Header stacks on mobile per the responsive-layout rule (grid-cols-[minmax(0,1fr)_auto]).
-- Side panels drop under main content on mobile.
+## Phase 3 — Dashboard, navigation, cleanup
 
-### Auth page (`auth.tsx`)
-- Fix the hydration mismatch showing in runtime errors (the `<div>` vs `<Suspense>` mismatch) by ensuring the outer wrapper is identical on server and client — remove any conditional wrapper.
+1. Dashboard reads only from the reconciled view. Per-currency cards, no mixed totals by default.
+2. Realized AED profit query includes matched trades + service income − profit-reducing expenses.
+3. Nav trimmed to 8 top items + Advanced group. Mobile: 5 items.
+4. Remove duplicate "New Trade" buttons; keep one FAB.
+5. Refactor oversized route files (`sells.$id.tsx`, `trades.new.tsx`) into `components/` + `lib/` modules.
 
-## Out of scope
-- No accounting logic, no schema changes, no new business rules.
-- No changes to Supabase policies, server functions, or AI logic.
-- No visual rebrand — same tokens, same colors, only layout/spacing/scroll behavior.
+---
 
-## Verification
-- Screenshot Sell, Dashboard, Command Center, AI Brain, one list, one dialog at 360, 480, 768, 1024, 1280 via Playwright.
-- Confirm: no horizontal scroll on any viewport, sticky action bars visible above safe area, dialogs scroll internally, tables become cards on mobile.
+## Technical notes
 
-Reply "go" to execute, or tell me what to adjust (e.g., skip a page, keep tables horizontal on mobile, different breakpoints).
+- **One forward-only migration** per phase. No history rewrites, no drops of existing tables/policies unless replacing an incorrect one in place.
+- **Auth untouched.** No changes to Supabase auth, RLS helpers, or role model.
+- **Data preserved.** All renames use `UPDATE`, not `DROP`. Cancel/reversal instead of delete.
+- **Score** renamed everywhere from "AI Deal/Trade Score" to **"Trade Quality Score"** with visible factor breakdown. The Gemini-powered Business Brain chat keeps the "AI" label since it *is* an LLM.
+
+---
+
+## What I need from you before I start
+
+1. **Scope confirmation**: Do you want me to proceed with all 3 phases across the next several turns, or only Phase 1 first and then decide?
+2. **Milad Box rename**: OK to update the display name on existing auto-created accounts (e.g. "Ali Cash Box (AED)" → "Milad Box (AED)")? IDs and balances stay identical.
+3. **Existing matched trades**: Some already exist in `trade_cycles` without a profit destination. On the first Phase-1 migration, should I (a) leave them as-is and require admin to set a destination before they count in dashboard profit, or (b) auto-assign them to a "Profit — Unassigned (AED)" holding account you can reclassify later?
+4. **Test runtime**: Vitest tests will hit the real Supabase project (read-only + rollback). OK, or do you want a separate test schema?
+
+Reply with answers (or "go ahead with defaults: full scope, yes rename, option b, real DB") and I'll start Phase 1 in the next turn.
