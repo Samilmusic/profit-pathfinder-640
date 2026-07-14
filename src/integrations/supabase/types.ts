@@ -129,6 +129,13 @@ export type Database = {
             referencedRelation: "profit_by_account"
             referencedColumns: ["account_id"]
           },
+          {
+            foreignKeyName: "accounts_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
+            referencedColumns: ["account_id"]
+          },
         ]
       }
       app_settings: {
@@ -393,6 +400,13 @@ export type Database = {
             referencedColumns: ["account_id"]
           },
           {
+            foreignKeyName: "brought_in_money_deposit_account_id_fkey"
+            columns: ["deposit_account_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
+            referencedColumns: ["account_id"]
+          },
+          {
             foreignKeyName: "brought_in_money_final_deposit_account_id_fkey"
             columns: ["final_deposit_account_id"]
             isOneToOne: false
@@ -418,6 +432,13 @@ export type Database = {
             columns: ["final_deposit_account_id"]
             isOneToOne: false
             referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "brought_in_money_final_deposit_account_id_fkey"
+            columns: ["final_deposit_account_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
             referencedColumns: ["account_id"]
           },
         ]
@@ -580,6 +601,13 @@ export type Database = {
             referencedColumns: ["account_id"]
           },
           {
+            foreignKeyName: "buy_transactions_paid_from_account_id_fkey"
+            columns: ["paid_from_account_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
+            referencedColumns: ["account_id"]
+          },
+          {
             foreignKeyName: "buy_transactions_received_into_account_id_fkey"
             columns: ["received_into_account_id"]
             isOneToOne: false
@@ -605,6 +633,13 @@ export type Database = {
             columns: ["received_into_account_id"]
             isOneToOne: false
             referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "buy_transactions_received_into_account_id_fkey"
+            columns: ["received_into_account_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
             referencedColumns: ["account_id"]
           },
           {
@@ -836,6 +871,13 @@ export type Database = {
             referencedColumns: ["account_id"]
           },
           {
+            foreignKeyName: "customer_deposits_deposit_account_id_fkey"
+            columns: ["deposit_account_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
+            referencedColumns: ["account_id"]
+          },
+          {
             foreignKeyName: "customer_deposits_wallet_account_id_fkey"
             columns: ["wallet_account_id"]
             isOneToOne: false
@@ -861,6 +903,13 @@ export type Database = {
             columns: ["wallet_account_id"]
             isOneToOne: false
             referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "customer_deposits_wallet_account_id_fkey"
+            columns: ["wallet_account_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
             referencedColumns: ["account_id"]
           },
         ]
@@ -1121,6 +1170,13 @@ export type Database = {
             referencedColumns: ["account_id"]
           },
           {
+            foreignKeyName: "expenses_paid_from_account_id_fkey"
+            columns: ["paid_from_account_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
+            referencedColumns: ["account_id"]
+          },
+          {
             foreignKeyName: "expenses_related_buy_id_fkey"
             columns: ["related_buy_id"]
             isOneToOne: false
@@ -1244,6 +1300,13 @@ export type Database = {
             referencedRelation: "profit_by_account"
             referencedColumns: ["account_id"]
           },
+          {
+            foreignKeyName: "inventory_lots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
+            referencedColumns: ["account_id"]
+          },
         ]
       }
       ledger_entries: {
@@ -1307,6 +1370,13 @@ export type Database = {
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "ledger_entries_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
             referencedColumns: ["account_id"]
           },
         ]
@@ -1641,6 +1711,13 @@ export type Database = {
             referencedColumns: ["account_id"]
           },
           {
+            foreignKeyName: "payment_orders_paid_from_account_id_fkey"
+            columns: ["paid_from_account_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
+            referencedColumns: ["account_id"]
+          },
+          {
             foreignKeyName: "payment_orders_source_wallet_account_id_fkey"
             columns: ["source_wallet_account_id"]
             isOneToOne: false
@@ -1668,6 +1745,13 @@ export type Database = {
             referencedRelation: "profit_by_account"
             referencedColumns: ["account_id"]
           },
+          {
+            foreignKeyName: "payment_orders_source_wallet_account_id_fkey"
+            columns: ["source_wallet_account_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
+            referencedColumns: ["account_id"]
+          },
         ]
       }
       profiles: {
@@ -1693,6 +1777,114 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      profit_receivables: {
+        Row: {
+          amount: number
+          cancel_reason: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          customer_id: string | null
+          deleted_at: string | null
+          id: string
+          notes: string | null
+          received_at: string | null
+          received_into_account_id: string | null
+          status: string
+          trade_cycle_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          cancel_reason?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          customer_id?: string | null
+          deleted_at?: string | null
+          id?: string
+          notes?: string | null
+          received_at?: string | null
+          received_into_account_id?: string | null
+          status?: string
+          trade_cycle_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          cancel_reason?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          customer_id?: string | null
+          deleted_at?: string | null
+          id?: string
+          notes?: string | null
+          received_at?: string | null
+          received_into_account_id?: string | null
+          status?: string
+          trade_cycle_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profit_receivables_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profit_receivables_received_into_account_id_fkey"
+            columns: ["received_into_account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "profit_receivables_received_into_account_id_fkey"
+            columns: ["received_into_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profit_receivables_received_into_account_id_fkey"
+            columns: ["received_into_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "profit_receivables_received_into_account_id_fkey"
+            columns: ["received_into_account_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "profit_receivables_received_into_account_id_fkey"
+            columns: ["received_into_account_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "profit_receivables_trade_cycle_id_fkey"
+            columns: ["trade_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "trade_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profit_receivables_trade_cycle_id_fkey"
+            columns: ["trade_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "v_open_cycles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sell_payments: {
         Row: {
@@ -1764,6 +1956,13 @@ export type Database = {
             columns: ["received_into_account_id"]
             isOneToOne: false
             referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "sell_payments_received_into_account_id_fkey"
+            columns: ["received_into_account_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
             referencedColumns: ["account_id"]
           },
           {
@@ -2003,6 +2202,13 @@ export type Database = {
             referencedColumns: ["account_id"]
           },
           {
+            foreignKeyName: "sell_transactions_received_into_account_id_fkey"
+            columns: ["received_into_account_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
+            referencedColumns: ["account_id"]
+          },
+          {
             foreignKeyName: "sell_transactions_sold_from_account_id_fkey"
             columns: ["sold_from_account_id"]
             isOneToOne: false
@@ -2028,6 +2234,13 @@ export type Database = {
             columns: ["sold_from_account_id"]
             isOneToOne: false
             referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "sell_transactions_sold_from_account_id_fkey"
+            columns: ["sold_from_account_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
             referencedColumns: ["account_id"]
           },
           {
@@ -2110,6 +2323,7 @@ export type Database = {
           created_by: string | null
           customer_id: string | null
           cycle_kind: string
+          deal_code: string | null
           deleted_at: string | null
           entry_date: string
           estimated_profit: number
@@ -2133,6 +2347,8 @@ export type Database = {
           net_profit: number | null
           notes: string | null
           pending_profit: number | null
+          profit_destination_account_id: string | null
+          profit_status: string | null
           quote_currency: string | null
           realized_profit: number
           realized_profit_currency: string | null
@@ -2147,6 +2363,7 @@ export type Database = {
           sell_rate: number | null
           status: Database["public"]["Enums"]["trade_status"]
           title: string | null
+          trade_mode: string | null
           updated_at: string
         }
         Insert: {
@@ -2165,6 +2382,7 @@ export type Database = {
           created_by?: string | null
           customer_id?: string | null
           cycle_kind?: string
+          deal_code?: string | null
           deleted_at?: string | null
           entry_date?: string
           estimated_profit?: number
@@ -2188,6 +2406,8 @@ export type Database = {
           net_profit?: number | null
           notes?: string | null
           pending_profit?: number | null
+          profit_destination_account_id?: string | null
+          profit_status?: string | null
           quote_currency?: string | null
           realized_profit?: number
           realized_profit_currency?: string | null
@@ -2202,6 +2422,7 @@ export type Database = {
           sell_rate?: number | null
           status?: Database["public"]["Enums"]["trade_status"]
           title?: string | null
+          trade_mode?: string | null
           updated_at?: string
         }
         Update: {
@@ -2220,6 +2441,7 @@ export type Database = {
           created_by?: string | null
           customer_id?: string | null
           cycle_kind?: string
+          deal_code?: string | null
           deleted_at?: string | null
           entry_date?: string
           estimated_profit?: number
@@ -2243,6 +2465,8 @@ export type Database = {
           net_profit?: number | null
           notes?: string | null
           pending_profit?: number | null
+          profit_destination_account_id?: string | null
+          profit_status?: string | null
           quote_currency?: string | null
           realized_profit?: number
           realized_profit_currency?: string | null
@@ -2257,6 +2481,7 @@ export type Database = {
           sell_rate?: number | null
           status?: Database["public"]["Enums"]["trade_status"]
           title?: string | null
+          trade_mode?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -2303,6 +2528,13 @@ export type Database = {
             referencedColumns: ["account_id"]
           },
           {
+            foreignKeyName: "trade_cycles_final_account_id_fkey"
+            columns: ["final_account_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
+            referencedColumns: ["account_id"]
+          },
+          {
             foreignKeyName: "trade_cycles_initial_account_id_fkey"
             columns: ["initial_account_id"]
             isOneToOne: false
@@ -2331,6 +2563,13 @@ export type Database = {
             referencedColumns: ["account_id"]
           },
           {
+            foreignKeyName: "trade_cycles_initial_account_id_fkey"
+            columns: ["initial_account_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
+            referencedColumns: ["account_id"]
+          },
+          {
             foreignKeyName: "trade_cycles_intermediate_account_id_fkey"
             columns: ["intermediate_account_id"]
             isOneToOne: false
@@ -2356,6 +2595,48 @@ export type Database = {
             columns: ["intermediate_account_id"]
             isOneToOne: false
             referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "trade_cycles_intermediate_account_id_fkey"
+            columns: ["intermediate_account_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "trade_cycles_profit_destination_account_id_fkey"
+            columns: ["profit_destination_account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "trade_cycles_profit_destination_account_id_fkey"
+            columns: ["profit_destination_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_cycles_profit_destination_account_id_fkey"
+            columns: ["profit_destination_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "trade_cycles_profit_destination_account_id_fkey"
+            columns: ["profit_destination_account_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "trade_cycles_profit_destination_account_id_fkey"
+            columns: ["profit_destination_account_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
             referencedColumns: ["account_id"]
           },
         ]
@@ -2485,6 +2766,13 @@ export type Database = {
             referencedColumns: ["account_id"]
           },
           {
+            foreignKeyName: "trade_movements_from_account_id_fkey"
+            columns: ["from_account_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
+            referencedColumns: ["account_id"]
+          },
+          {
             foreignKeyName: "trade_movements_from_customer_id_fkey"
             columns: ["from_customer_id"]
             isOneToOne: false
@@ -2524,6 +2812,13 @@ export type Database = {
             columns: ["to_account_id"]
             isOneToOne: false
             referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "trade_movements_to_account_id_fkey"
+            columns: ["to_account_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
             referencedColumns: ["account_id"]
           },
           {
@@ -2619,6 +2914,13 @@ export type Database = {
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "trade_profit_collections_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
             referencedColumns: ["account_id"]
           },
           {
@@ -2728,6 +3030,13 @@ export type Database = {
             referencedColumns: ["account_id"]
           },
           {
+            foreignKeyName: "transfers_from_account_id_fkey"
+            columns: ["from_account_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
+            referencedColumns: ["account_id"]
+          },
+          {
             foreignKeyName: "transfers_to_account_id_fkey"
             columns: ["to_account_id"]
             isOneToOne: false
@@ -2753,6 +3062,13 @@ export type Database = {
             columns: ["to_account_id"]
             isOneToOne: false
             referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "transfers_to_account_id_fkey"
+            columns: ["to_account_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
             referencedColumns: ["account_id"]
           },
         ]
@@ -2899,6 +3215,13 @@ export type Database = {
             referencedRelation: "profit_by_account"
             referencedColumns: ["account_id"]
           },
+          {
+            foreignKeyName: "inventory_lots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
+            referencedColumns: ["account_id"]
+          },
         ]
       }
       market_rate_deltas: {
@@ -3037,6 +3360,13 @@ export type Database = {
             referencedRelation: "profit_by_account"
             referencedColumns: ["account_id"]
           },
+          {
+            foreignKeyName: "inventory_lots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
+            referencedColumns: ["account_id"]
+          },
         ]
       }
       sale_allocations_view: {
@@ -3089,6 +3419,13 @@ export type Database = {
             referencedRelation: "profit_by_account"
             referencedColumns: ["account_id"]
           },
+          {
+            foreignKeyName: "inventory_lots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
+            referencedColumns: ["account_id"]
+          },
         ]
       }
       service_charge_daily: {
@@ -3105,6 +3442,19 @@ export type Database = {
           total_brought_in: number | null
           total_paid_expenses: number | null
           total_profit_share: number | null
+        }
+        Relationships: []
+      }
+      v_balance_reconciliation: {
+        Row: {
+          account_id: string | null
+          account_name: string | null
+          account_type: string | null
+          currency: string | null
+          diff: number | null
+          inventory_balance: number | null
+          is_mismatch: boolean | null
+          ledger_balance: number | null
         }
         Relationships: []
       }
@@ -3268,6 +3618,13 @@ export type Database = {
             referencedColumns: ["account_id"]
           },
           {
+            foreignKeyName: "trade_cycles_initial_account_id_fkey"
+            columns: ["initial_account_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
+            referencedColumns: ["account_id"]
+          },
+          {
             foreignKeyName: "trade_cycles_intermediate_account_id_fkey"
             columns: ["intermediate_account_id"]
             isOneToOne: false
@@ -3295,6 +3652,13 @@ export type Database = {
             referencedRelation: "profit_by_account"
             referencedColumns: ["account_id"]
           },
+          {
+            foreignKeyName: "trade_cycles_intermediate_account_id_fkey"
+            columns: ["intermediate_account_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
+            referencedColumns: ["account_id"]
+          },
         ]
       }
       v_today_profit: {
@@ -3315,7 +3679,12 @@ export type Database = {
       }
     }
     Functions: {
+      admin_force_close: {
+        Args: { _reason: string; _sell_id: string }
+        Returns: undefined
+      }
       admin_recalculate_balances: { Args: never; Returns: Json }
+      admin_reconcile: { Args: { _reason: string }; Returns: Json }
       avg_buy_rate: {
         Args: { _as_of?: string; _currency: string; _quote_currency: string }
         Returns: number
@@ -3383,6 +3752,7 @@ export type Database = {
         Returns: undefined
       }
       sync_sell_received_lot: { Args: { _sell_id: string }; Returns: undefined }
+      validate_close: { Args: { _sell_id: string }; Returns: Json }
     }
     Enums: {
       account_node_type: "box" | "location" | "currency_account"
