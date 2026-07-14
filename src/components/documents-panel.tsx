@@ -15,15 +15,26 @@ export function DocumentsPanel({
   refType,
   refId,
   compact,
+  docType: docTypeProp,
+  onDocTypeChange,
+  defaultDocType,
 }: {
   refType: RefType;
   refId: string | null | undefined;
   compact?: boolean;
+  docType?: DocType;
+  onDocTypeChange?: (v: DocType) => void;
+  defaultDocType?: DocType;
 }) {
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
-  const [docType, setDocType] = useState<DocType>("payment_receipt");
+  const [docTypeInner, setDocTypeInner] = useState<DocType>(defaultDocType ?? "payment_receipt");
+  const docType = docTypeProp ?? docTypeInner;
+  const setDocType = (v: DocType) => {
+    setDocTypeInner(v);
+    onDocTypeChange?.(v);
+  };
   const [notes, setNotes] = useState("");
   const [uploading, setUploading] = useState(false);
 
