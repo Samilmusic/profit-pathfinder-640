@@ -43,7 +43,6 @@ import { Route as AuthenticatedDepositsIndexRouteImport } from './routes/_authen
 import { Route as AuthenticatedCustomersIndexRouteImport } from './routes/_authenticated/customers.index'
 import { Route as AuthenticatedBroughtInIndexRouteImport } from './routes/_authenticated/brought-in.index'
 import { Route as AuthenticatedAccountsIndexRouteImport } from './routes/_authenticated/accounts.index'
-import { Route as AuthenticatedTradesNewRouteImport } from './routes/_authenticated/trades.new'
 import { Route as AuthenticatedTradesIdRouteImport } from './routes/_authenticated/trades.$id'
 import { Route as AuthenticatedSellsIdRouteImport } from './routes/_authenticated/sells.$id'
 import { Route as AuthenticatedDepositsNewRouteImport } from './routes/_authenticated/deposits.new'
@@ -233,11 +232,6 @@ const AuthenticatedAccountsIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedAccountsRoute,
   } as any)
-const AuthenticatedTradesNewRoute = AuthenticatedTradesNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => AuthenticatedTradesRoute,
-} as any)
 const AuthenticatedTradesIdRoute = AuthenticatedTradesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -314,7 +308,6 @@ export interface FileRoutesByFullPath {
   '/deposits/new': typeof AuthenticatedDepositsNewRoute
   '/sells/$id': typeof AuthenticatedSellsIdRoute
   '/trades/$id': typeof AuthenticatedTradesIdRoute
-  '/trades/new': typeof AuthenticatedTradesNewRoute
   '/accounts/': typeof AuthenticatedAccountsIndexRoute
   '/brought-in/': typeof AuthenticatedBroughtInIndexRoute
   '/customers/': typeof AuthenticatedCustomersIndexRoute
@@ -353,7 +346,6 @@ export interface FileRoutesByTo {
   '/deposits/new': typeof AuthenticatedDepositsNewRoute
   '/sells/$id': typeof AuthenticatedSellsIdRoute
   '/trades/$id': typeof AuthenticatedTradesIdRoute
-  '/trades/new': typeof AuthenticatedTradesNewRoute
   '/accounts': typeof AuthenticatedAccountsIndexRoute
   '/brought-in': typeof AuthenticatedBroughtInIndexRoute
   '/customers': typeof AuthenticatedCustomersIndexRoute
@@ -398,7 +390,6 @@ export interface FileRoutesById {
   '/_authenticated/deposits/new': typeof AuthenticatedDepositsNewRoute
   '/_authenticated/sells/$id': typeof AuthenticatedSellsIdRoute
   '/_authenticated/trades/$id': typeof AuthenticatedTradesIdRoute
-  '/_authenticated/trades/new': typeof AuthenticatedTradesNewRoute
   '/_authenticated/accounts/': typeof AuthenticatedAccountsIndexRoute
   '/_authenticated/brought-in/': typeof AuthenticatedBroughtInIndexRoute
   '/_authenticated/customers/': typeof AuthenticatedCustomersIndexRoute
@@ -443,7 +434,6 @@ export interface FileRouteTypes {
     | '/deposits/new'
     | '/sells/$id'
     | '/trades/$id'
-    | '/trades/new'
     | '/accounts/'
     | '/brought-in/'
     | '/customers/'
@@ -482,7 +472,6 @@ export interface FileRouteTypes {
     | '/deposits/new'
     | '/sells/$id'
     | '/trades/$id'
-    | '/trades/new'
     | '/accounts'
     | '/brought-in'
     | '/customers'
@@ -526,7 +515,6 @@ export interface FileRouteTypes {
     | '/_authenticated/deposits/new'
     | '/_authenticated/sells/$id'
     | '/_authenticated/trades/$id'
-    | '/_authenticated/trades/new'
     | '/_authenticated/accounts/'
     | '/_authenticated/brought-in/'
     | '/_authenticated/customers/'
@@ -782,13 +770,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAccountsIndexRouteImport
       parentRoute: typeof AuthenticatedAccountsRoute
     }
-    '/_authenticated/trades/new': {
-      id: '/_authenticated/trades/new'
-      path: '/new'
-      fullPath: '/trades/new'
-      preLoaderRoute: typeof AuthenticatedTradesNewRouteImport
-      parentRoute: typeof AuthenticatedTradesRoute
-    }
     '/_authenticated/trades/$id': {
       id: '/_authenticated/trades/$id'
       path: '/$id'
@@ -889,13 +870,11 @@ const AuthenticatedDepositsRouteWithChildren =
 
 interface AuthenticatedTradesRouteChildren {
   AuthenticatedTradesIdRoute: typeof AuthenticatedTradesIdRoute
-  AuthenticatedTradesNewRoute: typeof AuthenticatedTradesNewRoute
   AuthenticatedTradesIndexRoute: typeof AuthenticatedTradesIndexRoute
 }
 
 const AuthenticatedTradesRouteChildren: AuthenticatedTradesRouteChildren = {
   AuthenticatedTradesIdRoute: AuthenticatedTradesIdRoute,
-  AuthenticatedTradesNewRoute: AuthenticatedTradesNewRoute,
   AuthenticatedTradesIndexRoute: AuthenticatedTradesIndexRoute,
 }
 
