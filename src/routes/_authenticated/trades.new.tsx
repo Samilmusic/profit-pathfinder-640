@@ -360,7 +360,6 @@ function NewTradePage() {
         intermediate_currency: m.traded_currency,
         intermediate_received: mAmt,
         final_returned_amount: mValueB,
-        buy_rate: mRateA,
         sell_rate: mRateB,
         expected_profit: mProfitCounter,
         expected_profit_currency: m.counter_currency,
