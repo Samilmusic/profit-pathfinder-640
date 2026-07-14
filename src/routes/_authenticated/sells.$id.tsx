@@ -313,11 +313,18 @@ function DealPage() {
           <Card>
             <CardHeader className="pb-2 flex-row items-center justify-between">
               <CardTitle className="text-sm">Currency Delivery</CardTitle>
-              {!s.currency_delivered && s.deal_status !== "closed" && s.deal_status !== "cancelled" && (
-                <Button size="sm" onClick={() => setShowDeliver((v) => !v)}>
-                  <Truck className="h-4 w-4 mr-1" /> Deliver {s.sold_currency}
-                </Button>
-              )}
+              <div className="flex items-center gap-2">
+                {s.deal_status !== "closed" && s.deal_status !== "cancelled" && !hasDeliveryProof && (
+                  <Button size="sm" variant="secondary" onClick={jumpToUploadDeliveryProof}>
+                    <Paperclip className="h-4 w-4 mr-1" /> Upload delivery proof
+                  </Button>
+                )}
+                {!s.currency_delivered && s.deal_status !== "closed" && s.deal_status !== "cancelled" && (
+                  <Button size="sm" onClick={() => setShowDeliver((v) => !v)}>
+                    <Truck className="h-4 w-4 mr-1" /> Deliver {s.sold_currency}
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="pt-0 space-y-3">
               {showDeliver && (
