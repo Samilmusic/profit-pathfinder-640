@@ -336,7 +336,15 @@ function DealPage() {
             <CardHeader className="pb-2 flex-row items-center justify-between">
               <CardTitle className="text-sm">Customer Payment</CardTitle>
               {s.deal_status !== "closed" && s.deal_status !== "cancelled" && (
-                <Button size="sm" onClick={() => setShowPay((v) => !v)}><Plus className="h-4 w-4 mr-1" /> Record payment</Button>
+                <Button size="sm" onClick={() => {
+                  setShowPay((v) => {
+                    const next = !v;
+                    if (next && !pf.amount && remaining > 0) {
+                      setPf((p) => ({ ...p, amount: String(remaining) }));
+                    }
+                    return next;
+                  });
+                }}><Plus className="h-4 w-4 mr-1" /> Record payment</Button>
               )}
             </CardHeader>
             <CardContent className="pt-0">
