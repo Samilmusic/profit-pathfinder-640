@@ -1,0 +1,1 @@
+ALTER TYPE public.ledger_ref_type ADD VALUE IF NOT EXISTS 'sell_payment';
