@@ -3440,6 +3440,7 @@ export type Database = {
         | "deposit"
         | "payment_order"
         | "service_charge"
+        | "sell_payment"
       money_location:
         | "cash_box"
         | "aed_bank"
@@ -3703,6 +3704,7 @@ export const Constants = {
         "deposit",
         "payment_order",
         "service_charge",
+        "sell_payment",
       ],
       money_location: [
         "cash_box",
