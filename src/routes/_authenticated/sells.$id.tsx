@@ -479,9 +479,9 @@ function DealPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card id="documents-section">
             <CardHeader className="pb-2"><CardTitle className="text-sm">Documents</CardTitle></CardHeader>
-            <CardContent><DocumentsPanel refType="sell" refId={id} /></CardContent>
+            <CardContent><DocumentsPanel refType="sell" refId={id} docType={docType} onDocTypeChange={setDocType} /></CardContent>
           </Card>
         </div>
 
