@@ -93,6 +93,7 @@ export const DocumentsPanel = forwardRef<DocumentsPanelHandle, {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["documents", refType, refId] });
       qc.invalidateQueries({ queryKey: ["action_center"] });
+      qc.invalidateQueries({ queryKey: ["validate_close"] });
       toast.success("Document removed");
     },
     onError: (e: any) => toast.error(e.message),
@@ -131,6 +132,7 @@ export const DocumentsPanel = forwardRef<DocumentsPanelHandle, {
       if (cameraRef.current) cameraRef.current.value = "";
       qc.invalidateQueries({ queryKey: ["documents", refType, refId] });
       qc.invalidateQueries({ queryKey: ["action_center"] });
+      qc.invalidateQueries({ queryKey: ["validate_close"] });
       toast.success("Document attached");
     } catch (e: any) {
       toast.error(e.message);
