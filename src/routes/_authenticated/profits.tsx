@@ -5,7 +5,10 @@ import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { fmt } from "@/lib/exchange";
-import { TrendingUp, Coins, Clock, CheckCircle2 } from "lucide-react";
+import { TrendingUp, Coins, Clock, CheckCircle2, Wallet } from "lucide-react";
+import { useLatestMarketRates, pickDisplayRate } from "@/lib/market-rates";
+import { useState, useMemo } from "react";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/profits")({ component: ProfitsPage });
 
@@ -98,86 +101,218 @@ function CcyGrid({ title, icon, rows }: { title: string; icon: React.ReactNode; 
 function ProfitsPage() {
   const q = useCycles();
   const rows = q.data ?? [];
+  const marketRatesQ = useLatestMarketRates();
+  const [filter, setFilter] = useState<"all" | "buy_only" | "sell_from_inventory" | "matched_direct" | "legacy">("all");
 
-  const expectedByCcy = sumBy(rows, "expected_profit", "expected_profit_currency");
-  const realizedByCcy = sumBy(rows, "realized_profit", "realized_profit_currency");
-  const receivedByCcy = sumBy(rows, "received_profit", "expected_profit_currency");
-  const pendingByCcy = sumBy(rows, "pending_profit", "expected_profit_currency");
+  // Currency conversion helpers (via IRR pivot, market mid).
+  const rateFor = (ccy: string): number => {
+    if (!ccy || ccy === "IRR") return 1;
+    const row = pickDisplayRate(marketRatesQ.data, ccy).row;
+    return row?.mid_rate ?? row?.sell_rate ?? row?.buy_rate ?? 0;
+  };
+  const toAED = (amount: number, from: string): number => {
+    if (!amount) return 0;
+    if (!from || from === "AED") return amount;
+    const asIrr = from === "IRR" ? amount : amount * rateFor(from);
+    const aedR = rateFor("AED");
+    return aedR > 0 ? asIrr / aedR : 0;
+  };
 
-  const byMode: Record<string, Cycle[]> = {};
+  const filtered = filter === "all" ? rows : rows.filter((r) => (r.trade_mode ?? "legacy") === filter);
+
+  const totals = useMemo(() => {
+    let exp = 0, real = 0, recv = 0, pend = 0, milad = 0, ali = 0;
+    for (const r of filtered) {
+      const ecy = r.expected_profit_currency ?? r.realized_profit_currency ?? r.quote_currency ?? "";
+      const rcy = r.realized_profit_currency ?? ecy;
+      exp += toAED(Number(r.expected_profit ?? 0), ecy);
+      real += toAED(Number(r.realized_profit ?? 0), rcy);
+      recv += toAED(Number(r.received_profit ?? 0), rcy);
+      pend += toAED(Number(r.pending_profit ?? 0), rcy);
+      milad += toAED(Number(r.milad_profit ?? 0), rcy);
+      ali += toAED(Number(r.ali_profit ?? 0), rcy);
+    }
+    return { exp, real, recv, pend, milad, ali };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtered, marketRatesQ.data]);
+
+  const expectedByCcy = sumBy(filtered, "expected_profit", "expected_profit_currency");
+  const realizedByCcy = sumBy(filtered, "realized_profit", "realized_profit_currency");
+  const receivedByCcy = sumBy(filtered, "received_profit", "realized_profit_currency");
+  const pendingByCcy = sumBy(filtered, "pending_profit", "realized_profit_currency");
+
+  const modeCounts: Record<string, number> = { all: rows.length };
   for (const r of rows) {
-    const m = r.trade_mode ?? "legacy";
-    (byMode[m] ??= []).push(r);
+    const k = r.trade_mode ?? "legacy";
+    modeCounts[k] = (modeCounts[k] ?? 0) + 1;
   }
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Profits" description="All profit signals across every deal — expected, realized, received, and pending." />
+      <PageHeader
+        title="Profits"
+        description="All profits across every deal — converted to AED at current market rates."
+      />
 
+      {/* Hero totals in AED */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <CcyGrid title="Expected profit" icon={<TrendingUp className="h-4 w-4" />} rows={expectedByCcy} />
-        <CcyGrid title="Realized profit" icon={<CheckCircle2 className="h-4 w-4" />} rows={realizedByCcy} />
-        <CcyGrid title="Received (in hand)" icon={<Coins className="h-4 w-4" />} rows={receivedByCcy} />
-        <CcyGrid title="Pending collection" icon={<Clock className="h-4 w-4" />} rows={pendingByCcy} />
+        <HeroCard
+          title="Realized profit"
+          icon={<CheckCircle2 className="h-4 w-4 text-emerald-600" />}
+          aed={totals.real}
+          byCcy={realizedByCcy}
+          tone="emerald"
+        />
+        <HeroCard
+          title="Received in hand"
+          icon={<Coins className="h-4 w-4 text-emerald-600" />}
+          aed={totals.recv}
+          byCcy={receivedByCcy}
+          tone="emerald"
+        />
+        <HeroCard
+          title="Pending collection"
+          icon={<Clock className="h-4 w-4 text-amber-600" />}
+          aed={totals.pend}
+          byCcy={pendingByCcy}
+          tone="amber"
+        />
+        <HeroCard
+          title="Expected (open deals)"
+          icon={<TrendingUp className="h-4 w-4 text-sky-600" />}
+          aed={totals.exp}
+          byCcy={expectedByCcy}
+          tone="sky"
+        />
       </div>
 
-      {Object.keys(byMode).sort().map((m) => (
-        <Card key={m}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center justify-between">
-              <span>{modeLabel(m)} deals</span>
-              <Badge variant="outline">{byMode[m].length}</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
-                  <tr>
-                    <th className="text-left p-2">Deal</th>
-                    <th className="text-left p-2">Date</th>
-                    <th className="text-left p-2">Pair</th>
-                    <th className="text-right p-2">Expected</th>
-                    <th className="text-right p-2">Realized</th>
-                    <th className="text-right p-2">Received</th>
-                    <th className="text-right p-2">Pending</th>
-                    <th className="text-right p-2">Milad</th>
-                    <th className="text-right p-2">Ali</th>
-                    <th className="text-left p-2">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {byMode[m].map((r) => {
-                    const ecy = r.expected_profit_currency ?? "";
-                    const rcy = r.realized_profit_currency ?? ecy;
-                    return (
-                      <tr key={r.id} className="border-t hover:bg-muted/20">
-                        <td className="p-2 font-mono text-xs">
-                          <Link to="/trades/$id" params={{ id: r.id }} className="text-primary hover:underline">
-                            {r.deal_code ?? r.code ?? r.id.slice(0, 8)}
-                          </Link>
-                        </td>
-                        <td className="p-2">{r.entry_date ?? "—"}</td>
-                        <td className="p-2">{r.base_currency ?? "?"} → {r.quote_currency ?? "?"}</td>
-                        <td className="p-2 text-right font-mono">{r.expected_profit ? fmt(r.expected_profit, ecy) : "—"}</td>
-                        <td className="p-2 text-right font-mono">{r.realized_profit ? fmt(r.realized_profit, rcy) : "—"}</td>
-                        <td className="p-2 text-right font-mono">{r.received_profit ? fmt(r.received_profit, ecy) : "—"}</td>
-                        <td className="p-2 text-right font-mono">{r.pending_profit ? fmt(r.pending_profit, ecy) : "—"}</td>
-                        <td className="p-2 text-right font-mono">{r.milad_profit ? fmt(r.milad_profit, ecy) : "—"}</td>
-                        <td className="p-2 text-right font-mono">{r.ali_profit ? fmt(r.ali_profit, ecy) : "—"}</td>
-                        <td className="p-2"><Badge variant={statusTone(r.status)}>{r.status ?? "—"}</Badge></td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+      {/* Partner split */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Wallet className="h-4 w-4" /> Partner split (realized, AED-equivalent)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid sm:grid-cols-2 gap-3">
+          <div className="rounded-lg border p-3">
+            <div className="text-xs text-muted-foreground">Milad</div>
+            <div className="font-mono text-xl font-semibold text-emerald-600">{fmt(totals.milad, "AED")} AED</div>
+          </div>
+          <div className="rounded-lg border p-3">
+            <div className="text-xs text-muted-foreground">Ali</div>
+            <div className="font-mono text-xl font-semibold text-emerald-600">{fmt(totals.ali, "AED")} AED</div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-2">
+        {(["all", "matched_direct", "sell_from_inventory", "buy_only", "legacy"] as const).map((k) => (
+          <Button
+            key={k}
+            variant={filter === k ? "default" : "outline"}
+            size="sm"
+            onClick={() => setFilter(k)}
+            className="h-8"
+          >
+            {k === "all" ? "All" : modeLabel(k)}
+            <Badge variant="secondary" className="ml-2">{modeCounts[k] ?? 0}</Badge>
+          </Button>
+        ))}
+      </div>
+
+      {/* Deals table */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Deals ({filtered.length})</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
+                <tr>
+                  <th className="text-left p-2">Deal</th>
+                  <th className="text-left p-2">Date</th>
+                  <th className="text-left p-2">Mode</th>
+                  <th className="text-left p-2">Pair</th>
+                  <th className="text-right p-2">Profit (native)</th>
+                  <th className="text-right p-2">≈ AED</th>
+                  <th className="text-left p-2">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.length === 0 && (
+                  <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">No deals in this view.</td></tr>
+                )}
+                {filtered.map((r) => {
+                  const rcy = r.realized_profit_currency ?? r.expected_profit_currency ?? "";
+                  const native = Number(r.realized_profit ?? r.expected_profit ?? 0);
+                  const aed = toAED(native, rcy);
+                  return (
+                    <tr key={r.id} className="border-t hover:bg-muted/20">
+                      <td className="p-2 font-mono text-xs">
+                        <Link to="/trades/$id" params={{ id: r.id }} className="text-primary hover:underline">
+                          {r.deal_code ?? r.code ?? r.id.slice(0, 8)}
+                        </Link>
+                      </td>
+                      <td className="p-2 whitespace-nowrap">{r.entry_date ?? "—"}</td>
+                      <td className="p-2"><Badge variant="outline">{modeLabel(r.trade_mode)}</Badge></td>
+                      <td className="p-2 whitespace-nowrap">{r.base_currency ?? "?"} → {r.quote_currency ?? "?"}</td>
+                      <td className={`p-2 text-right font-mono ${native > 0 ? "text-emerald-600" : native < 0 ? "text-destructive" : ""}`}>
+                        {native ? `${fmt(native, rcy)} ${rcy}` : "—"}
+                      </td>
+                      <td className={`p-2 text-right font-mono font-semibold ${aed > 0 ? "text-emerald-600" : aed < 0 ? "text-destructive" : ""}`}>
+                        {aed ? `${fmt(aed, "AED")} AED` : "—"}
+                      </td>
+                      <td className="p-2"><Badge variant={statusTone(r.status)}>{r.status ?? "—"}</Badge></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
 
       {q.isLoading && <div className="text-sm text-muted-foreground">Loading…</div>}
-      {!q.isLoading && rows.length === 0 && <div className="text-sm text-muted-foreground">No deals yet.</div>}
     </div>
+  );
+}
+
+function HeroCard({ title, icon, aed, byCcy, tone }: {
+  title: string;
+  icon: React.ReactNode;
+  aed: number;
+  byCcy: Record<string, number>;
+  tone: "emerald" | "amber" | "sky";
+}) {
+  const entries = Object.entries(byCcy).filter(([, v]) => Math.abs(v) > 0.0001);
+  const toneClass =
+    tone === "emerald" ? "text-emerald-600" :
+    tone === "amber" ? "text-amber-600" :
+    "text-sky-600";
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-xs flex items-center gap-2 font-medium text-muted-foreground uppercase tracking-wide">
+          {icon}{title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <div className={`font-mono text-2xl font-bold ${toneClass}`}>
+          {fmt(aed, "AED")} <span className="text-sm font-normal text-muted-foreground">AED</span>
+        </div>
+        {entries.length > 0 && (
+          <div className="border-t pt-2 space-y-0.5">
+            {entries.map(([ccy, v]) => (
+              <div key={ccy} className="flex items-center justify-between text-[11px]">
+                <span className="text-muted-foreground">{ccy}</span>
+                <span className="font-mono">{fmt(v, ccy)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

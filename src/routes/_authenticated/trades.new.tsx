@@ -201,12 +201,31 @@ function NewTradePage() {
   const marketRatesQ = useLatestMarketRates();
   const aedRow = pickDisplayRate(marketRatesQ.data, "AED").row;
   const aedRateIRR = aedRow?.mid_rate ?? aedRow?.sell_rate ?? aedRow?.buy_rate ?? 0;
+
+  // Convert an amount between currencies using IRR as pivot and market mid rates.
+  const rateFor = (ccy: string): number => {
+    if (ccy === "IRR") return 1;
+    const row = pickDisplayRate(marketRatesQ.data, ccy).row;
+    return row?.mid_rate ?? row?.sell_rate ?? row?.buy_rate ?? 0;
+  };
+  const convertCcy = (amount: number, from: string, to: string): number => {
+    if (!amount || from === to) return amount;
+    // to IRR
+    const asIrr = from === "IRR" ? amount : amount * (rateFor(from) || 0);
+    if (to === "IRR") return asIrr;
+    const r = rateFor(to);
+    return r > 0 ? asIrr / r : 0;
+  };
+
+  // Profit currency follows the destination account. If none chosen, use counter currency.
+  const profitDestAccount = accounts.find((a: any) => a.id === m.profit_destination_account_id);
+  const profitCcy: string = profitDestAccount?.currency ?? m.counter_currency;
+  const mProfitInDest = convertCcy(mProfitCounter, m.counter_currency, profitCcy);
   const mProfitAED =
-    m.counter_currency === "AED"
-      ? mProfitCounter
-      : m.counter_currency === "IRR" && aedRateIRR > 0
-        ? mProfitCounter / aedRateIRR
-        : 0;
+    profitCcy === "AED"
+      ? mProfitInDest
+      : convertCcy(mProfitCounter, m.counter_currency, "AED");
+  void aedRateIRR;
 
   // ---------- Validation ----------
   type Check = { key: string; label: string; ok: boolean; hint?: string };
@@ -361,11 +380,11 @@ function NewTradePage() {
         intermediate_received: mAmt,
         final_returned_amount: mValueB,
         sell_rate: mRateB,
-        expected_profit: mProfitCounter,
-        expected_profit_currency: m.counter_currency,
-        realized_profit: mProfitCounter,
-        realized_profit_currency: m.counter_currency,
-        received_profit: opts.closeNow ? mProfitCounter : 0,
+        expected_profit: mProfitInDest,
+        expected_profit_currency: profitCcy,
+        realized_profit: mProfitInDest,
+        realized_profit_currency: profitCcy,
+        received_profit: opts.closeNow ? mProfitInDest : 0,
         final_profit_confirmed: opts.closeNow,
         status: opts.closeNow ? "completed" : "in_progress",
         profit_destination_account_id: m.profit_destination_account_id || null,
@@ -707,14 +726,26 @@ function NewTradePage() {
                   <Row label="Sell rate" value={mRateB ? fmt(mRateB) : "—"} />
                   <Row label="Amount" value={mAmt ? `${fmt(mAmt)} ${m.traded_currency}` : "—"} />
                   <div className="rounded-lg border bg-muted/40 p-3 text-center">
-                    <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Spread profit</div>
-                    <div className={`font-mono text-lg font-semibold ${mProfitCounter >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-                      {mProfitCounter ? `${fmt(mProfitCounter)} ${m.counter_currency}` : "—"}
+                    <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                      Profit in {profitCcy}
+                      {profitDestAccount ? ` · ${profitDestAccount.name}` : ""}
                     </div>
-                    <div className="mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">≈ AED</div>
-                    <div className={`font-mono text-2xl font-bold ${mProfitAED >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-                      {mProfitAED ? fmt(mProfitAED, "AED") : "—"}
+                    <div className={`font-mono text-2xl font-bold ${mProfitInDest >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+                      {mProfitInDest ? `${fmt(mProfitInDest, profitCcy)} ${profitCcy}` : "—"}
                     </div>
+                    {profitCcy !== "AED" && (
+                      <>
+                        <div className="mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">≈ AED equivalent</div>
+                        <div className={`font-mono text-sm ${mProfitAED >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+                          {mProfitAED ? fmt(mProfitAED, "AED") : "—"}
+                        </div>
+                      </>
+                    )}
+                    {profitCcy !== m.counter_currency && mProfitCounter !== 0 && (
+                      <div className="mt-1 text-[10px] text-muted-foreground">
+                        Spread {fmt(mProfitCounter)} {m.counter_currency} converted at market
+                      </div>
+                    )}
                     {mMarginPct !== 0 && (
                       <div className={`text-[11px] mt-1 ${mMarginPct >= 0 ? "text-emerald-600" : "text-destructive"}`}>
                         Margin {mMarginPct.toFixed(2)}%
