@@ -229,7 +229,7 @@ function NewTradePage() {
     { key: "amt", label: "Amount entered", ok: mAmt > 0 },
     { key: "ra", label: "Buy rate entered", ok: mRateA > 0 },
     { key: "rb", label: "Sell rate entered", ok: mRateB > 0 },
-    { key: "profit_acc", label: `Profit destination (${m.counter_currency}) selected`, ok: !!m.profit_destination_account_id, hint: `Where the ${m.counter_currency} spread lands.` },
+    { key: "profit_acc", label: "Profit destination account selected", ok: !!m.profit_destination_account_id, hint: "Pick any account (AED, IRR, or other) to receive the spread." },
   ];
   const checks = mode === "buy" ? buyChecks : mode === "sell" ? sellChecks : matchedChecks;
   const missing = checks.filter((c) => !c.ok);
@@ -609,14 +609,13 @@ function NewTradePage() {
                 </F>
                 <div className="sm:col-span-2">
                   <F
-                    label={`Profit destination account (${m.counter_currency})`}
-                    hint={`The spread profit (${m.counter_currency}) will be credited to this account.`}
+                    label="Profit destination account"
+                    hint="Any account — AED, IRR, or other. The spread will be credited here."
                   >
                     <AccountSelect
                       value={m.profit_destination_account_id}
                       onChange={(v) => setM({ ...m, profit_destination_account_id: v })}
-                      currency={m.counter_currency}
-                      placeholder={`Select ${m.counter_currency} account`}
+                      placeholder="Select any account"
                     />
                   </F>
                 </div>
