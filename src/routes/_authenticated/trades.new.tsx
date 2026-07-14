@@ -252,7 +252,7 @@ function NewTradePage() {
         ali_share_pct: aliPct,
         notes: notes || null,
         status: "in_progress",
-        trade_mode: mode,
+        trade_mode: mode === "buy" ? "buy_only" : mode === "sell" ? "sell_from_inventory" : "matched_direct",
       };
 
       if (mode === "buy") {
