@@ -15,7 +15,7 @@ import { DealStatusBadge } from "@/components/deal-status-badge";
 import { NumberInput } from "@/components/number-input";
 import { fmt, parseMoneyInput } from "@/lib/exchange";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowLeft, CheckCircle2, Plus, XCircle, Truck } from "lucide-react";
+import { AlertTriangle, ArrowLeft, CheckCircle2, Plus, XCircle, Truck, Paperclip } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/_authenticated/sells/$id")({
@@ -78,6 +78,15 @@ function DealPage() {
   const [showPay, setShowPay] = useState(false);
   const [showDeliver, setShowDeliver] = useState(false);
   const [df, setDf] = useState({ method: "cash_handover", delivered_to: "", notes: "", account_id: "" });
+  const [docType, setDocType] = useState<any>("payment_receipt");
+
+  function jumpToUploadDeliveryProof() {
+    setDocType("currency_handover_proof");
+    setTimeout(() => {
+      const el = document.getElementById("documents-section");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+  }
 
   useEffect(() => {
     if (!showPay || !s || remaining <= 0) return;
@@ -304,11 +313,18 @@ function DealPage() {
           <Card>
             <CardHeader className="pb-2 flex-row items-center justify-between">
               <CardTitle className="text-sm">Currency Delivery</CardTitle>
-              {!s.currency_delivered && s.deal_status !== "closed" && s.deal_status !== "cancelled" && (
-                <Button size="sm" onClick={() => setShowDeliver((v) => !v)}>
-                  <Truck className="h-4 w-4 mr-1" /> Deliver {s.sold_currency}
-                </Button>
-              )}
+              <div className="flex items-center gap-2">
+                {s.deal_status !== "closed" && s.deal_status !== "cancelled" && !hasDeliveryProof && (
+                  <Button size="sm" variant="secondary" onClick={jumpToUploadDeliveryProof}>
+                    <Paperclip className="h-4 w-4 mr-1" /> Upload delivery proof
+                  </Button>
+                )}
+                {!s.currency_delivered && s.deal_status !== "closed" && s.deal_status !== "cancelled" && (
+                  <Button size="sm" onClick={() => setShowDeliver((v) => !v)}>
+                    <Truck className="h-4 w-4 mr-1" /> Deliver {s.sold_currency}
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="pt-0 space-y-3">
               {showDeliver && (
@@ -470,9 +486,9 @@ function DealPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card id="documents-section">
             <CardHeader className="pb-2"><CardTitle className="text-sm">Documents</CardTitle></CardHeader>
-            <CardContent><DocumentsPanel refType="sell" refId={id} /></CardContent>
+            <CardContent><DocumentsPanel refType="sell" refId={id} docType={docType} onDocTypeChange={setDocType} /></CardContent>
           </Card>
         </div>
 
