@@ -152,9 +152,8 @@ function NewTradePage() {
     if (!s.received_into_account_id) {
       const id = pickAccount({
         currency: s.received_currency,
-        holderCustomerId: s.customer_id || undefined,
         ownerFallback: owner === "ali" || owner === "milad" ? owner : undefined,
-        prefer: ["bank", "cash", "customer_wallet", "person_holding"],
+        prefer: ["bank", "cash", "person_holding", "customer_wallet"],
       });
       if (id) patch.received_into_account_id = id;
     }
@@ -682,7 +681,7 @@ function NewTradePage() {
                           <AccountSelect value={s.sold_from_account_id} onChange={(v) => setS({ ...s, sold_from_account_id: v })} currency={s.sold_currency} />
                         </F>
                         <F label={`Received into (${s.received_currency})`}>
-                          <AccountSelect value={s.received_into_account_id} onChange={(v) => setS({ ...s, received_into_account_id: v })} currency={s.received_currency} holderCustomerId={s.customer_id || undefined} />
+                          <AccountSelect value={s.received_into_account_id} onChange={(v) => setS({ ...s, received_into_account_id: v })} currency={s.received_currency} />
                         </F>
                       </>
                     )}
