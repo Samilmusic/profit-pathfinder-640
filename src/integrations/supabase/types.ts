@@ -145,6 +145,33 @@ export type Database = {
           },
         ]
       }
+      admin_alert_dismissals: {
+        Row: {
+          active: boolean
+          alert_key: string
+          dismissed_at: string
+          dismissed_by: string | null
+          id: string
+          reason: string | null
+        }
+        Insert: {
+          active?: boolean
+          alert_key: string
+          dismissed_at?: string
+          dismissed_by?: string | null
+          id?: string
+          reason?: string | null
+        }
+        Update: {
+          active?: boolean
+          alert_key?: string
+          dismissed_at?: string
+          dismissed_by?: string | null
+          id?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
       app_feature_flags: {
         Row: {
           description: string | null
@@ -5641,6 +5668,7 @@ export type Database = {
       }
     }
     Functions: {
+      _admin_report_gate: { Args: never; Returns: undefined }
       _assert_flag: { Args: { _key: string }; Returns: undefined }
       _assert_role: {
         Args: { _role: Database["public"]["Enums"]["app_role"] }
@@ -5673,6 +5701,12 @@ export type Database = {
         Returns: number
       }
       _report_meta: { Args: { _key: string; _version: string }; Returns: Json }
+      admin_alert_dismiss: {
+        Args: { _key: string; _reason?: string }
+        Returns: string
+      }
+      admin_alert_dismiss_history: { Args: { _limit?: number }; Returns: Json }
+      admin_alert_undismiss: { Args: { _key: string }; Returns: number }
       admin_force_close: {
         Args: { _reason: string; _sell_id: string }
         Returns: undefined
@@ -5896,6 +5930,11 @@ export type Database = {
         }
         Returns: Json
       }
+      report_bi_inventory: { Args: never; Returns: Json }
+      report_business_alerts: {
+        Args: { _include_dismissed?: boolean; _thresholds?: Json }
+        Returns: Json
+      }
       report_currency_exposure: {
         Args: { _from?: string; _to?: string }
         Returns: Json
@@ -6008,6 +6047,8 @@ export type Database = {
         }
         Returns: Json
       }
+      report_reporting_health: { Args: never; Returns: Json }
+      report_slow_queries: { Args: { _limit?: number }; Returns: Json }
       report_supplier_detail: {
         Args: {
           _from?: string
@@ -6029,6 +6070,7 @@ export type Database = {
         }
         Returns: Json
       }
+      report_system_health: { Args: never; Returns: Json }
       report_treasury_account_detail: {
         Args: { _account_id: string; _from?: string; _to?: string }
         Returns: Json
