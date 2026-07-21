@@ -5062,6 +5062,17 @@ export type Database = {
         Args: { _client_request_id?: string; _id: string; _note?: string }
         Returns: undefined
       }
+      remittance_v2_reconcile: {
+        Args: never
+        Returns: {
+          check_id: number
+          check_name: string
+          delta: number
+          details: Json
+          passed: boolean
+          severity: string
+        }[]
+      }
       remittance_v2_record_supplier_delivery: {
         Args: {
           _buy_id: string

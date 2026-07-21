@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/page-header";
@@ -14,6 +14,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  runRemittanceV2Reconciliation,
+  type ReconCheck,
+} from "@/lib/remittance-v2-recon.functions";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/migration-status")({
   component: MigrationStatusPage,
@@ -146,6 +151,9 @@ function MigrationStatusPage() {
         </CardContent>
       </Card>
 
+      {/* Reconciliation */}
+      <ReconciliationPanel />
+
       {/* Counters */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
         <Stat label="Migrated rows" value={migrated} />
@@ -159,7 +167,154 @@ function MigrationStatusPage() {
         />
       </div>
 
-      {/* Empty state / audit rows */}
+      {/* Audit + batches unchanged */}
+      <LegacyAuditAndBatches
+        auditQ={auditQ}
+        batchesQ={batchesQ}
+        totalAudit={totalAudit}
+        audit={audit}
+      />
+    </div>
+  );
+}
+
+function ReconciliationPanel() {
+  const [results, setResults] = useState<ReconCheck[] | null>(null);
+  const [lastRunAt, setLastRunAt] = useState<Date | null>(null);
+
+  const runMutation = useMutation({
+    mutationFn: runRemittanceV2Reconciliation,
+    onSuccess: (data) => {
+      setResults(data);
+      setLastRunAt(new Date());
+      const failed = data.filter((c) => !c.passed).length;
+      if (failed === 0) toast.success("Reconciliation passed all checks");
+      else toast.warning(`Reconciliation completed — ${failed} check(s) failed`);
+    },
+    onError: (err: unknown) => {
+      toast.error(err instanceof Error ? err.message : "Reconciliation failed");
+    },
+  });
+
+  const failedCritical = (results ?? []).filter(
+    (c) => !c.passed && c.severity === "critical",
+  ).length;
+  const failedWarning = (results ?? []).filter(
+    (c) => !c.passed && c.severity === "warning",
+  ).length;
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <CardTitle className="text-base">Reconciliation suite</CardTitle>
+          <div className="flex items-center gap-2">
+            {lastRunAt ? (
+              <span className="text-xs text-muted-foreground">
+                Last run {lastRunAt.toLocaleString()}
+              </span>
+            ) : null}
+            <Button
+              size="sm"
+              onClick={() => runMutation.mutate()}
+              disabled={runMutation.isPending}
+            >
+              {runMutation.isPending ? "Running…" : "Run reconciliation"}
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {results === null ? (
+          <p className="text-sm text-muted-foreground">
+            Reconciliation has not been run in this session. Nightly automation is
+            optional — you can run the full suite on demand at any time.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-2 text-xs">
+              <Badge variant={failedCritical === 0 ? "default" : "destructive"}>
+                Critical failures: {failedCritical}
+              </Badge>
+              <Badge variant={failedWarning === 0 ? "default" : "secondary"}>
+                Warnings: {failedWarning}
+              </Badge>
+              <Badge variant="secondary">Total checks: {results.length}</Badge>
+            </div>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-10">#</TableHead>
+                    <TableHead>Check</TableHead>
+                    <TableHead>Severity</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Delta</TableHead>
+                    <TableHead>Details</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {results.map((c) => (
+                    <TableRow key={c.check_id}>
+                      <TableCell className="tabular-nums text-xs">
+                        {c.check_id}
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {c.check_name}
+                      </TableCell>
+                      <TableCell className="text-xs uppercase text-muted-foreground">
+                        {c.severity}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            c.passed
+                              ? "default"
+                              : c.severity === "critical"
+                                ? "destructive"
+                                : "secondary"
+                          }
+                        >
+                          {c.passed ? "PASS" : "FAIL"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums text-xs">
+                        {c.delta}
+                      </TableCell>
+                      <TableCell className="max-w-[36ch] truncate text-xs text-muted-foreground">
+                        <code>{JSON.stringify(c.details)}</code>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              This suite is also executable directly as
+              <code className="mx-1">select * from public.remittance_v2_reconcile();</code>
+              (admin session required). Nightly scheduling via pg_cron is optional
+              and not required for the system to operate.
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function LegacyAuditAndBatches({
+  auditQ,
+  batchesQ,
+  totalAudit,
+  audit,
+}: {
+  auditQ: { isLoading: boolean };
+  batchesQ: { isLoading: boolean; data?: any[] };
+  totalAudit: number;
+  audit: { total: number; byCategory: Record<string, number> } | undefined;
+}) {
+  return (
+    <>
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Migration audit</CardTitle>
@@ -180,26 +335,16 @@ function MigrationStatusPage() {
                   </Badge>
                 ))}
               </div>
-              <div className="flex flex-wrap gap-2">
-                <Button size="sm" variant="outline" disabled title="Enabled in Phase 4">
-                  Approve
-                </Button>
-                <Button size="sm" variant="outline" disabled title="Enabled in Phase 4">
-                  Block
-                </Button>
-                <Button size="sm" variant="outline" disabled title="Enabled in Phase 4">
-                  Amend
-                </Button>
-              </div>
               <p className="text-xs text-muted-foreground">
-                Approve / Block / Amend actions become active in Phase 4.
+                Legacy adoption is intentionally not exposed here. It is a
+                separate administrative migration project, run after production
+                stabilization.
               </p>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Batches */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Recent batches</CardTitle>
@@ -247,7 +392,7 @@ function MigrationStatusPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </>
   );
 }
 
