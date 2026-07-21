@@ -41,6 +41,7 @@ import { Route as AuthenticatedAliInvestorRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAiBrainRouteImport } from './routes/_authenticated/ai-brain'
 import { Route as AuthenticatedAccountsRouteImport } from './routes/_authenticated/accounts'
 import { Route as AuthenticatedTradesIndexRouteImport } from './routes/_authenticated/trades.index'
+import { Route as AuthenticatedReportsIndexRouteImport } from './routes/_authenticated/reports.index'
 import { Route as AuthenticatedRemittancesIndexRouteImport } from './routes/_authenticated/remittances.index'
 import { Route as AuthenticatedDepositsIndexRouteImport } from './routes/_authenticated/deposits.index'
 import { Route as AuthenticatedCustomersIndexRouteImport } from './routes/_authenticated/customers.index'
@@ -227,6 +228,12 @@ const AuthenticatedTradesIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedTradesRoute,
   } as any)
+const AuthenticatedReportsIndexRoute =
+  AuthenticatedReportsIndexRouteImport.update({
+    id: '/reports/',
+    path: '/reports/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedRemittancesIndexRoute =
   AuthenticatedRemittancesIndexRouteImport.update({
     id: '/remittances/',
@@ -373,6 +380,7 @@ export interface FileRoutesByFullPath {
   '/customers/': typeof AuthenticatedCustomersIndexRoute
   '/deposits/': typeof AuthenticatedDepositsIndexRoute
   '/remittances/': typeof AuthenticatedRemittancesIndexRoute
+  '/reports/': typeof AuthenticatedReportsIndexRoute
   '/trades/': typeof AuthenticatedTradesIndexRoute
   '/remittances/$id/v2': typeof AuthenticatedRemittancesIdV2Route
   '/api/public/hooks/fetch-market-rates': typeof ApiPublicHooksFetchMarketRatesRoute
@@ -419,6 +427,7 @@ export interface FileRoutesByTo {
   '/customers': typeof AuthenticatedCustomersIndexRoute
   '/deposits': typeof AuthenticatedDepositsIndexRoute
   '/remittances': typeof AuthenticatedRemittancesIndexRoute
+  '/reports': typeof AuthenticatedReportsIndexRoute
   '/trades': typeof AuthenticatedTradesIndexRoute
   '/remittances/$id/v2': typeof AuthenticatedRemittancesIdV2Route
   '/api/public/hooks/fetch-market-rates': typeof ApiPublicHooksFetchMarketRatesRoute
@@ -471,6 +480,7 @@ export interface FileRoutesById {
   '/_authenticated/customers/': typeof AuthenticatedCustomersIndexRoute
   '/_authenticated/deposits/': typeof AuthenticatedDepositsIndexRoute
   '/_authenticated/remittances/': typeof AuthenticatedRemittancesIndexRoute
+  '/_authenticated/reports/': typeof AuthenticatedReportsIndexRoute
   '/_authenticated/trades/': typeof AuthenticatedTradesIndexRoute
   '/_authenticated/remittances/$id/v2': typeof AuthenticatedRemittancesIdV2Route
   '/api/public/hooks/fetch-market-rates': typeof ApiPublicHooksFetchMarketRatesRoute
@@ -523,6 +533,7 @@ export interface FileRouteTypes {
     | '/customers/'
     | '/deposits/'
     | '/remittances/'
+    | '/reports/'
     | '/trades/'
     | '/remittances/$id/v2'
     | '/api/public/hooks/fetch-market-rates'
@@ -569,6 +580,7 @@ export interface FileRouteTypes {
     | '/customers'
     | '/deposits'
     | '/remittances'
+    | '/reports'
     | '/trades'
     | '/remittances/$id/v2'
     | '/api/public/hooks/fetch-market-rates'
@@ -620,6 +632,7 @@ export interface FileRouteTypes {
     | '/_authenticated/customers/'
     | '/_authenticated/deposits/'
     | '/_authenticated/remittances/'
+    | '/_authenticated/reports/'
     | '/_authenticated/trades/'
     | '/_authenticated/remittances/$id/v2'
     | '/api/public/hooks/fetch-market-rates'
@@ -858,6 +871,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTradesIndexRouteImport
       parentRoute: typeof AuthenticatedTradesRoute
     }
+    '/_authenticated/reports/': {
+      id: '/_authenticated/reports/'
+      path: '/reports'
+      fullPath: '/reports/'
+      preLoaderRoute: typeof AuthenticatedReportsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/remittances/': {
       id: '/_authenticated/remittances/'
       path: '/remittances'
@@ -1091,6 +1111,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSellsIdRoute: typeof AuthenticatedSellsIdRoute
   AuthenticatedBroughtInIndexRoute: typeof AuthenticatedBroughtInIndexRoute
   AuthenticatedRemittancesIndexRoute: typeof AuthenticatedRemittancesIndexRoute
+  AuthenticatedReportsIndexRoute: typeof AuthenticatedReportsIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -1129,6 +1150,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSellsIdRoute: AuthenticatedSellsIdRoute,
   AuthenticatedBroughtInIndexRoute: AuthenticatedBroughtInIndexRoute,
   AuthenticatedRemittancesIndexRoute: AuthenticatedRemittancesIndexRoute,
+  AuthenticatedReportsIndexRoute: AuthenticatedReportsIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
