@@ -354,13 +354,13 @@ export function CurrencyLedger({ ccy, marketRate = 0, avgCost = 0 }: { ccy: stri
                     )}
                     {detailHref && (
                       <div className="mt-3">
-                        <Link
-                          to={detailHref}
-                          onClick={(e) => e.stopPropagation()}
+                        <a
+                          href={detailHref}
+                          onClick={(e: React.MouseEvent) => e.stopPropagation()}
                           className="inline-flex items-center gap-1.5 text-[11px] font-medium text-primary hover:underline"
                         >
                           Open full transaction →
-                        </Link>
+                        </a>
                       </div>
                     )}
                   </div>
