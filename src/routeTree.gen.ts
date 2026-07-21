@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
@@ -74,6 +75,11 @@ import { Route as AuthenticatedReportsInventoryIdRouteImport } from './routes/_a
 import { Route as AuthenticatedReportsCustomersIdRouteImport } from './routes/_authenticated/reports.customers.$id'
 import { Route as AuthenticatedRemittancesIdV2RouteImport } from './routes/_authenticated/remittances.$id.v2'
 
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
   id: '/forgot-password',
   path: '/forgot-password',
@@ -435,6 +441,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/accounts': typeof AuthenticatedAccountsRouteWithChildren
   '/ai-brain': typeof AuthenticatedAiBrainRoute
   '/ali-investor': typeof AuthenticatedAliInvestorRoute
@@ -500,6 +507,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/ai-brain': typeof AuthenticatedAiBrainRoute
   '/ali-investor': typeof AuthenticatedAliInvestorRoute
   '/audit': typeof AuthenticatedAuditRoute
@@ -563,6 +571,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/accounts': typeof AuthenticatedAccountsRouteWithChildren
   '/_authenticated/ai-brain': typeof AuthenticatedAiBrainRoute
   '/_authenticated/ali-investor': typeof AuthenticatedAliInvestorRoute
@@ -630,6 +639,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/forgot-password'
+    | '/reset-password'
     | '/accounts'
     | '/ai-brain'
     | '/ali-investor'
@@ -695,6 +705,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/forgot-password'
+    | '/reset-password'
     | '/ai-brain'
     | '/ali-investor'
     | '/audit'
@@ -757,6 +768,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/forgot-password'
+    | '/reset-password'
     | '/_authenticated/accounts'
     | '/_authenticated/ai-brain'
     | '/_authenticated/ali-investor'
@@ -824,11 +836,19 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   ApiPublicHooksFetchMarketRatesRoute: typeof ApiPublicHooksFetchMarketRatesRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/forgot-password': {
       id: '/forgot-password'
       path: '/forgot-password'
@@ -1482,6 +1502,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   ApiPublicHooksFetchMarketRatesRoute: ApiPublicHooksFetchMarketRatesRoute,
 }
 export const routeTree = rootRouteImport
