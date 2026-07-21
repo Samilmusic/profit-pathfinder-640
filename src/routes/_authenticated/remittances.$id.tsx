@@ -12,7 +12,7 @@ import { NumberInput } from "@/components/number-input";
 import { AccountSelect } from "@/components/account-select";
 import { DocumentsPanel } from "@/components/documents-panel";
 import { fmt, fmtProfit } from "@/lib/exchange";
-import { CURRENCIES } from "@/lib/market-currencies";
+import { MARKET_CURRENCIES } from "@/lib/market-currencies";
 import { ArrowLeft, Trash2, CheckCircle2, Circle, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
@@ -31,6 +31,7 @@ function RemittanceDetailPage() {
   const { id } = Route.useParams();
   const nav = useNavigate();
   const qc = useQueryClient();
+  const [receiveOpen, setReceiveOpen] = useState(false);
 
   const q = useQuery({
     queryKey: ["remittance", id],
