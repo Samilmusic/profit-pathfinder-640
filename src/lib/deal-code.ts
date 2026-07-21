@@ -5,7 +5,7 @@
  */
 
 export type DealKind =
-  | "sell" | "buy" | "brought_in" | "expense" | "transfer" | "deposit" | "payment_order";
+  | "sell" | "buy" | "brought_in" | "expense" | "transfer" | "deposit" | "payment_order" | "remittance";
 
 const PREFIX: Record<DealKind, string> = {
   sell: "DEAL",
@@ -15,6 +15,7 @@ const PREFIX: Record<DealKind, string> = {
   transfer: "TRF",
   deposit: "DEP",
   payment_order: "PO",
+  remittance: "REM",
 };
 
 export function kindLabel(k: DealKind): string {
@@ -22,6 +23,7 @@ export function kindLabel(k: DealKind): string {
     sell: "Sell", buy: "Buy", brought_in: "Brought-In",
     expense: "Expense", transfer: "Transfer",
     deposit: "Deposit", payment_order: "Payment Order",
+    remittance: "Remittance",
   };
   return m[k] ?? k;
 }
@@ -50,5 +52,6 @@ export function kindHref(kind: DealKind, id: string): string {
     case "transfer": return `/transfers`;
     case "deposit": return `/deposits`;
     case "payment_order": return `/payment-orders`;
+    case "remittance": return `/remittances/${id}`;
   }
 }
