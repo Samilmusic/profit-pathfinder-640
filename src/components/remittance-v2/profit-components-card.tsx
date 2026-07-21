@@ -3,6 +3,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { fmt } from "@/lib/exchange";
 
+type ProfitComponentRow = {
+  id: string;
+  allocation_id: string | null;
+  component_type: string;
+  currency: string | null;
+  amount: number | null;
+  amount_aed: number | null;
+  posting_class: string;
+  entry_kind: string;
+  reference_note: string | null;
+  created_at: string;
+};
+
 export function ProfitComponentsCard({
   remittanceId,
   allocationPostingEnabled,
@@ -16,11 +29,11 @@ export function ProfitComponentsCard({
         .eq("remittance_id", remittanceId)
         .order("created_at", { ascending: true });
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as unknown as ProfitComponentRow[];
     },
   });
 
-  const totalAed = (q.data ?? []).reduce((acc: number, r: any) => {
+  const totalAed = (q.data ?? []).reduce((acc: number, r: ProfitComponentRow) => {
     const val = Number(r.amount_aed ?? 0);
     return acc + (String(r.component_type) === "expense" ? -val : val);
   }, 0);
@@ -50,7 +63,7 @@ export function ProfitComponentsCard({
                   </tr>
                 </thead>
                 <tbody>
-                  {q.data!.map((r: any) => (
+                  {q.data!.map((r) => (
                     <tr key={r.id} className="border-t">
                       <td className="py-2 pr-3">{String(r.component_type)}</td>
                       <td className="py-2 pr-3">{r.amount != null ? `${fmt(r.amount)} ${r.currency ?? ""}` : "—"}</td>
