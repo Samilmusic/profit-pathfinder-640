@@ -4,6 +4,27 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { fmt } from "@/lib/exchange";
 
+type AllocationRow = {
+  id: string;
+  buy_id: string | null;
+  lot_id: string | null;
+  currency: string;
+  allocated_amount: number;
+  status: string;
+  posting_class: string;
+  entry_kind: string;
+  parent_allocation_id: string | null;
+  reversed_by_id: string | null;
+  frozen_cost_amount: number | null;
+  frozen_cost_currency: string | null;
+  frozen_spread_profit_aed: number | null;
+  frozen_commission_aed: number | null;
+  frozen_total_profit_aed: number | null;
+  frozen_at: string | null;
+  created_at: string;
+  buy: { id: string; doc_no: string | null; bought_currency: string | null; bought_amount: number | null; buy_rate: number | null; supplier_delivered: boolean | null } | null;
+};
+
 export function AllocationsTable({ remittanceId }: { remittanceId: string }) {
   const q = useQuery({
     queryKey: ["remittance-v2", "allocations", remittanceId],
@@ -16,7 +37,7 @@ export function AllocationsTable({ remittanceId }: { remittanceId: string }) {
         .eq("remittance_id", remittanceId)
         .order("created_at", { ascending: true });
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as unknown as AllocationRow[];
     },
   });
 
@@ -49,7 +70,7 @@ export function AllocationsTable({ remittanceId }: { remittanceId: string }) {
                 </tr>
               </thead>
               <tbody>
-                {q.data!.map((a: Record<string, unknown> & { buy?: { doc_no?: string | null } | null }) => (
+                {q.data!.map((a) => (
                   <tr key={a.id} className="border-t">
                     <td className="py-2 pr-3 font-mono text-xs">{String(a.id).slice(0, 8)}</td>
                     <td className="py-2 pr-3">
