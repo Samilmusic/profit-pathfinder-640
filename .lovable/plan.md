@@ -1,165 +1,113 @@
-## Lot-Based Inventory & Sell Profit Engine — Redesign
+# Third-Party Settlement for Remittances
 
-Reuse everything that exists (`inventory_lots`, `lot_consumptions`, `sell_transactions`, `currency_inventory` view, market_rates). No data will be deleted, no lots merged. What changes is how cost basis is tracked, how it is surfaced in the UI, and how profit is computed and frozen.
+Add an optional settlement path where the remittance customer pays a **third party** (usually a supplier we're buying currency from) instead of paying us. No money enters our accounts. A linked Buy deal creates inventory only when the supplier delivers.
 
----
+The existing "Paid to our account / cash" remittance flow stays untouched — this is a new option on the same form.
 
-### 1. Schema additions (single migration)
+## What we're changing
 
-**inventory_lots**
-- `cost_basis_status text NOT NULL default 'known'` — one of `known`, `unknown`, `capital` (no cost basis, explicitly flagged as capital).
-- `allocation_mode text default 'fifo'` (informational, drives Sell form only).
+### 1. Database (one migration)
 
-Backfill: existing rows with `cost_basis_rate IS NULL OR cost_basis_rate = 0` → `unknown`; everything else → `known`.
+Add third-party settlement columns to `public.remittances`:
+- `payment_destination` — `into_account | cash_to_us | to_third_party | settles_linked_buy | pending`
+- `third_party_customer_id` — who received the customer's payment
+- `linked_buy_id` — foreign key to `buy_transactions`
+- `settlement_amount`, `settlement_currency`, `settlement_date`
+- `settlement_proof_url` (documents table still used, this is a convenience mirror)
+- `excess_allocation` — `our_account | another_supplier | customer_balance | pending | commission | none`
+- `excess_allocation_target_id` (nullable)
 
-**sell_transactions — permanent profit snapshot (frozen at close)**
-- `cost_basis_snapshot jsonb` — array of `{lot_id, lot_code, take, cost_rate, cost_currency, cost_amount}`.
-- `allocated_cost_irr numeric`, `allocated_cost_currency text`, `allocated_cost_amount numeric`.
-- `sale_value_amount numeric`, `sale_value_currency text`.
-- `linked_expenses_amount numeric default 0`.
-- `net_profit_irr numeric`, `net_profit_aed numeric`, `margin_pct numeric`.
-- `market_reference_rate numeric`, `market_reference_source text`, `market_reference_time timestamptz`.
-- `profit_frozen_at timestamptz`, `profit_frozen_by uuid`.
-- `allocation_mode text default 'fifo'` — `fifo` | `weighted_average` | `manual`.
-- `manual_allocation jsonb` — used when `allocation_mode = 'manual'`.
+Add to `public.buy_transactions`:
+- `settlement_source` — `own_funds | remittance_payment | mixed`
+- `settled_by_remittance_id` — FK back to `remittances`
+- `supplier_settled_amount` — how much of the buy has been settled
 
-**New RPC: `preview_sell_allocation(_currency, _amount, _source_account_id, _mode, _manual jsonb)`**
-Returns `{lots: [...], covered, shortfall, blended_cost_rate, cost_basis_currency, total_cost, has_unknown_cost, unknown_amount}`. Pure — never writes.
+Rewrite the remittance ledger trigger so:
+- When `payment_destination in ('to_third_party','settles_linked_buy')`, **no** IRR ledger entry hits our accounts.
+- A `third_party_settlement` ledger row is written (memo-only, `account_id = null`, using a new `ref_type = 'third_party_settlement'`).
+- Commission is still tracked as profit.
 
-**New RPC: `freeze_sell_profit(_sell_id uuid)`**
-Called from `close_sell_deal` (existing) *after* the ledger is posted:
-1. Read all `lot_consumptions` for this sell.
-2. Sum cost, compute sale value = `sold_amount * sell_rate`.
-3. Read latest AED market rate at close time to compute AED equivalents.
-4. Pull linked expenses (via `expenses.linked_sell_id` if present; otherwise 0).
-5. Write `cost_basis_snapshot` + all snapshot columns above.
-6. Insert audit entry `sell.profit_frozen`.
-Idempotent — refuses to overwrite unless called with `_recompute := true` (Accounting Correction path with reason).
+Rewrite the buy inventory trigger so:
+- When `settlement_source = 'remittance_payment'`, the outflow leg on our IRR account is skipped.
+- Inventory lot is still created on the AED leg **only after delivery is recorded** (new `delivered_at` flag on buy_transactions — most flows already treat buy as immediate; we gate lot creation behind delivery when this settlement type is used).
 
-**New RPC: `assign_lot_cost_basis(_lot_id, _cost_rate, _cost_currency, _reason)`**
-For "Direct Deposit / Capital" lots — admin-only, writes audit entry.
+Add a validation function `validate_third_party_settlement(_remittance_id)` returning a checklist (customer paid, proof uploaded, supplier delivered, remittance transferred, etc.).
 
-**View: `v_currency_inventory_summary`** (per currency)
-Columns: `currency, available_amount, known_cost_amount, unknown_cost_amount, capital_amount, weighted_avg_cost_rate, cost_basis_currency, lot_count, market_buy, market_sell, estimated_value_irr, unrealized_profit_irr, unrealized_profit_aed`.
-- Weighted avg uses only lots with `cost_basis_status = 'known'` AND `remaining_amount > 0` AND `status IN ('available','partial')`.
-- Never includes depleted/cancelled/reversed lots, pending receivables, or lots with unknown cost.
+Add `v_remittance_settlement_path` view returning the linked chain for Deal Center display.
 
-**View: `v_lot_detailed`**
-`lot_code, currency, original_amount, remaining_amount, sold_amount, cost_basis_rate, cost_basis_currency, cost_basis_status, source_ref_type, source_ref_id, source_description, account_id, account_path, entry_date, age_days, status, market_rate, unrealized_pl, unrealized_pl_pct`.
-`account_path` = "Milad Box → ENBD → AED"-style breadcrumb built from `accounts.parent_id`.
+### 2. Remittance form (`remittances.new.tsx`)
 
----
+Add a **Settlement Method** section after the customer-payment amount:
+- Radio: `Paid to our account | Cash to us | Paid to third party | Settles linked buy | Pending`
+- When `third party` or `linked buy`: show
+  - Third-party recipient picker (customer/supplier)
+  - Settlement currency + amount (defaults from remittance)
+  - Settlement date, proof upload
+  - Linked Buy: existing (select from open buys where supplier matches) or **Create linked buy** inline (opens a mini form: supplier, AED amount, supplier rate → auto-fills settlement amount, marks `settlement_source='remittance_payment'`)
+- If settlement amount ≠ linked buy amount, show an **Excess/Shortfall** allocator (options: our account, another supplier, customer balance, pending, commission). No auto-allocation.
 
-### 2. Backend: sell close pipeline
+Live **Settlement Path** panel: `Customer A → Customer B`, plus a summary showing "IRR into our account: 0", "AED expected from supplier: X", "Commission: Y".
 
-`close_sell_deal(_id, _override, _difference_reason)` becomes:
+### 3. Remittance detail (`remittances.$id.tsx`)
+
+- New **Third-Party Settlement** card with the path, linked buy chip, delivery status, proof list, and a "Record supplier delivery" button that flips the buy's delivery flag and creates the AED lot.
+- **Close checklist** driven by `validate_third_party_settlement` — each unchecked item explains why close is blocked.
+- **Statuses** added to the badge: `Customer Paid Supplier`, `Waiting Supplier AED Delivery`, `Partially Settled`.
+
+### 4. Buy form (`buy.tsx` / trades new)
+
+Small addition: a **Settlement source** toggle (Own funds / From remittance payment). When "From remittance", user picks the open remittance; the buy is linked and its ledger IRR-out leg is skipped.
+
+### 5. Deal Center + Action Center
+
+- Deal Center: render remittance rows with their linked buy code as a chip; expanding shows the chain (REM → third party → BUY → delivery).
+- Action Center alerts:
+  - "Customer A paid X IRR directly to Customer B" (when settlement recorded, no proof yet)
+  - "Payment proof missing on REM-..."
+  - "Supplier still owes X AED on BUY-..."
+
+### 6. Profit / Inventory correctness
+
+- Remittance profit = commission only, unchanged.
+- Linked buy creates an inventory lot with cost rate = `settlement_amount / bought_amount`, source description referencing both the buy code and the settling remittance code.
+- IRR never appears in `v_currency_inventory_summary` from this path — verified by the trigger changes.
+
+## Not changing
+
+- Existing "paid into our account" and "cash to us" remittance flows.
+- Normal buy transactions where we pay from our own funds.
+- Sell / inventory / cost-preview logic shipped last turn.
+- Milad Box / account balances (third-party settlements are memo entries with `account_id = null`).
+
+## Technical layout
 
 ```text
-1. Existing FIFO consumption logic (unchanged) — still writes lot_consumptions
-2. NEW: call freeze_sell_profit(_id)
-3. Existing ledger posting & received-lot creation on payment (unchanged)
+supabase migration
+  remittances.*  (new columns + status enum values)
+  buy_transactions.*  (settlement_source, settled_by_remittance_id, delivered_at)
+  ledger_ref_type += 'third_party_settlement'
+  fn: validate_third_party_settlement(uuid) -> jsonb
+  fn: record_supplier_delivery(uuid)  -- creates AED lot on demand
+  view: v_remittance_settlement_path
+  trigger rewrites: trg_remittance_ledger, trg_buy_ledger, trg_buy_lot
+
+src/lib/
+  remittance-settlement.ts  (rpc wrappers, path formatter)
+
+src/components/
+  settlement-method-picker.tsx
+  linked-buy-picker.tsx  (search open buys / create-new mini form)
+  excess-allocator.tsx
+  settlement-path-summary.tsx
+  third-party-settlement-card.tsx
+  supplier-delivery-dialog.tsx
+
+src/routes/_authenticated/
+  remittances.new.tsx  (add Settlement Method section)
+  remittances.$id.tsx  (add Third-Party card + expanded checklist)
+  buy.tsx  (settlement-source toggle)
+  deals.tsx  (render linked chain)
+  dashboard.tsx  (extra Action Center rules)
 ```
 
-Manual allocation: if `sell_transactions.allocation_mode = 'manual'` at close time, the FIFO trigger reads `manual_allocation` instead of walking lots in FIFO order. Validation ensures every referenced lot has enough `remaining_amount` and same currency.
-
-Guard rails:
-- Refuse to close if `preview_sell_allocation` reports `has_unknown_cost = true` AND admin has not ticked "Sell without recorded cost basis". This blocks silent fake-profit.
-- Received-currency lot creation stays on the payment-received event — unchanged.
-
----
-
-### 3. Frontend — Currency Inventory page (`inventory.tsx`)
-
-Replace the current 7-tab table view with a hero-summary + lots layout, one section per currency.
-
-Per-currency card:
-
-```text
-┌───────────────────────────────────────────────────────────────┐
-│ AED                                            22,984 AED     │
-│                                                                │
-│  Available            Known cost      Unknown cost   Capital  │
-│  22,984              18,500          4,484          0         │
-│                                                                │
-│  Weighted avg cost   Market buy      Market sell              │
-│  483,250 IRR/AED     522,500         523,000                  │
-│                                                                │
-│  Estimated value ≈ 12,019,832,000 IRR                         │
-│  Unrealized P/L    +735,000,000 IRR  ≈ +1,405 AED             │
-└───────────────────────────────────────────────────────────────┘
-```
-
-Under it, one row per lot:
-`AED-LOT-001 · 10,000 avail · 476,000 IRR/AED · Milad Box → Cash → AED · 12 days old · Available · Unrealized +46,500,000 IRR`
-
-Lots with `cost_basis_status = 'unknown'` render **"Cost Basis: Not Recorded"** in muted red with an inline **[Assign Cost]** action (admin only) that opens a dialog calling `assign_lot_cost_basis`. Lots marked `capital` render **"Capital — no P/L"** and are excluded from unrealized-profit math.
-
-Filter chips: `All / Known / Unknown / Capital / Depleted` (default: hide Depleted).
-
-The existing tabs stay behind a "Details" toggle for auditability (allocations, profit-by-lot, etc.).
-
----
-
-### 4. Frontend — Sell form (`sell.tsx` + `trades.new.tsx` sell mode)
-
-Replace the current "FIFO cost preview" block with a redesigned **Inventory Cost Preview** card driven by `preview_sell_allocation`:
-
-- Header: allocation-mode picker `FIFO · Weighted Avg · Manual`.
-- Manual mode reveals a lot table with amount inputs per lot (validated against `remaining_amount`); server RPC returns a manual preview.
-- Lot list: `LOT-CODE · take × cost_rate` with per-lot subtotals.
-- Cost calculation block: sum lines like `10,000 × 476,000 = 4,760,000,000 IRR`.
-- **Total cost / Effective cost rate / Sale value / Realized profit IRR / Profit in AED**, exactly per spec §5.
-- If `has_unknown_cost`, replace the profit box with a red warning: *"Cannot calculate exact profit: X AED inventory has no recorded cost basis."* No fake numbers shown.
-- Sub-card "Expected Profit" (large) below, per spec §11, with `Spread`, `Expected Net Profit`, `Inventory After Sale`.
-
-Manual-mode warning: if manual allocation total cost > FIFO total cost, show *"Manual allocation reduces profit by X IRR vs FIFO"*.
-
-Save-close button is disabled with a reason when: shortfall > 0, unknown-cost blocks profit and override not ticked, or manual allocation is incomplete.
-
----
-
-### 5. Currency card / dashboard IRR fix
-
-`CurrencyLedger` component:
-- For IRR: hide `Avg Cost`, `Market`, `Floating P/L` tiles (they show `1` today). Instead show "Cash Balance" only. Add a subtitle "Settlement cash — no floating P/L".
-- For AED/USD/etc.: pull `weighted_avg_cost_rate` and `market_sell` from `v_currency_inventory_summary` — not the raw ledger — so tiles never render `0` or `1` again.
-
-Bonbast rate normalization already stores IRR/unit (post-fix Toman×10). Sanity clamp: any rate < 100 for IRR pair is treated as missing.
-
----
-
-### 6. Immutability of closed-deal profit
-
-- `freeze_sell_profit` writes once. `cost_basis_snapshot` and all `net_profit_*` columns are the only source of truth for reports after close.
-- Reports (`profits.tsx`, `dashboard.tsx`, `ali-investor.tsx`) read `net_profit_irr / net_profit_aed` from `sell_transactions` for closed deals, not recomputed from current lots.
-- A future **Accounting Correction** action (admin + reason, out of scope for this task's UI but the RPC path is wired) can call `freeze_sell_profit(_id, _recompute := true)` and creates an audit event.
-
----
-
-### 7. Data audit / cleanup
-
-Migration includes a `SELECT` reporting script (as comment) but does **not** mutate historical data. Two safe backfills only:
-- Set `cost_basis_status = 'unknown'` on lots with rate 0/NULL.
-- For sells already closed with FIFO consumption, populate `cost_basis_snapshot`, `allocated_cost_amount`, `net_profit_irr`, and `net_profit_aed` from existing `lot_consumptions` + a lookup market rate at their close date (best-effort — if no market rate exists, leave AED profit NULL). This gives immediate consistent reporting without losing history.
-
----
-
-### Technical notes
-
-- All new views run `security_invoker = on` and grant `SELECT` to `authenticated`.
-- All new RPCs are `SECURITY INVOKER`, `EXECUTE` granted to `authenticated`; the admin-only `assign_lot_cost_basis` checks `has_role(auth.uid(), 'admin')` internally.
-- No changes to `close_sell_deal` signature — it calls `freeze_sell_profit` in-transaction.
-- Frontend uses `useSuspenseQuery` where already established, `useQuery` for the preview RPC (called on every keystroke, debounced 150ms).
-- Numeric inputs continue to use the existing `NumberInput` component (thousands separators, raw persistence).
-
-### Files touched
-
-- **Migration**: 1 new file (schema + views + RPCs + backfill).
-- `src/routes/_authenticated/inventory.tsx` — rebuilt around per-currency hero cards.
-- `src/routes/_authenticated/sell.tsx` — new Inventory Cost Preview block.
-- `src/routes/_authenticated/trades.new.tsx` — same preview block in "Sell from Inventory" mode.
-- `src/components/currency-ledger.tsx` — IRR-aware tiles + summary-view driven values.
-- `src/routes/_authenticated/dashboard.tsx` — currency cards read `v_currency_inventory_summary`.
-- New `src/components/inventory-cost-preview.tsx` (shared between Sell and Quick-Sell).
-- New `src/components/lot-cost-basis-dialog.tsx` (admin "Assign Cost" flow).
-- `src/lib/inventory.ts` — client helpers (weighted avg, formatting).
+Rollout order: migration first (approval), then RPC wrappers, then components, then wire the new form section, then detail-page card, then Deal Center / Action Center touches.
