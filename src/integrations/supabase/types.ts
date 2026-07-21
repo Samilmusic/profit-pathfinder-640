@@ -1861,6 +1861,7 @@ export type Database = {
           display_name: string | null
           email: string | null
           id: string
+          must_change_password: boolean
           updated_at: string
         }
         Insert: {
@@ -1868,6 +1869,7 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           id: string
+          must_change_password?: boolean
           updated_at?: string
         }
         Update: {
@@ -1875,6 +1877,7 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           id?: string
+          must_change_password?: boolean
           updated_at?: string
         }
         Relationships: []
@@ -5599,6 +5602,7 @@ export type Database = {
         | "operator"
         | "manager"
         | "accountant"
+        | "partner"
       brought_in_by: "milad" | "ali" | "customer" | "other"
       brought_in_reason:
         | "capital"
@@ -5924,6 +5928,7 @@ export const Constants = {
         "operator",
         "manager",
         "accountant",
+        "partner",
       ],
       brought_in_by: ["milad", "ali", "customer", "other"],
       brought_in_reason: [

@@ -10,7 +10,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/roles")({ component: Page });
 
-const ROLES = ["admin", "milad", "ali", "viewer"] as const;
+const ROLES = ["admin", "partner", "accountant", "manager", "operator", "viewer"] as const;
 
 function Page() {
   const qc = useQueryClient();

@@ -35,6 +35,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedDailyClosingRouteImport } from './routes/_authenticated/daily-closing'
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedCommandCenterRouteImport } from './routes/_authenticated/command-center'
+import { Route as AuthenticatedChangePasswordRouteImport } from './routes/_authenticated/change-password'
 import { Route as AuthenticatedBuyRouteImport } from './routes/_authenticated/buy'
 import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
 import { Route as AuthenticatedAliInvestorRouteImport } from './routes/_authenticated/ali-investor'
@@ -201,6 +202,12 @@ const AuthenticatedCommandCenterRoute =
   AuthenticatedCommandCenterRouteImport.update({
     id: '/command-center',
     path: '/command-center',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedChangePasswordRoute =
+  AuthenticatedChangePasswordRouteImport.update({
+    id: '/change-password',
+    path: '/change-password',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedBuyRoute = AuthenticatedBuyRouteImport.update({
@@ -391,6 +398,7 @@ export interface FileRoutesByFullPath {
   '/ali-investor': typeof AuthenticatedAliInvestorRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/buy': typeof AuthenticatedBuyRoute
+  '/change-password': typeof AuthenticatedChangePasswordRoute
   '/command-center': typeof AuthenticatedCommandCenterRoute
   '/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/daily-closing': typeof AuthenticatedDailyClosingRoute
@@ -448,6 +456,7 @@ export interface FileRoutesByTo {
   '/ali-investor': typeof AuthenticatedAliInvestorRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/buy': typeof AuthenticatedBuyRoute
+  '/change-password': typeof AuthenticatedChangePasswordRoute
   '/command-center': typeof AuthenticatedCommandCenterRoute
   '/daily-closing': typeof AuthenticatedDailyClosingRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -505,6 +514,7 @@ export interface FileRoutesById {
   '/_authenticated/ali-investor': typeof AuthenticatedAliInvestorRoute
   '/_authenticated/audit': typeof AuthenticatedAuditRoute
   '/_authenticated/buy': typeof AuthenticatedBuyRoute
+  '/_authenticated/change-password': typeof AuthenticatedChangePasswordRoute
   '/_authenticated/command-center': typeof AuthenticatedCommandCenterRoute
   '/_authenticated/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/_authenticated/daily-closing': typeof AuthenticatedDailyClosingRoute
@@ -565,6 +575,7 @@ export interface FileRouteTypes {
     | '/ali-investor'
     | '/audit'
     | '/buy'
+    | '/change-password'
     | '/command-center'
     | '/customers'
     | '/daily-closing'
@@ -622,6 +633,7 @@ export interface FileRouteTypes {
     | '/ali-investor'
     | '/audit'
     | '/buy'
+    | '/change-password'
     | '/command-center'
     | '/daily-closing'
     | '/dashboard'
@@ -678,6 +690,7 @@ export interface FileRouteTypes {
     | '/_authenticated/ali-investor'
     | '/_authenticated/audit'
     | '/_authenticated/buy'
+    | '/_authenticated/change-password'
     | '/_authenticated/command-center'
     | '/_authenticated/customers'
     | '/_authenticated/daily-closing'
@@ -918,6 +931,13 @@ declare module '@tanstack/react-router' {
       path: '/command-center'
       fullPath: '/command-center'
       preLoaderRoute: typeof AuthenticatedCommandCenterRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/change-password': {
+      id: '/_authenticated/change-password'
+      path: '/change-password'
+      fullPath: '/change-password'
+      preLoaderRoute: typeof AuthenticatedChangePasswordRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/buy': {
@@ -1221,6 +1241,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAliInvestorRoute: typeof AuthenticatedAliInvestorRoute
   AuthenticatedAuditRoute: typeof AuthenticatedAuditRoute
   AuthenticatedBuyRoute: typeof AuthenticatedBuyRoute
+  AuthenticatedChangePasswordRoute: typeof AuthenticatedChangePasswordRoute
   AuthenticatedCommandCenterRoute: typeof AuthenticatedCommandCenterRoute
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRouteWithChildren
   AuthenticatedDailyClosingRoute: typeof AuthenticatedDailyClosingRoute
@@ -1267,6 +1288,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAliInvestorRoute: AuthenticatedAliInvestorRoute,
   AuthenticatedAuditRoute: AuthenticatedAuditRoute,
   AuthenticatedBuyRoute: AuthenticatedBuyRoute,
+  AuthenticatedChangePasswordRoute: AuthenticatedChangePasswordRoute,
   AuthenticatedCommandCenterRoute: AuthenticatedCommandCenterRoute,
   AuthenticatedCustomersRoute: AuthenticatedCustomersRouteWithChildren,
   AuthenticatedDailyClosingRoute: AuthenticatedDailyClosingRoute,
