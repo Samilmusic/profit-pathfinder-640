@@ -58,6 +58,7 @@ import { Route as AuthenticatedReportsInventoryRouteImport } from './routes/_aut
 import { Route as AuthenticatedReportsExecutiveRouteImport } from './routes/_authenticated/reports.executive'
 import { Route as AuthenticatedReportsDataQualityRouteImport } from './routes/_authenticated/reports.data-quality'
 import { Route as AuthenticatedReportsCounterpartiesRouteImport } from './routes/_authenticated/reports.counterparties'
+import { Route as AuthenticatedReportsAuditExplorerRouteImport } from './routes/_authenticated/reports.audit-explorer'
 import { Route as AuthenticatedRemittancesNewV2RouteImport } from './routes/_authenticated/remittances.new-v2'
 import { Route as AuthenticatedRemittancesNewRouteImport } from './routes/_authenticated/remittances.new'
 import { Route as AuthenticatedRemittancesIdRouteImport } from './routes/_authenticated/remittances.$id'
@@ -338,6 +339,12 @@ const AuthenticatedReportsCounterpartiesRoute =
     path: '/reports/counterparties',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedReportsAuditExplorerRoute =
+  AuthenticatedReportsAuditExplorerRouteImport.update({
+    id: '/reports/audit-explorer',
+    path: '/reports/audit-explorer',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedRemittancesNewV2Route =
   AuthenticatedRemittancesNewV2RouteImport.update({
     id: '/remittances/new-v2',
@@ -450,6 +457,7 @@ export interface FileRoutesByFullPath {
   '/remittances/$id': typeof AuthenticatedRemittancesIdRouteWithChildren
   '/remittances/new': typeof AuthenticatedRemittancesNewRoute
   '/remittances/new-v2': typeof AuthenticatedRemittancesNewV2Route
+  '/reports/audit-explorer': typeof AuthenticatedReportsAuditExplorerRoute
   '/reports/counterparties': typeof AuthenticatedReportsCounterpartiesRoute
   '/reports/data-quality': typeof AuthenticatedReportsDataQualityRoute
   '/reports/executive': typeof AuthenticatedReportsExecutiveRoute
@@ -508,6 +516,7 @@ export interface FileRoutesByTo {
   '/remittances/$id': typeof AuthenticatedRemittancesIdRouteWithChildren
   '/remittances/new': typeof AuthenticatedRemittancesNewRoute
   '/remittances/new-v2': typeof AuthenticatedRemittancesNewV2Route
+  '/reports/audit-explorer': typeof AuthenticatedReportsAuditExplorerRoute
   '/reports/counterparties': typeof AuthenticatedReportsCounterpartiesRoute
   '/reports/data-quality': typeof AuthenticatedReportsDataQualityRoute
   '/reports/executive': typeof AuthenticatedReportsExecutiveRoute
@@ -572,6 +581,7 @@ export interface FileRoutesById {
   '/_authenticated/remittances/$id': typeof AuthenticatedRemittancesIdRouteWithChildren
   '/_authenticated/remittances/new': typeof AuthenticatedRemittancesNewRoute
   '/_authenticated/remittances/new-v2': typeof AuthenticatedRemittancesNewV2Route
+  '/_authenticated/reports/audit-explorer': typeof AuthenticatedReportsAuditExplorerRoute
   '/_authenticated/reports/counterparties': typeof AuthenticatedReportsCounterpartiesRoute
   '/_authenticated/reports/data-quality': typeof AuthenticatedReportsDataQualityRoute
   '/_authenticated/reports/executive': typeof AuthenticatedReportsExecutiveRoute
@@ -636,6 +646,7 @@ export interface FileRouteTypes {
     | '/remittances/$id'
     | '/remittances/new'
     | '/remittances/new-v2'
+    | '/reports/audit-explorer'
     | '/reports/counterparties'
     | '/reports/data-quality'
     | '/reports/executive'
@@ -694,6 +705,7 @@ export interface FileRouteTypes {
     | '/remittances/$id'
     | '/remittances/new'
     | '/remittances/new-v2'
+    | '/reports/audit-explorer'
     | '/reports/counterparties'
     | '/reports/data-quality'
     | '/reports/executive'
@@ -757,6 +769,7 @@ export interface FileRouteTypes {
     | '/_authenticated/remittances/$id'
     | '/_authenticated/remittances/new'
     | '/_authenticated/remittances/new-v2'
+    | '/_authenticated/reports/audit-explorer'
     | '/_authenticated/reports/counterparties'
     | '/_authenticated/reports/data-quality'
     | '/_authenticated/reports/executive'
@@ -1133,6 +1146,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReportsCounterpartiesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/reports/audit-explorer': {
+      id: '/_authenticated/reports/audit-explorer'
+      path: '/reports/audit-explorer'
+      fullPath: '/reports/audit-explorer'
+      preLoaderRoute: typeof AuthenticatedReportsAuditExplorerRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/remittances/new-v2': {
       id: '/_authenticated/remittances/new-v2'
       path: '/remittances/new-v2'
@@ -1343,6 +1363,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRemittancesIdRoute: typeof AuthenticatedRemittancesIdRouteWithChildren
   AuthenticatedRemittancesNewRoute: typeof AuthenticatedRemittancesNewRoute
   AuthenticatedRemittancesNewV2Route: typeof AuthenticatedRemittancesNewV2Route
+  AuthenticatedReportsAuditExplorerRoute: typeof AuthenticatedReportsAuditExplorerRoute
   AuthenticatedReportsCounterpartiesRoute: typeof AuthenticatedReportsCounterpartiesRoute
   AuthenticatedReportsDataQualityRoute: typeof AuthenticatedReportsDataQualityRoute
   AuthenticatedReportsExecutiveRoute: typeof AuthenticatedReportsExecutiveRoute
@@ -1392,6 +1413,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRemittancesIdRoute: AuthenticatedRemittancesIdRouteWithChildren,
   AuthenticatedRemittancesNewRoute: AuthenticatedRemittancesNewRoute,
   AuthenticatedRemittancesNewV2Route: AuthenticatedRemittancesNewV2Route,
+  AuthenticatedReportsAuditExplorerRoute:
+    AuthenticatedReportsAuditExplorerRoute,
   AuthenticatedReportsCounterpartiesRoute:
     AuthenticatedReportsCounterpartiesRoute,
   AuthenticatedReportsDataQualityRoute: AuthenticatedReportsDataQualityRoute,

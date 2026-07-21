@@ -4856,6 +4856,25 @@ export type Database = {
         }
         Relationships: []
       }
+      v_audit_timeline: {
+        Row: {
+          action: string | null
+          actor_id: string | null
+          after: Json | null
+          before: Json | null
+          correlation_id: string | null
+          created_at: string | null
+          entity_id: string | null
+          entity_type: string | null
+          event_id: string | null
+          kind: string | null
+          reason: string | null
+          source_id: string | null
+          source_table: string | null
+          summary: string | null
+        }
+        Relationships: []
+      }
       v_balance_reconciliation: {
         Row: {
           account_id: string | null
@@ -5846,6 +5865,26 @@ export type Database = {
         Returns: string
       }
       remittance_v2_validate_close: { Args: { _id: string }; Returns: Json }
+      report_audit_actors: { Args: never; Returns: Json }
+      report_audit_event_detail: {
+        Args: { _id: string; _kind: string }
+        Returns: Json
+      }
+      report_audit_timeline: {
+        Args: {
+          _actor?: string
+          _cursor_id?: string
+          _cursor_ts?: string
+          _entity_id?: string
+          _entity_type?: string
+          _from?: string
+          _kinds?: string[]
+          _limit?: number
+          _search?: string
+          _to?: string
+        }
+        Returns: Json
+      }
       report_bank_account_analytics: {
         Args: {
           _currency?: string
