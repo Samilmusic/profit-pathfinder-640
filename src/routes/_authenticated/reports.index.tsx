@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   Download,
   ArrowRight,
+  ShieldAlert,
 } from "lucide-react";
 import type { ComponentType } from "react";
 
@@ -38,6 +39,7 @@ type Card = {
 const cards: Card[] = [
   { to: "/reports/executive",       label: "Executive Dashboard", desc: "Profit, remittance state, inventory value.",           icon: Gauge,       status: "ready" },
   { to: "/reports/operations",      label: "Operational KPIs",    desc: "Live queue, operator workload, processing times.",     icon: Activity,    status: "ready" },
+  { to: "/reports/data-quality",    label: "Data Quality",        desc: "Read-only classification of every financial row.",     icon: ShieldAlert, status: "ready" },
   { to: "/reports/profits",         label: "Profit Analytics",    desc: "Charts by day/week/month, breakdowns by dimension.",   icon: TrendingUp,  status: "coming" },
   { to: "/reports/remittances",     label: "Remittance Analytics",desc: "Lifecycle durations, completion rates, trends.",       icon: Send,        status: "coming" },
   { to: "/reports/inventory",       label: "Inventory Dashboard", desc: "FIFO lots, remaining, age, turnover.",                 icon: Package,     status: "coming" },
