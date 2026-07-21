@@ -4369,7 +4369,14 @@ export type Database = {
         | "customer_wallet"
         | "pending_delivery"
         | "other"
-      app_role: "admin" | "milad" | "ali" | "viewer"
+      app_role:
+        | "admin"
+        | "milad"
+        | "ali"
+        | "viewer"
+        | "operator"
+        | "manager"
+        | "accountant"
       brought_in_by: "milad" | "ali" | "customer" | "other"
       brought_in_reason:
         | "capital"
@@ -4666,7 +4673,15 @@ export const Constants = {
         "pending_delivery",
         "other",
       ],
-      app_role: ["admin", "milad", "ali", "viewer"],
+      app_role: [
+        "admin",
+        "milad",
+        "ali",
+        "viewer",
+        "operator",
+        "manager",
+        "accountant",
+      ],
       brought_in_by: ["milad", "ali", "customer", "other"],
       brought_in_reason: [
         "capital",
