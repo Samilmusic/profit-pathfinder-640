@@ -4318,6 +4318,17 @@ export type Database = {
         }
         Returns: Json
       }
+      receive_linked_buy: {
+        Args: {
+          _bought_amount?: number
+          _bought_currency?: string
+          _buy_id: string
+          _delivered_at?: string
+          _note?: string
+          _received_into_account_id: string
+        }
+        Returns: undefined
+      }
       recompute_cycle_profit: {
         Args: { _cycle_id: string }
         Returns: undefined
