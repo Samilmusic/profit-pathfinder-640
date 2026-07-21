@@ -53,6 +53,7 @@ import { Route as AuthenticatedTradesIdRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedSellsIdRouteImport } from './routes/_authenticated/sells.$id'
 import { Route as AuthenticatedReportsProfitsRouteImport } from './routes/_authenticated/reports.profits'
 import { Route as AuthenticatedReportsOperationsRouteImport } from './routes/_authenticated/reports.operations'
+import { Route as AuthenticatedReportsInventoryRouteImport } from './routes/_authenticated/reports.inventory'
 import { Route as AuthenticatedReportsExecutiveRouteImport } from './routes/_authenticated/reports.executive'
 import { Route as AuthenticatedReportsDataQualityRouteImport } from './routes/_authenticated/reports.data-quality'
 import { Route as AuthenticatedReportsCounterpartiesRouteImport } from './routes/_authenticated/reports.counterparties'
@@ -305,6 +306,12 @@ const AuthenticatedReportsOperationsRoute =
     path: '/reports/operations',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedReportsInventoryRoute =
+  AuthenticatedReportsInventoryRouteImport.update({
+    id: '/reports/inventory',
+    path: '/reports/inventory',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedReportsExecutiveRoute =
   AuthenticatedReportsExecutiveRouteImport.update({
     id: '/reports/executive',
@@ -432,6 +439,7 @@ export interface FileRoutesByFullPath {
   '/reports/counterparties': typeof AuthenticatedReportsCounterpartiesRoute
   '/reports/data-quality': typeof AuthenticatedReportsDataQualityRoute
   '/reports/executive': typeof AuthenticatedReportsExecutiveRoute
+  '/reports/inventory': typeof AuthenticatedReportsInventoryRoute
   '/reports/operations': typeof AuthenticatedReportsOperationsRoute
   '/reports/profits': typeof AuthenticatedReportsProfitsRoute
   '/sells/$id': typeof AuthenticatedSellsIdRoute
@@ -487,6 +495,7 @@ export interface FileRoutesByTo {
   '/reports/counterparties': typeof AuthenticatedReportsCounterpartiesRoute
   '/reports/data-quality': typeof AuthenticatedReportsDataQualityRoute
   '/reports/executive': typeof AuthenticatedReportsExecutiveRoute
+  '/reports/inventory': typeof AuthenticatedReportsInventoryRoute
   '/reports/operations': typeof AuthenticatedReportsOperationsRoute
   '/reports/profits': typeof AuthenticatedReportsProfitsRoute
   '/sells/$id': typeof AuthenticatedSellsIdRoute
@@ -548,6 +557,7 @@ export interface FileRoutesById {
   '/_authenticated/reports/counterparties': typeof AuthenticatedReportsCounterpartiesRoute
   '/_authenticated/reports/data-quality': typeof AuthenticatedReportsDataQualityRoute
   '/_authenticated/reports/executive': typeof AuthenticatedReportsExecutiveRoute
+  '/_authenticated/reports/inventory': typeof AuthenticatedReportsInventoryRoute
   '/_authenticated/reports/operations': typeof AuthenticatedReportsOperationsRoute
   '/_authenticated/reports/profits': typeof AuthenticatedReportsProfitsRoute
   '/_authenticated/sells/$id': typeof AuthenticatedSellsIdRoute
@@ -609,6 +619,7 @@ export interface FileRouteTypes {
     | '/reports/counterparties'
     | '/reports/data-quality'
     | '/reports/executive'
+    | '/reports/inventory'
     | '/reports/operations'
     | '/reports/profits'
     | '/sells/$id'
@@ -664,6 +675,7 @@ export interface FileRouteTypes {
     | '/reports/counterparties'
     | '/reports/data-quality'
     | '/reports/executive'
+    | '/reports/inventory'
     | '/reports/operations'
     | '/reports/profits'
     | '/sells/$id'
@@ -724,6 +736,7 @@ export interface FileRouteTypes {
     | '/_authenticated/reports/counterparties'
     | '/_authenticated/reports/data-quality'
     | '/_authenticated/reports/executive'
+    | '/_authenticated/reports/inventory'
     | '/_authenticated/reports/operations'
     | '/_authenticated/reports/profits'
     | '/_authenticated/sells/$id'
@@ -1059,6 +1072,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReportsOperationsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/reports/inventory': {
+      id: '/_authenticated/reports/inventory'
+      path: '/reports/inventory'
+      fullPath: '/reports/inventory'
+      preLoaderRoute: typeof AuthenticatedReportsInventoryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/reports/executive': {
       id: '/_authenticated/reports/executive'
       path: '/reports/executive'
@@ -1272,6 +1292,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedReportsCounterpartiesRoute: typeof AuthenticatedReportsCounterpartiesRoute
   AuthenticatedReportsDataQualityRoute: typeof AuthenticatedReportsDataQualityRoute
   AuthenticatedReportsExecutiveRoute: typeof AuthenticatedReportsExecutiveRoute
+  AuthenticatedReportsInventoryRoute: typeof AuthenticatedReportsInventoryRoute
   AuthenticatedReportsOperationsRoute: typeof AuthenticatedReportsOperationsRoute
   AuthenticatedReportsProfitsRoute: typeof AuthenticatedReportsProfitsRoute
   AuthenticatedSellsIdRoute: typeof AuthenticatedSellsIdRoute
@@ -1320,6 +1341,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedReportsCounterpartiesRoute,
   AuthenticatedReportsDataQualityRoute: AuthenticatedReportsDataQualityRoute,
   AuthenticatedReportsExecutiveRoute: AuthenticatedReportsExecutiveRoute,
+  AuthenticatedReportsInventoryRoute: AuthenticatedReportsInventoryRoute,
   AuthenticatedReportsOperationsRoute: AuthenticatedReportsOperationsRoute,
   AuthenticatedReportsProfitsRoute: AuthenticatedReportsProfitsRoute,
   AuthenticatedSellsIdRoute: AuthenticatedSellsIdRoute,
