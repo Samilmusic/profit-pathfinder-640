@@ -152,6 +152,28 @@ export function AppShell({ children }: { children: ReactNode }) {
     supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
   }, []);
 
+  // Force password change on first login for seeded/bootstrap accounts.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.auth.getUser();
+      const uid = data.user?.id;
+      if (!uid) return;
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("must_change_password")
+        .eq("id", uid)
+        .maybeSingle();
+      if (cancelled) return;
+      if (prof?.must_change_password && pathname !== "/change-password") {
+        navigate({ to: "/change-password", replace: true });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname, navigate]);
+
   useEffect(() => setOpen(false), [pathname]);
 
   const handleSignOut = async () => {
