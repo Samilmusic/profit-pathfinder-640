@@ -583,6 +583,53 @@ function NewRemittancePage() {
           </CardContent>
         </Card>
 
+        {/* FX Purchase (Trading profit from rate spread) */}
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="text-sm font-semibold">7. FX Purchase (optional)</div>
+              <Badge variant="outline" className="text-[10px]">rate spread → trading profit</Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              If you used the customer's payment to buy the settlement currency from a supplier
+              at a better rate, enter the supplier rate to auto-calculate trading profit.
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="space-y-1.5">
+                <Label>Purchase rate ({payCurrency}/{transferCurrency})</Label>
+                <NumberInput rate value={fxPurchaseRate} onChange={(e) => setFxPurchaseRate((e.target as HTMLInputElement).value)} className="h-11" placeholder="e.g. 521,000" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Purchased amount</Label>
+                <NumberInput currency={transferCurrency} value={fxPurchasedAmount} onChange={(e) => setFxPurchasedAmount((e.target as HTMLInputElement).value)} className="h-11" placeholder={`Defaults to ${transferredAmount || "transfer amount"}`} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Supplier (existing)</Label>
+                <Select value={fxSupplierId} onValueChange={(v) => { setFxSupplierId(v); if (v) setFxSupplierName(""); }}>
+                  <SelectTrigger className="h-11"><SelectValue placeholder="— optional —" /></SelectTrigger>
+                  <SelectContent>
+                    {(customers.data ?? []).map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>…or supplier name</Label>
+                <Input value={fxSupplierName} onChange={(e) => { setFxSupplierName(e.target.value); if (e.target.value) setFxSupplierId(""); }} className="h-11" placeholder="Free text" />
+              </div>
+            </div>
+
+            {fxCalc.hasFx && (
+              <div className="rounded-md border bg-muted/30 p-3 space-y-1.5 text-sm">
+                <div className="flex justify-between"><span className="text-muted-foreground">Customer rate</span><span className="font-mono">{fxCalc.customerRate.toLocaleString()} {payCurrency}/{transferCurrency}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Supplier rate</span><span className="font-mono">{fxCalc.supplierRate.toLocaleString()} {payCurrency}/{transferCurrency}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Spread</span><span className={`font-mono ${fxCalc.spread < 0 ? "text-rose-400" : "text-emerald-400"}`}>{fxCalc.spread >= 0 ? "+" : ""}{fxCalc.spread.toLocaleString()}</span></div>
+                <div className="flex justify-between pt-2 border-t"><span>Trading profit ({payCurrency})</span><span className={`font-semibold ${fxCalc.tradingPayCcy < 0 ? "text-rose-400" : "text-emerald-400"}`}>{fmtProfit(fxCalc.tradingPayCcy, payCurrency)}</span></div>
+                <div className="flex justify-between"><span>Trading profit (AED)</span><span className={`font-semibold ${fxCalc.tradingAed < 0 ? "text-rose-400" : "text-emerald-400"}`}>≈ {fmtProfit(fxCalc.tradingAed, "AED")}</span></div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Summary */}
         <Card className="border-primary/30 bg-primary/5">
           <CardContent className="p-4 space-y-2">
@@ -591,8 +638,14 @@ function NewRemittancePage() {
               <div className="flex justify-between"><span className="text-muted-foreground">Actual transfer</span><span className="font-medium">{fmt(Number(transferredAmount) || 0, transferCurrency)}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Customer paid</span><span className="font-medium">{fmt(Number(payAmount) || 0, payCurrency)}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Base value ({payCurrency})</span><span>{fmt(calc.baseValueInPayCcy, payCurrency)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Gross commission ({payCurrency})</span><span className={calc.grossPayCcy < 0 ? "text-rose-400" : "text-emerald-400"}>{fmtProfit(calc.grossPayCcy, payCurrency)}</span></div>
-              <div className="flex justify-between md:col-span-2 pt-2 border-t"><span className="font-semibold">Commission profit (AED)</span><span className={`text-lg font-bold ${calc.grossAed < 0 ? "text-rose-400" : "text-emerald-400"}`}>≈ {fmtProfit(calc.grossAed, "AED")}</span></div>
+              <div className="md:col-span-2 pt-2 border-t space-y-1">
+                <div className="flex justify-between"><span className="text-muted-foreground">Trading profit ({payCurrency})</span><span className={fxCalc.tradingPayCcy < 0 ? "text-rose-400" : fxCalc.hasFx ? "text-emerald-400" : ""}>{fxCalc.hasFx ? fmtProfit(fxCalc.tradingPayCcy, payCurrency) : "—"}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Trading profit (AED)</span><span className={fxCalc.tradingAed < 0 ? "text-rose-400" : fxCalc.hasFx ? "text-emerald-400" : ""}>{fxCalc.hasFx ? `≈ ${fmtProfit(fxCalc.tradingAed, "AED")}` : "—"}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Commission profit ({payCurrency})</span><span className={calc.grossPayCcy < 0 ? "text-rose-400" : "text-emerald-400"}>{fmtProfit(calc.grossPayCcy, payCurrency)}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Commission profit (AED)</span><span className={calc.grossAed < 0 ? "text-rose-400" : "text-emerald-400"}>≈ {fmtProfit(calc.grossAed, "AED")}</span></div>
+              </div>
+              <div className="flex justify-between md:col-span-2 pt-2 border-t"><span className="font-semibold">Total profit ({payCurrency})</span><span className={`text-base font-bold ${totalProfitPayCcy < 0 ? "text-rose-400" : "text-emerald-400"}`}>{fmtProfit(totalProfitPayCcy, payCurrency)}</span></div>
+              <div className="flex justify-between md:col-span-2"><span className="font-semibold">TOTAL PROFIT (AED)</span><span className={`text-lg font-bold ${totalProfitAed < 0 ? "text-rose-400" : "text-emerald-400"}`}>≈ {fmtProfit(totalProfitAed, "AED")}</span></div>
             </div>
           </CardContent>
         </Card>
