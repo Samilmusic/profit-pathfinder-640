@@ -471,7 +471,7 @@ export type Database = {
           paid_from_account_id: string | null
           rate_difference: number | null
           rate_difference_percent: number | null
-          received_into_account_id: string
+          received_into_account_id: string | null
           reference_buy_rate: number | null
           reference_currency: string | null
           reference_mid_rate: number | null
@@ -517,7 +517,7 @@ export type Database = {
           paid_from_account_id?: string | null
           rate_difference?: number | null
           rate_difference_percent?: number | null
-          received_into_account_id: string
+          received_into_account_id?: string | null
           reference_buy_rate?: number | null
           reference_currency?: string | null
           reference_mid_rate?: number | null
@@ -563,7 +563,7 @@ export type Database = {
           paid_from_account_id?: string | null
           rate_difference?: number | null
           rate_difference_percent?: number | null
-          received_into_account_id?: string
+          received_into_account_id?: string | null
           reference_buy_rate?: number | null
           reference_currency?: string | null
           reference_mid_rate?: number | null
