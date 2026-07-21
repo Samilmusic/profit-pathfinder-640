@@ -130,7 +130,7 @@ export async function fetchBusinessAlerts(includeDismissed = false, thresholds: 
 }
 
 export async function dismissAlert(key: string, reason?: string): Promise<string> {
-  const { data, error } = await supabase.rpc("admin_alert_dismiss", { _key: key, _reason: reason ?? null });
+  const { data, error } = await supabase.rpc("admin_alert_dismiss", { _key: key, _reason: reason ?? undefined });
   if (error) throw error;
   return data as unknown as string;
 }
