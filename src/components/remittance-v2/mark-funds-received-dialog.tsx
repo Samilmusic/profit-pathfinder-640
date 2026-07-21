@@ -82,7 +82,14 @@ export function MarkFundsReceivedDialog({
           </div>
           <div className="space-y-1">
             <Label>Amount {defaultCurrency ? `(${defaultCurrency})` : ""}</Label>
-            <NumberInput value={amount} onValueChange={setAmount} inputMode="decimal" />
+            <NumberInput
+              value={amount ?? ""}
+              onChange={(e) => {
+                const v = e.target.value;
+                setAmount(v === "" ? null : Number(v));
+              }}
+              inputMode="decimal"
+            />
           </div>
           <div className="space-y-1">
             <Label>Note (optional)</Label>
