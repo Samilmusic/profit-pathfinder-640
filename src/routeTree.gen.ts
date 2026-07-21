@@ -51,6 +51,7 @@ import { Route as AuthenticatedAccountsIndexRouteImport } from './routes/_authen
 import { Route as AuthenticatedTradesNewRouteImport } from './routes/_authenticated/trades.new'
 import { Route as AuthenticatedTradesIdRouteImport } from './routes/_authenticated/trades.$id'
 import { Route as AuthenticatedSellsIdRouteImport } from './routes/_authenticated/sells.$id'
+import { Route as AuthenticatedReportsTreasuryRouteImport } from './routes/_authenticated/reports.treasury'
 import { Route as AuthenticatedReportsProfitsRouteImport } from './routes/_authenticated/reports.profits'
 import { Route as AuthenticatedReportsOperationsRouteImport } from './routes/_authenticated/reports.operations'
 import { Route as AuthenticatedReportsInventoryRouteImport } from './routes/_authenticated/reports.inventory'
@@ -295,6 +296,12 @@ const AuthenticatedSellsIdRoute = AuthenticatedSellsIdRouteImport.update({
   path: '/sells/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedReportsTreasuryRoute =
+  AuthenticatedReportsTreasuryRouteImport.update({
+    id: '/reports/treasury',
+    path: '/reports/treasury',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedReportsProfitsRoute =
   AuthenticatedReportsProfitsRouteImport.update({
     id: '/reports/profits',
@@ -449,6 +456,7 @@ export interface FileRoutesByFullPath {
   '/reports/inventory': typeof AuthenticatedReportsInventoryRouteWithChildren
   '/reports/operations': typeof AuthenticatedReportsOperationsRoute
   '/reports/profits': typeof AuthenticatedReportsProfitsRoute
+  '/reports/treasury': typeof AuthenticatedReportsTreasuryRoute
   '/sells/$id': typeof AuthenticatedSellsIdRoute
   '/trades/$id': typeof AuthenticatedTradesIdRoute
   '/trades/new': typeof AuthenticatedTradesNewRoute
@@ -506,6 +514,7 @@ export interface FileRoutesByTo {
   '/reports/inventory': typeof AuthenticatedReportsInventoryRouteWithChildren
   '/reports/operations': typeof AuthenticatedReportsOperationsRoute
   '/reports/profits': typeof AuthenticatedReportsProfitsRoute
+  '/reports/treasury': typeof AuthenticatedReportsTreasuryRoute
   '/sells/$id': typeof AuthenticatedSellsIdRoute
   '/trades/$id': typeof AuthenticatedTradesIdRoute
   '/trades/new': typeof AuthenticatedTradesNewRoute
@@ -569,6 +578,7 @@ export interface FileRoutesById {
   '/_authenticated/reports/inventory': typeof AuthenticatedReportsInventoryRouteWithChildren
   '/_authenticated/reports/operations': typeof AuthenticatedReportsOperationsRoute
   '/_authenticated/reports/profits': typeof AuthenticatedReportsProfitsRoute
+  '/_authenticated/reports/treasury': typeof AuthenticatedReportsTreasuryRoute
   '/_authenticated/sells/$id': typeof AuthenticatedSellsIdRoute
   '/_authenticated/trades/$id': typeof AuthenticatedTradesIdRoute
   '/_authenticated/trades/new': typeof AuthenticatedTradesNewRoute
@@ -632,6 +642,7 @@ export interface FileRouteTypes {
     | '/reports/inventory'
     | '/reports/operations'
     | '/reports/profits'
+    | '/reports/treasury'
     | '/sells/$id'
     | '/trades/$id'
     | '/trades/new'
@@ -689,6 +700,7 @@ export interface FileRouteTypes {
     | '/reports/inventory'
     | '/reports/operations'
     | '/reports/profits'
+    | '/reports/treasury'
     | '/sells/$id'
     | '/trades/$id'
     | '/trades/new'
@@ -751,6 +763,7 @@ export interface FileRouteTypes {
     | '/_authenticated/reports/inventory'
     | '/_authenticated/reports/operations'
     | '/_authenticated/reports/profits'
+    | '/_authenticated/reports/treasury'
     | '/_authenticated/sells/$id'
     | '/_authenticated/trades/$id'
     | '/_authenticated/trades/new'
@@ -1071,6 +1084,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSellsIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/reports/treasury': {
+      id: '/_authenticated/reports/treasury'
+      path: '/reports/treasury'
+      fullPath: '/reports/treasury'
+      preLoaderRoute: typeof AuthenticatedReportsTreasuryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/reports/profits': {
       id: '/_authenticated/reports/profits'
       path: '/reports/profits'
@@ -1329,6 +1349,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedReportsInventoryRoute: typeof AuthenticatedReportsInventoryRouteWithChildren
   AuthenticatedReportsOperationsRoute: typeof AuthenticatedReportsOperationsRoute
   AuthenticatedReportsProfitsRoute: typeof AuthenticatedReportsProfitsRoute
+  AuthenticatedReportsTreasuryRoute: typeof AuthenticatedReportsTreasuryRoute
   AuthenticatedSellsIdRoute: typeof AuthenticatedSellsIdRoute
   AuthenticatedBroughtInIndexRoute: typeof AuthenticatedBroughtInIndexRoute
   AuthenticatedRemittancesIndexRoute: typeof AuthenticatedRemittancesIndexRoute
@@ -1379,6 +1400,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedReportsInventoryRouteWithChildren,
   AuthenticatedReportsOperationsRoute: AuthenticatedReportsOperationsRoute,
   AuthenticatedReportsProfitsRoute: AuthenticatedReportsProfitsRoute,
+  AuthenticatedReportsTreasuryRoute: AuthenticatedReportsTreasuryRoute,
   AuthenticatedSellsIdRoute: AuthenticatedSellsIdRoute,
   AuthenticatedBroughtInIndexRoute: AuthenticatedBroughtInIndexRoute,
   AuthenticatedRemittancesIndexRoute: AuthenticatedRemittancesIndexRoute,
