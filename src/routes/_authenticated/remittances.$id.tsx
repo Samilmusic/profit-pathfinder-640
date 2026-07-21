@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { fmt, fmtProfit } from "@/lib/exchange";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { ArrowLeft, Trash2, CheckCircle2, Circle, Truck } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/remittances/$id")({
@@ -29,7 +29,7 @@ function RemittanceDetailPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("remittances")
-        .select("*, customers(name), source:accounts!remittances_source_account_id_fkey(name,currency), payment:accounts!remittances_payment_received_account_id_fkey(name,currency)")
+        .select("*, customers!remittances_customer_id_fkey(name), third_party:customers!remittances_third_party_customer_id_fkey(name), linked_buy:buy_transactions!remittances_linked_buy_id_fkey(id,doc_no,bought_amount,bought_currency,buy_rate,supplier_delivered,supplier_delivered_at), source:accounts!remittances_source_account_id_fkey(name,currency), payment:accounts!remittances_payment_received_account_id_fkey(name,currency)")
         .eq("id", id).maybeSingle();
       if (error) throw error;
       return data;
@@ -56,9 +56,33 @@ function RemittanceDetailPage() {
     onError: (e: any) => { if (e.message !== "Reason required") toast.error(e.message); },
   });
 
+  const recordDelivery = useMutation({
+    mutationFn: async () => {
+      const buyId = (q.data as any)?.linked_buy?.id;
+      if (!buyId) throw new Error("No linked buy");
+      const note = window.prompt("Delivery note (optional):") || "";
+      const { error } = await supabase.rpc("record_supplier_delivery" as any, { _buy_id: buyId, _note: note });
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries(); toast.success("Supplier delivery recorded — inventory posted."); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const validationQ = useQuery({
+    enabled: !!id,
+    queryKey: ["remittance-close-validation", id],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("validate_third_party_settlement" as any, { _remittance_id: id });
+      if (error) return null;
+      return data as any;
+    },
+  });
+
   const r = q.data;
   if (q.isLoading) return <div className="p-6 text-sm text-muted-foreground">Loading…</div>;
   if (!r) return <div className="p-6 text-sm text-muted-foreground">Not found.</div>;
+
+  const isThirdParty = r.payment_destination === "to_third_party" || r.payment_destination === "settles_linked_buy";
 
   return (
     <div className="p-4 md:p-6 space-y-4 max-w-4xl mx-auto pb-24">
@@ -106,6 +130,65 @@ function RemittanceDetailPage() {
           <Row k="Method" v={String(r.transfer_method).replace(/_/g, " ")} />
         </CardContent></Card>
       </div>
+
+      {/* Third-Party Settlement */}
+      {isThirdParty && (
+        <Card className="border-amber-500/40 bg-amber-500/5">
+          <CardContent className="p-4 space-y-3 text-sm">
+            <div className="flex items-center gap-2">
+              <Truck className="h-4 w-4" />
+              <div className="font-semibold">Third-Party Settlement</div>
+              <Badge variant="outline" className="text-[10px]">{String(r.payment_destination).replace(/_/g, " ")}</Badge>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Cell label="Paid to" value={r.third_party?.name || r.third_party_name || "—"} />
+              <Cell label="Settlement" value={r.settlement_amount ? fmt(r.settlement_amount, r.settlement_currency || r.customer_payment_currency) : "—"} />
+              <Cell label="Date" value={r.settlement_date || "—"} />
+              <Cell label="Excess handling" value={String(r.excess_allocation || "none").replace(/_/g, " ")} />
+            </div>
+
+            {r.linked_buy && (
+              <div className="rounded-md border bg-background/40 p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="text-xs font-semibold text-muted-foreground">Linked buy</div>
+                  <Link to="/buys/$id" params={{ id: r.linked_buy.id }} className="font-mono text-xs underline">
+                    {r.linked_buy.doc_no || r.linked_buy.id.slice(0, 8)}
+                  </Link>
+                  <Badge variant={r.linked_buy.supplier_delivered ? "default" : "secondary"} className="text-[10px]">
+                    {r.linked_buy.supplier_delivered ? "Delivered" : "Awaiting delivery"}
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                  <Cell label="Bought" value={fmt(r.linked_buy.bought_amount, r.linked_buy.bought_currency)} />
+                  <Cell label="Rate" value={String(r.linked_buy.buy_rate)} />
+                  <Cell label="Delivered at" value={r.linked_buy.supplier_delivered_at?.slice(0, 10) || "—"} />
+                  <div className="flex items-end">
+                    {!r.linked_buy.supplier_delivered && (
+                      <Button size="sm" onClick={() => recordDelivery.mutate()} disabled={recordDelivery.isPending} className="h-9">
+                        <Truck className="h-3.5 w-3.5 mr-1" /> Record supplier delivery
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <div className="text-[11px] text-muted-foreground">Inventory is created only after supplier delivery is recorded.</div>
+              </div>
+            )}
+
+            {validationQ.data && Array.isArray(validationQ.data?.items) && (
+              <div className="rounded-md border p-3 space-y-1.5">
+                <div className="text-xs font-semibold text-muted-foreground">Close checklist</div>
+                {(validationQ.data.items as any[]).map((it, i) => (
+                  <div key={i} className="flex items-center gap-2 text-xs">
+                    {it.ok ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> : <Circle className="h-3.5 w-3.5 text-muted-foreground" />}
+                    <span className={it.ok ? "" : "text-muted-foreground"}>{it.label}</span>
+                    {it.detail && <span className="text-[10px] text-muted-foreground">— {it.detail}</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Status control */}
       <Card>

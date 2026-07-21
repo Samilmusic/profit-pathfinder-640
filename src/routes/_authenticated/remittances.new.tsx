@@ -9,6 +9,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AccountSelect, useCustomers } from "@/components/account-select";
+import { Badge } from "@/components/ui/badge";
+import { useQuery } from "@tanstack/react-query";
 import { NumberInput } from "@/components/number-input";
 import { CURRENCIES, fmt, fmtProfit } from "@/lib/exchange";
 import { ArrowLeft, Send } from "lucide-react";
@@ -62,6 +64,59 @@ function NewRemittancePage() {
   const [payAmount, setPayAmount] = useState("");
   const [refRate, setRefRate] = useState("");
   const [paymentAccountId, setPaymentAccountId] = useState("");
+
+  // Settlement method (NEW — third-party / linked-buy)
+  const [paymentDestination, setPaymentDestination] = useState<
+    "into_account" | "cash_to_us" | "to_third_party" | "settles_linked_buy" | "pending"
+  >("into_account");
+  const [thirdPartyCustomerId, setThirdPartyCustomerId] = useState("");
+  const [thirdPartyName, setThirdPartyName] = useState("");
+  const [linkedBuyId, setLinkedBuyId] = useState("");
+  const [settlementAmount, setSettlementAmount] = useState("");
+  const [settlementCurrency, setSettlementCurrency] = useState("IRR");
+  const [settlementDate, setSettlementDate] = useState(today);
+  const [excessAllocation, setExcessAllocation] = useState<
+    "none" | "our_account" | "another_supplier" | "customer_balance" | "pending" | "commission"
+  >("none");
+  const [excessNote, setExcessNote] = useState("");
+
+  // Inline "Create new linked buy"
+  const [newBuy, setNewBuy] = useState({
+    supplierId: "",
+    boughtCurrency: "AED",
+    boughtAmount: "",
+    supplierRate: "",
+  });
+
+  const isThirdParty = paymentDestination === "to_third_party" || paymentDestination === "settles_linked_buy";
+
+  // Auto-mirror settlement currency/amount from customer payment inputs
+  useMemo(() => {
+    if (isThirdParty) {
+      if (!settlementCurrency && payCurrency) setSettlementCurrency(payCurrency);
+    }
+  }, [isThirdParty, payCurrency]); // eslint-disable-line
+
+  const openBuysQ = useQuery({
+    enabled: isThirdParty,
+    queryKey: ["open-buys-for-remittance", newBuy.supplierId, thirdPartyCustomerId],
+    queryFn: async () => {
+      let q = supabase.from("buy_transactions").select("id,doc_no,bought_amount,bought_currency,paid_amount,paid_currency,buy_rate,customer_id,counterparty")
+        .is("deleted_at", null).eq("settlement_source", "own_funds")
+        .order("entry_date", { ascending: false }).limit(20);
+      const cid = thirdPartyCustomerId || newBuy.supplierId;
+      if (cid) q = q.eq("customer_id", cid);
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data ?? []) as any[];
+    },
+  });
+
+  const settlementSummary = useMemo(() => {
+    const cust = Number(payAmount) || 0;
+    const set = Number(settlementAmount) || 0;
+    return { diff: cust - set, absDiff: Math.abs(cust - set) };
+  }, [payAmount, settlementAmount]);
 
   // Commission
   const [commMethod, setCommMethod] = useState<CommissionMethod>("included");
@@ -125,9 +180,40 @@ function NewRemittancePage() {
       if (!sourceAccountId) throw new Error("Select the source account (paid from)");
       if (opts.close) {
         if (!payAmount || Number(payAmount) <= 0) throw new Error("Enter the customer payment amount before closing");
-        if (!paymentAccountId) throw new Error("Select the payment received account before closing");
         if (!benName) throw new Error("Enter beneficiary name before closing");
+        if (paymentDestination === "into_account" && !paymentAccountId) throw new Error("Select the payment received account before closing");
       }
+      if (isThirdParty) {
+        if (!thirdPartyCustomerId && !thirdPartyName) throw new Error("Choose who the customer paid to");
+        if (!settlementAmount || Number(settlementAmount) <= 0) throw new Error("Enter the settlement amount");
+      }
+
+      // Optionally create linked buy first
+      let linkedBuyIdFinal: string | null = linkedBuyId || null;
+      if (isThirdParty && !linkedBuyIdFinal && newBuy.boughtAmount && newBuy.supplierRate) {
+        const bAmt = Number(newBuy.boughtAmount);
+        const rate = Number(newBuy.supplierRate);
+        if (!bAmt || !rate) throw new Error("Linked buy amount and rate are required");
+        const paidAmt = bAmt * rate;
+        const { data: u2 } = await supabase.auth.getUser();
+        const { data: newB, error: bErr } = await supabase.from("buy_transactions").insert({
+          entry_date: entryDate,
+          bought_currency: newBuy.boughtCurrency,
+          bought_amount: bAmt,
+          buy_rate: rate,
+          paid_currency: settlementCurrency || payCurrency,
+          paid_amount: paidAmt,
+          paid_from_account_id: null,
+          received_into_account_id: null,
+          customer_id: newBuy.supplierId || thirdPartyCustomerId || null,
+          counterparty: thirdPartyName || null,
+          settlement_source: "remittance_payment",
+          created_by: u2.user?.id,
+        } as any).select("id").single();
+        if (bErr) throw bErr;
+        linkedBuyIdFinal = newB.id as string;
+      }
+
       const { data: u } = await supabase.auth.getUser();
       const insert: any = {
         entry_date: entryDate,
@@ -150,7 +236,16 @@ function NewRemittancePage() {
         customer_payment_currency: payCurrency,
         customer_payment_amount: Number(payAmount) || 0,
         reference_rate: Number(refRate) || 0,
-        payment_received_account_id: paymentAccountId || null,
+        payment_received_account_id: isThirdParty ? null : (paymentAccountId || null),
+        payment_destination: paymentDestination,
+        third_party_customer_id: isThirdParty ? (thirdPartyCustomerId || null) : null,
+        third_party_name: isThirdParty ? (thirdPartyName || null) : null,
+        linked_buy_id: isThirdParty ? linkedBuyIdFinal : null,
+        settlement_amount: isThirdParty ? (Number(settlementAmount) || null) : null,
+        settlement_currency: isThirdParty ? (settlementCurrency || null) : null,
+        settlement_date: isThirdParty ? (settlementDate || null) : null,
+        excess_allocation: isThirdParty ? excessAllocation : "none",
+        excess_allocation_note: isThirdParty && excessAllocation !== "none" ? (excessNote || null) : null,
         commission_method: commMethod,
         commission_fixed_amount: commMethod === "fixed" ? Number(commFixedAmount) || 0 : null,
         commission_fixed_currency: commMethod === "fixed" ? commFixedCurrency : null,
@@ -284,18 +379,147 @@ function NewRemittancePage() {
                 <Label>Reference rate ({payCurrency}/{transferCurrency})</Label>
                 <NumberInput rate value={refRate} onChange={(e) => setRefRate((e.target as HTMLInputElement).value)} className="h-11" placeholder="e.g. 500,000" />
               </div>
-              <div className="space-y-1.5 md:col-span-4">
-                <Label>Received into account</Label>
-                <AccountSelect value={paymentAccountId} onChange={setPaymentAccountId} currency={payCurrency} placeholder="Account that received customer payment" />
-              </div>
+              {paymentDestination === "into_account" && (
+                <div className="space-y-1.5 md:col-span-4">
+                  <Label>Received into account *</Label>
+                  <AccountSelect value={paymentAccountId} onChange={setPaymentAccountId} currency={payCurrency} placeholder="Account that received customer payment" />
+                </div>
+              )}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Settlement Method */}
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="text-sm font-semibold">5. Settlement Method</div>
+              <Badge variant="outline" className="text-[10px]">where did the customer pay?</Badge>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+              {([
+                { v: "into_account", label: "Our account" },
+                { v: "cash_to_us", label: "Cash to us" },
+                { v: "to_third_party", label: "Third party" },
+                { v: "settles_linked_buy", label: "Settles a buy" },
+                { v: "pending", label: "Pending" },
+              ] as const).map((o) => (
+                <button key={o.v} type="button" onClick={() => setPaymentDestination(o.v)}
+                  className={`h-11 rounded-md border text-xs font-medium transition ${paymentDestination === o.v ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:bg-accent"}`}>
+                  {o.label}
+                </button>
+              ))}
+            </div>
+
+            {isThirdParty && (
+              <div className="space-y-3 rounded-md border border-dashed p-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label>Paid to (existing supplier/customer)</Label>
+                    <Select value={thirdPartyCustomerId} onValueChange={(v) => { setThirdPartyCustomerId(v); if (v) setThirdPartyName(""); }}>
+                      <SelectTrigger className="h-11"><SelectValue placeholder="— optional —" /></SelectTrigger>
+                      <SelectContent>
+                        {(customers.data ?? []).map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>…or name (free text)</Label>
+                    <Input value={thirdPartyName} onChange={(e) => { setThirdPartyName(e.target.value); if (e.target.value) setThirdPartyCustomerId(""); }} className="h-11" placeholder="Supplier / receiver" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="space-y-1.5">
+                    <Label>Settlement currency</Label>
+                    <Select value={settlementCurrency} onValueChange={setSettlementCurrency}>
+                      <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                      <SelectContent>{CURRENCIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5 col-span-1 md:col-span-2">
+                    <Label>Settlement amount *</Label>
+                    <NumberInput currency={settlementCurrency} value={settlementAmount} onChange={(e) => setSettlementAmount((e.target as HTMLInputElement).value)} className="h-11" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Date</Label>
+                    <Input type="date" value={settlementDate} onChange={(e) => setSettlementDate(e.target.value)} className="h-11" />
+                  </div>
+                </div>
+
+                {paymentDestination === "settles_linked_buy" && (
+                  <div className="space-y-2 rounded-md bg-muted/30 p-3">
+                    <div className="text-xs font-semibold text-muted-foreground">Link to a buy deal</div>
+                    <Select value={linkedBuyId} onValueChange={setLinkedBuyId}>
+                      <SelectTrigger className="h-11"><SelectValue placeholder="Pick an open buy…" /></SelectTrigger>
+                      <SelectContent>
+                        {(openBuysQ.data ?? []).map((b) => (
+                          <SelectItem key={b.id} value={b.id}>
+                            {b.doc_no || b.id.slice(0, 8)} — {fmt(b.bought_amount, b.bought_currency)} @ {b.buy_rate}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <div className="text-[11px] text-muted-foreground">Or leave empty and create a new buy inline:</div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Bought currency</Label>
+                        <Select value={newBuy.boughtCurrency} onValueChange={(v) => setNewBuy((s) => ({ ...s, boughtCurrency: v }))}>
+                          <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                          <SelectContent>{CURRENCIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Bought amount</Label>
+                        <NumberInput currency={newBuy.boughtCurrency} value={newBuy.boughtAmount} onChange={(e) => setNewBuy((s) => ({ ...s, boughtAmount: (e.target as HTMLInputElement).value }))} className="h-10" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Supplier rate</Label>
+                        <NumberInput rate value={newBuy.supplierRate} onChange={(e) => setNewBuy((s) => ({ ...s, supplierRate: (e.target as HTMLInputElement).value }))} className="h-10" />
+                      </div>
+                      <div className="space-y-1.5 flex items-end text-[11px] text-muted-foreground">
+                        {newBuy.boughtAmount && newBuy.supplierRate
+                          ? <>Paid ≈ {fmt(Number(newBuy.boughtAmount) * Number(newBuy.supplierRate), settlementCurrency || payCurrency)}</>
+                          : <span>Inventory created on delivery.</span>}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {settlementSummary.absDiff > 0.001 && (
+                  <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 space-y-2">
+                    <div className="text-xs font-semibold">
+                      {settlementSummary.diff > 0 ? "Excess" : "Shortfall"}: {fmt(settlementSummary.absDiff, settlementCurrency || payCurrency)}
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {([
+                        { v: "our_account", label: "Keep in our account" },
+                        { v: "another_supplier", label: "To another supplier" },
+                        { v: "customer_balance", label: "Customer balance" },
+                        { v: "commission", label: "Add to commission" },
+                        { v: "pending", label: "Pending" },
+                        { v: "none", label: "Ignore" },
+                      ] as const).map((o) => (
+                        <button key={o.v} type="button" onClick={() => setExcessAllocation(o.v)}
+                          className={`h-9 rounded-md border text-[11px] transition ${excessAllocation === o.v ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:bg-accent"}`}>
+                          {o.label}
+                        </button>
+                      ))}
+                    </div>
+                    {excessAllocation !== "none" && (
+                      <Input value={excessNote} onChange={(e) => setExcessNote(e.target.value)} className="h-9" placeholder="Optional note" />
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
         {/* Commission */}
         <Card>
           <CardContent className="p-4 space-y-3">
-            <div className="text-sm font-semibold">5. Commission Method</div>
+            <div className="text-sm font-semibold">6. Commission Method</div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               {(["fixed", "percentage", "included", "free"] as CommissionMethod[]).map((m) => (
                 <button key={m} type="button" onClick={() => setCommMethod(m)}
