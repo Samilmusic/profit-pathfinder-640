@@ -21,18 +21,18 @@ type Row = {
 
 type Preset = "today" | "yesterday" | "7d" | "30d" | "all";
 
-const ACTION_META: Record<string, { label: string; icon: any; codePrefix: string; table: string | null; codeCol: string | null }> = {
-  buy:              { label: "Buy",       icon: Package,        codePrefix: "BUY",   table: "buy_transactions",   codeCol: "doc_no" },
-  sell:             { label: "Sell",      icon: Package,        codePrefix: "SELL",  table: "sell_transactions",  codeCol: "doc_no" },
-  brought_in:       { label: "Brought In",icon: Landmark,       codePrefix: "BI",    table: "brought_in_money",   codeCol: "doc_no" },
-  expense:          { label: "Expense",   icon: Receipt,        codePrefix: "EXP",   table: "expenses",           codeCol: "doc_no" },
-  transfer:         { label: "Transfer",  icon: ArrowRightLeft, codePrefix: "TRF",   table: "transfers",          codeCol: null },
-  deposit:          { label: "Deposit",   icon: CreditCard,     codePrefix: "DEP",   table: "customer_deposits",  codeCol: null },
-  sell_payment:     { label: "Payment",   icon: CreditCard,     codePrefix: "PAY",   table: "sell_payments",      codeCol: null },
-  payment_order:    { label: "Payment Order", icon: CreditCard, codePrefix: "PO",    table: "payment_orders",     codeCol: null },
-  service_charge:   { label: "Service Charge", icon: Receipt,   codePrefix: "SVC",   table: "service_charges",    codeCol: null },
-  opening_balance:  { label: "Opening",   icon: Landmark,       codePrefix: "OPEN",  table: null,                 codeCol: null },
-  adjustment:       { label: "Adjustment",icon: RefreshCw,      codePrefix: "ADJ",   table: null,                 codeCol: null },
+const ACTION_META: Record<string, { label: string; icon: any; codePrefix: string; table: string | null; codeCol: string | null; partyCols: string[] }> = {
+  buy:              { label: "Buy",       icon: Package,        codePrefix: "BUY",   table: "buy_transactions",   codeCol: "doc_no", partyCols: ["counterparty", "txn_owner"] },
+  sell:             { label: "Sell",      icon: Package,        codePrefix: "SELL",  table: "sell_transactions",  codeCol: "doc_no", partyCols: ["customer_name"] },
+  brought_in:       { label: "Brought In",icon: Landmark,       codePrefix: "BI",    table: "brought_in_money",   codeCol: "doc_no", partyCols: ["source_name", "brought_by"] },
+  expense:          { label: "Expense",   icon: Receipt,        codePrefix: "EXP",   table: "expenses",           codeCol: "doc_no", partyCols: ["category"] },
+  transfer:         { label: "Transfer",  icon: ArrowRightLeft, codePrefix: "TRF",   table: "transfers",          codeCol: null,     partyCols: ["reason"] },
+  deposit:          { label: "Deposit",   icon: CreditCard,     codePrefix: "DEP",   table: "customer_deposits",  codeCol: null,     partyCols: [] },
+  sell_payment:     { label: "Payment",   icon: CreditCard,     codePrefix: "PAY",   table: "sell_payments",      codeCol: null,     partyCols: [] },
+  payment_order:    { label: "Payment Order", icon: CreditCard, codePrefix: "PO",    table: "payment_orders",     codeCol: null,     partyCols: [] },
+  service_charge:   { label: "Service Charge", icon: Receipt,   codePrefix: "SVC",   table: "service_charges",    codeCol: null,     partyCols: [] },
+  opening_balance:  { label: "Opening",   icon: Landmark,       codePrefix: "OPEN",  table: null,                 codeCol: null,     partyCols: [] },
+  adjustment:       { label: "Adjustment",icon: RefreshCw,      codePrefix: "ADJ",   table: null,                 codeCol: null,     partyCols: [] },
 };
 
 function metaFor(refType: string) {
@@ -128,20 +128,26 @@ export function CurrencyLedger({ ccy, marketRate = 0, avgCost = 0 }: { ccy: stri
     enabled: refsByTable.size > 0,
     queryFn: async () => {
       const codeMap = new Map<string, string>(); // ref_id -> code
+      const partyMap = new Map<string, string>(); // ref_id -> party name
       for (const [table, ids] of refsByTable.entries()) {
         const meta = Object.values(ACTION_META).find((m) => m.table === table);
-        if (!meta?.codeCol) continue;
+        if (!meta) continue;
         const uniq = Array.from(new Set(ids));
+        const cols = ["id", meta.codeCol, ...meta.partyCols].filter(Boolean).join(",");
         const { data, error } = await supabase
           .from(table as any)
-          .select(`id,${meta.codeCol}`)
+          .select(cols)
           .in("id", uniq);
         if (error) continue;
         for (const r of (data as any[]) ?? []) {
-          if (r[meta.codeCol]) codeMap.set(r.id, r[meta.codeCol]);
+          if (meta.codeCol && r[meta.codeCol]) codeMap.set(r.id, r[meta.codeCol]);
+          for (const col of meta.partyCols) {
+            const v = r[col];
+            if (v && String(v).trim() !== "") { partyMap.set(r.id, String(v)); break; }
+          }
         }
       }
-      return codeMap;
+      return { codeMap, partyMap };
     },
   });
 
@@ -155,10 +161,15 @@ export function CurrencyLedger({ ccy, marketRate = 0, avgCost = 0 }: { ccy: stri
 
   const codeFor = (r: Row) => {
     const meta = metaFor(r.ref_type);
-    const code = r.ref_id ? codesQ.data?.get(r.ref_id) : undefined;
+    const code = r.ref_id ? codesQ.data?.codeMap.get(r.ref_id) : undefined;
     if (code) return code;
     if (r.ref_id) return `${meta.codePrefix}-${shortId(r.ref_id)}`;
     return meta.codePrefix;
+  };
+  const partyFor = (r: Row): string | null => {
+    if (!r.ref_id) return null;
+    const p = codesQ.data?.partyMap.get(r.ref_id);
+    return p && p.trim() !== "" ? p : null;
   };
 
   // Apply filters (on descending display)
@@ -320,15 +331,18 @@ export function CurrencyLedger({ ccy, marketRate = 0, avgCost = 0 }: { ccy: stri
                       <Icon className="h-3.5 w-3.5 text-muted-foreground" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-baseline gap-2 flex-wrap">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{meta.label}</span>
                         <span className="text-[11px] tabular-nums text-muted-foreground">{day} · {time}</span>
-                        <span className="text-[10px] uppercase tracking-wider font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{code}</span>
-                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{meta.label}</span>
                       </div>
-                      <div className="mt-0.5 text-sm truncate">
-                        {r.description || meta.label}
+                      <div className="mt-0.5 text-sm font-semibold truncate">
+                        {partyFor(r) || r.description || meta.label}
                       </div>
-                      <div className="mt-0.5 text-[11px] text-muted-foreground truncate">{acct}</div>
+                      <div className="mt-0.5 text-[11px] text-muted-foreground truncate">
+                        {acct}
+                        <span className="mx-1.5">·</span>
+                        <span className="font-mono">{code}</span>
+                      </div>
                     </div>
                     <div className="text-right shrink-0">
                       <div className={`text-sm font-mono tabular-nums font-semibold ${amountColor}`}>

@@ -422,33 +422,50 @@ function statusTone(bucket: string): string {
 
 function DealCard({ d }: { d: NormDeal }) {
   const href = kindHref(d.kind, d.id);
+  const customerLabel = d.customer && String(d.customer).trim() !== ""
+    ? String(d.customer)
+    : d.kind === "expense" ? "Expense"
+    : d.kind === "transfer" ? "Internal transfer"
+    : d.kind === "deposit" ? "Customer deposit"
+    : d.kind === "payment_order" ? "Payment order"
+    : "No customer";
+  const flowLine =
+    d.kind === "expense"
+      ? (d.currencyOut && d.amountOut != null ? `Paid ${fmt(d.amountOut, d.currencyOut)}` : "")
+      : d.kind === "transfer"
+      ? (d.currencyOut && d.amountOut != null ? `Transferred ${fmt(d.amountOut, d.currencyOut)}` : "")
+      : d.kind === "deposit"
+      ? (d.currencyIn && d.amountIn != null ? `Received ${fmt(d.amountIn, d.currencyIn)}` : "")
+      : d.kind === "brought_in"
+      ? (d.currencyOut && d.amountOut != null ? `Brought in ${fmt(d.amountOut, d.currencyOut)}` : "")
+      : d.kind === "buy"
+      ? (d.currencyIn && d.amountIn != null ? `Bought ${fmt(d.amountIn, d.currencyIn)}${d.currencyOut && d.amountOut != null ? ` · Paid ${fmt(d.amountOut, d.currencyOut)}` : ""}` : "")
+      : d.kind === "sell"
+      ? (d.currencyOut && d.amountOut != null ? `Sold ${fmt(d.amountOut, d.currencyOut)}${d.currencyIn && d.amountIn != null ? ` → ${fmt(d.amountIn, d.currencyIn)}` : ""}` : "")
+      : d.kind === "remittance"
+      ? (d.currencyOut && d.amountOut != null ? `Transferred ${fmt(d.amountOut, d.currencyOut)}${d.currencyIn && d.amountIn != null ? ` · Paid ${fmt(d.amountIn, d.currencyIn)}` : ""}` : "")
+      : "";
   return (
     <Card className="hover:shadow-md transition">
       <CardContent className="p-4">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 items-start">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <Link to={href} className="font-mono text-sm font-semibold text-primary hover:underline">{d.code}</Link>
               <Badge variant="outline" className="text-[10px] uppercase tracking-wide">{kindLabel(d.kind)}</Badge>
               <Badge variant="outline" className={`text-[10px] font-normal ${statusTone(d.status)}`}>{d.statusLabel}</Badge>
             </div>
-            <div className="text-sm mt-1 truncate">
-              {d.customer || <span className="text-muted-foreground italic">No customer</span>}
-              <span className="text-muted-foreground text-xs ml-2">{d.date}</span>
-            </div>
-            <div className="mt-2 text-sm font-mono">
-              {d.currencyOut && (d.amountOut != null) && (
-                <span>{fmt(d.amountOut, d.currencyOut)}</span>
-              )}
-              {d.currencyIn && d.amountIn != null && d.currencyOut !== d.currencyIn && (
-                <span className="text-muted-foreground"> → </span>
-              )}
-              {d.currencyIn && d.amountIn != null && d.currencyOut !== d.currencyIn && (
-                <span>{fmt(d.amountIn, d.currencyIn)}</span>
-              )}
-              {d.rate != null && (
-                <span className="text-xs text-muted-foreground ml-2">@ {fmt(d.rate)}</span>
-              )}
+            <Link to={href} className="mt-1.5 block text-base sm:text-lg font-semibold leading-tight truncate hover:underline">
+              {customerLabel}
+            </Link>
+            {flowLine && (
+              <div className="mt-0.5 text-sm text-muted-foreground tabular-nums truncate">
+                {flowLine}
+                {d.rate != null && <span className="text-xs ml-1.5">@ {fmt(d.rate)}</span>}
+              </div>
+            )}
+            <div className="mt-1.5 flex items-center gap-2 flex-wrap text-[11px] text-muted-foreground font-mono">
+              <Link to={href} className="text-primary hover:underline">{d.code}</Link>
+              <span>· {d.date}</span>
             </div>
             {d.missing && (
               <div className="mt-1.5 text-xs text-amber-700 dark:text-amber-400">

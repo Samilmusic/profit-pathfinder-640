@@ -518,29 +518,31 @@ function DashboardPage() {
           )}
           <ul className="divide-y">
             {(recentDealsQ.data ?? []).map((r: any) => (
-              <li key={`${r.kind}-${r.id}`} className="px-5 py-4">
-                <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4">
+              <li key={`${r.kind}-${r.id}`} className="px-4 sm:px-5 py-4">
+                <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 sm:gap-4">
                   <div className={`shrink-0 text-[10px] uppercase tracking-[0.14em] font-semibold rounded-md px-2 py-1 border ${r.kind === "sell" ? "border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5" : "border-sky-500/30 text-sky-600 dark:text-sky-400 bg-sky-500/5"}`}>
-                    {r.kind === "sell" ? "Sold" : "Bought"}
+                    {r.kind === "sell" ? "SELL" : "BUY"}
                   </div>
                   <div className="min-w-0">
-                    <div className="flex items-baseline gap-3 flex-wrap">
-                      <div className="text-lg font-semibold tabular-nums font-mono">
-                        {r.kind === "sell"
-                          ? fmt(r.sold_amount, r.sold_currency)
-                          : fmt(r.bought_amount, r.bought_currency)}
-                      </div>
-                      <div className="text-[11px] text-muted-foreground font-mono">{r.doc_no}</div>
+                    <div className="text-base sm:text-lg font-semibold leading-tight truncate">
+                      {r.kind === "sell"
+                        ? (r.customer_name || "Unnamed customer")
+                        : (r.counterparty || "Unnamed supplier")}
                     </div>
-                    <div className="mt-0.5 text-xs text-muted-foreground truncate">
-                      {r.kind === "sell" ? (r.customer_name || "Customer") : (r.counterparty || "Supplier")}
-                      {r.kind === "sell" && r.gross_profit ? ` · Profit ${fmt(r.gross_profit, r.received_currency)}` : ""}
-                      {r.kind === "buy" && r.buy_rate ? ` · Rate ${nfInt.format(Number(r.buy_rate))}` : ""}
+                    <div className="mt-0.5 text-sm text-muted-foreground tabular-nums">
+                      {r.kind === "sell"
+                        ? <>Sold <span className="font-mono text-foreground/80">{fmt(r.sold_amount, r.sold_currency)}</span>{r.received_currency ? <> → <span className="font-mono text-foreground/80">{fmt(r.received_amount, r.received_currency)}</span></> : null}</>
+                        : <>Bought <span className="font-mono text-foreground/80">{fmt(r.bought_amount, r.bought_currency)}</span>{r.paid_currency ? <> · Paid <span className="font-mono text-foreground/80">{fmt(r.paid_amount, r.paid_currency)}</span></> : null}</>}
+                    </div>
+                    <div className="mt-1 flex items-center gap-2 flex-wrap text-[11px] text-muted-foreground font-mono">
+                      <span>{r.doc_no}</span>
+                      {r.kind === "sell" && r.gross_profit ? <span>· Profit {fmt(r.gross_profit, r.received_currency)}</span> : null}
+                      {r.kind === "buy" && r.buy_rate ? <span>· Rate {nfInt.format(Number(r.buy_rate))}</span> : null}
                     </div>
                   </div>
                   <div className="text-[11px] text-muted-foreground text-right tabular-nums shrink-0">
                     {relTime(r.when)}
-                    {r.kind === "sell" && (
+                    {r.kind === "sell" && r.deal_status && (
                       <div className={`mt-0.5 text-[10px] uppercase tracking-wider ${r.deal_status === "closed" ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}`}>{r.deal_status?.replace(/_/g, " ")}</div>
                     )}
                   </div>
