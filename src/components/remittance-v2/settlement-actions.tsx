@@ -8,6 +8,9 @@ import { Button } from "@/components/ui/button";
 import { MarkFundsReceivedDialog } from "./mark-funds-received-dialog";
 import { RecordThirdPartySettlementDialog } from "./record-third-party-settlement-dialog";
 import { RecordSupplierDeliveryDialog } from "./record-supplier-delivery-dialog";
+import { PrepareCloseDialog } from "./prepare-close-dialog";
+import { FinalizeCloseDialog } from "./finalize-close-dialog";
+import { CancelRemittanceDialog } from "./cancel-remittance-dialog";
 
 /**
  * Phase 4E — chooses which settlement action buttons to show.
@@ -40,6 +43,9 @@ export function SettlementActions({
   const [openMark, setOpenMark] = useState(false);
   const [openThirdParty, setOpenThirdParty] = useState(false);
   const [openDelivery, setOpenDelivery] = useState(false);
+  const [openPrepare, setOpenPrepare] = useState(false);
+  const [openFinalize, setOpenFinalize] = useState(false);
+  const [openCancel, setOpenCancel] = useState(false);
 
   const progress = useQuery({
     queryKey: ["remittance-v2", "progress", remittanceId],
@@ -81,10 +87,18 @@ export function SettlementActions({
     (workflowState === "funds_received" || workflowState === "settlement_pending") &&
     !!linkedBuyId &&
     !linkedBuyDelivered;
+  const canPrepareClose = workflowState === "allocating";
+  const canFinalizeClose = workflowState === "ready_to_close";
+  const canCancel = workflowState === "draft";
 
   if (
     !v2Enabled ||
-    (!canMarkFundsReceived && !canRecordThirdParty && !canRecordSupplierDelivery)
+    (!canMarkFundsReceived &&
+      !canRecordThirdParty &&
+      !canRecordSupplierDelivery &&
+      !canPrepareClose &&
+      !canFinalizeClose &&
+      !canCancel)
   ) {
     return null;
   }
@@ -108,6 +122,21 @@ export function SettlementActions({
         {canRecordSupplierDelivery ? (
           <Button size="sm" onClick={() => setOpenDelivery(true)}>
             Record Supplier Delivery
+          </Button>
+        ) : null}
+        {canPrepareClose ? (
+          <Button size="sm" onClick={() => setOpenPrepare(true)}>
+            Prepare Close
+          </Button>
+        ) : null}
+        {canFinalizeClose ? (
+          <Button size="sm" variant="destructive" onClick={() => setOpenFinalize(true)}>
+            Finalize Close
+          </Button>
+        ) : null}
+        {canCancel ? (
+          <Button size="sm" variant="ghost" onClick={() => setOpenCancel(true)}>
+            Cancel Remittance
           </Button>
         ) : null}
 
@@ -138,6 +167,27 @@ export function SettlementActions({
             buyId={linkedBuyId}
             deliveryCurrency={settlementCurrency}
             remainingAmount={remainingDelivery}
+          />
+        ) : null}
+        {openPrepare ? (
+          <PrepareCloseDialog
+            open={openPrepare}
+            onOpenChange={setOpenPrepare}
+            remittanceId={remittanceId}
+          />
+        ) : null}
+        {openFinalize ? (
+          <FinalizeCloseDialog
+            open={openFinalize}
+            onOpenChange={setOpenFinalize}
+            remittanceId={remittanceId}
+          />
+        ) : null}
+        {openCancel ? (
+          <CancelRemittanceDialog
+            open={openCancel}
+            onOpenChange={setOpenCancel}
+            remittanceId={remittanceId}
           />
         ) : null}
       </CardContent>

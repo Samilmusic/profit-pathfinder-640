@@ -5040,13 +5040,13 @@ export type Database = {
         Args: { _client_request_id?: string; _id: string; _reason: string }
         Returns: undefined
       }
-      remittance_v2_close: {
-        Args: { _client_request_id?: string; _id: string; _note?: string }
-        Returns: undefined
-      }
       remittance_v2_create: {
         Args: { _client_request_id?: string; _payload: Json }
         Returns: string
+      }
+      remittance_v2_finalize_close: {
+        Args: { _client_request_id?: string; _id: string; _note?: string }
+        Returns: undefined
       }
       remittance_v2_mark_funds_received: {
         Args: {
@@ -5056,6 +5056,10 @@ export type Database = {
           _id: string
           _note?: string
         }
+        Returns: undefined
+      }
+      remittance_v2_prepare_close: {
+        Args: { _client_request_id?: string; _id: string; _note?: string }
         Returns: undefined
       }
       remittance_v2_record_supplier_delivery: {
