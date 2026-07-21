@@ -68,7 +68,7 @@ export function LotCostBasisDialog({ lotId, lotCode, currency, trigger, mode = "
               </div>
               <div>
                 <Label className="text-xs">Cost rate ({costCurrency} per 1 {currency})</Label>
-                <NumberInput value={costRate} onChange={setCostRate} />
+                <NumberInput value={costRate} onChange={(e) => setCostRate(e.target.value)} />
               </div>
             </>
           )}
