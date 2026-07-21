@@ -144,7 +144,7 @@ function DashboardPage() {
     queryFn: async () => {
       const [se, bu] = await Promise.all([
         supabase.from("sell_transactions").select("id,doc_no,created_at,sold_amount,sold_currency,received_amount,received_currency,customer_name,gross_profit,deal_status").is("deleted_at", null).order("created_at", { ascending: false }).limit(8),
-        supabase.from("buy_transactions").select("id,doc_no,created_at,bought_amount,bought_currency,paid_amount,paid_currency,supplier_name,rate").is("deleted_at", null).order("created_at", { ascending: false }).limit(8),
+        supabase.from("buy_transactions").select("id,doc_no,created_at,bought_amount,bought_currency,paid_amount,paid_currency,counterparty,buy_rate").is("deleted_at", null).order("created_at", { ascending: false }).limit(8),
       ]);
       const rows: any[] = [
         ...(se.data ?? []).map((r: any) => ({ kind: "sell", when: r.created_at, ...r })),
@@ -533,9 +533,9 @@ function DashboardPage() {
                       <div className="text-[11px] text-muted-foreground font-mono">{r.doc_no}</div>
                     </div>
                     <div className="mt-0.5 text-xs text-muted-foreground truncate">
-                      {r.kind === "sell" ? (r.customer_name || "Customer") : (r.supplier_name || "Supplier")}
+                      {r.kind === "sell" ? (r.customer_name || "Customer") : (r.counterparty || "Supplier")}
                       {r.kind === "sell" && r.gross_profit ? ` · Profit ${fmt(r.gross_profit, r.received_currency)}` : ""}
-                      {r.kind === "buy" && r.rate ? ` · Rate ${nfInt.format(Number(r.rate))}` : ""}
+                      {r.kind === "buy" && r.buy_rate ? ` · Rate ${nfInt.format(Number(r.buy_rate))}` : ""}
                     </div>
                   </div>
                   <div className="text-[11px] text-muted-foreground text-right tabular-nums shrink-0">
