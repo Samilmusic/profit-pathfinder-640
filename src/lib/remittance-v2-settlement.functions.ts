@@ -21,7 +21,7 @@ export async function remittanceV2MarkFundsReceived(
     _id: input.remittance_id,
     _account_id: input.account_id,
     _amount: input.amount,
-    _note: input.note ?? null,
+    _note: input.note,
     _client_request_id: clientRequestId,
   });
   if (error) throw error;
@@ -35,7 +35,7 @@ export async function remittanceV2RecordThirdPartySettlement(
     _id: input.remittance_id,
     _third_party_customer_id: input.third_party_customer_id,
     _amount: input.amount,
-    _note: input.note ?? null,
+    _note: input.note,
     _client_request_id: clientRequestId,
   });
   if (error) throw error;
@@ -51,7 +51,7 @@ export async function remittanceV2RecordSupplierDelivery(
     _delivered_amount: input.delivered_amount,
     _received_into_account_id: input.received_into_account_id,
     _delivered_at: input.delivered_at,
-    _note: input.note ?? null,
+    _note: input.note,
     _client_request_id: clientRequestId,
   });
   if (error) throw error;
