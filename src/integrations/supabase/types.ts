@@ -4886,10 +4886,31 @@ export type Database = {
         Args: { _role: Database["public"]["Enums"]["app_role"] }
         Returns: undefined
       }
+      _calc_required_delivery_amount: {
+        Args: { _remittance_id: string }
+        Returns: number
+      }
       _idem_lookup: { Args: { _req: string }; Returns: Json }
       _idem_store: {
         Args: { _req: string; _result: Json; _rpc: string }
         Returns: undefined
+      }
+      _insert_workflow_transition_if_changed: {
+        Args: {
+          _from: Database["public"]["Enums"]["remittance_workflow_state"]
+          _reason: string
+          _remittance_id: string
+          _to: Database["public"]["Enums"]["remittance_workflow_state"]
+        }
+        Returns: undefined
+      }
+      _remittance_delivered_so_far: {
+        Args: { _remittance_id: string }
+        Returns: number
+      }
+      _remittance_third_party_settled_so_far: {
+        Args: { _remittance_id: string }
+        Returns: number
       }
       admin_force_close: {
         Args: { _reason: string; _sell_id: string }
@@ -5041,10 +5062,11 @@ export type Database = {
         Args: {
           _buy_id: string
           _client_request_id?: string
-          _delivery_date?: string
+          _delivered_amount: number
+          _delivered_at?: string
           _note?: string
-          _received_amount: number
           _received_into_account_id: string
+          _remittance_id: string
         }
         Returns: string
       }
