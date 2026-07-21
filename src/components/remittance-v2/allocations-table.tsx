@@ -2,7 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { fmt } from "@/lib/exchange";
+import { useState } from "react";
+import { ReverseAllocationDialog } from "./reverse-allocation-dialog";
 
 type AllocationRow = {
   id: string;
@@ -32,7 +35,16 @@ type AllocationRow = {
   } | null;
 };
 
-export function AllocationsTable({ remittanceId }: { remittanceId: string }) {
+export function AllocationsTable({
+  remittanceId,
+  workflowState,
+}: {
+  remittanceId: string;
+  workflowState?: string;
+}) {
+  const [reverseTargetId, setReverseTargetId] = useState<string | null>(null);
+  const canReverse =
+    workflowState === "allocating" || workflowState === "ready_to_close";
   const q = useQuery({
     queryKey: ["remittance-v2", "allocations", remittanceId],
     queryFn: async () => {
@@ -76,6 +88,7 @@ export function AllocationsTable({ remittanceId }: { remittanceId: string }) {
                   <th className="py-2 pr-3">Total AED</th>
                   <th className="py-2 pr-3">Status</th>
                   <th className="py-2 pr-3">Kind</th>
+                  <th className="py-2 pr-3" />
                 </tr>
               </thead>
               <tbody>
@@ -125,6 +138,19 @@ export function AllocationsTable({ remittanceId }: { remittanceId: string }) {
                         </div>
                       ) : null}
                     </td>
+                    <td className="py-2 pr-3 text-right">
+                      {canReverse &&
+                      String(a.entry_kind) === "normal" &&
+                      !a.reversed_by_id ? (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setReverseTargetId(a.id)}
+                        >
+                          Reverse
+                        </Button>
+                      ) : null}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -132,6 +158,13 @@ export function AllocationsTable({ remittanceId }: { remittanceId: string }) {
           </div>
         )}
       </CardContent>
+      {reverseTargetId ? (
+        <ReverseAllocationDialog
+          open={!!reverseTargetId}
+          onOpenChange={(v) => !v && setReverseTargetId(null)}
+          allocationId={reverseTargetId}
+        />
+      ) : null}
     </Card>
   );
 }

@@ -14,6 +14,7 @@ import { ProfitComponentsCard } from "@/components/remittance-v2/profit-componen
 import { DocumentsReadonly } from "@/components/remittance-v2/documents-readonly";
 import { SettlementActions } from "@/components/remittance-v2/settlement-actions";
 import { SettlementProgressCard } from "@/components/remittance-v2/settlement-progress-card";
+import { AllocationForm } from "@/components/remittance-v2/allocation-form";
 
 export const Route = createFileRoute("/_authenticated/remittances/$id/v2")({
   component: RemittanceV2DetailPage,
@@ -268,7 +269,14 @@ function RemittanceV2DetailPage() {
         linkedBuyDelivered={r.linked_buy?.supplier_delivered ?? null}
         v2Enabled={v2Enabled}
       />
-      <AllocationsTable remittanceId={id} />
+      <AllocationForm
+        remittanceId={id}
+        workflowState={r.workflow_state}
+        transferCurrency={r.transfer_currency}
+        transferredAmount={r.transferred_amount}
+        defaultBuyId={r.linked_buy?.id ?? null}
+      />
+      <AllocationsTable remittanceId={id} workflowState={r.workflow_state} />
       <WorkflowTimeline remittanceId={id} />
       <SettlementEventsList remittanceId={id} />
 
