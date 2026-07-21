@@ -29,7 +29,7 @@ function RemittanceDetailPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("remittances")
-        .select("*, customers(name), source:accounts!remittances_source_account_id_fkey(name,currency), payment:accounts!remittances_payment_received_account_id_fkey(name,currency)")
+        .select("*, customers!remittances_customer_id_fkey(name), third_party:customers!remittances_third_party_customer_id_fkey(name), linked_buy:buy_transactions!remittances_linked_buy_id_fkey(id,doc_no,bought_amount,bought_currency,buy_rate,supplier_delivered,supplier_delivered_at), source:accounts!remittances_source_account_id_fkey(name,currency), payment:accounts!remittances_payment_received_account_id_fkey(name,currency)")
         .eq("id", id).maybeSingle();
       if (error) throw error;
       return data;
