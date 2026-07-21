@@ -133,7 +133,7 @@ function MigrationStatusPage() {
   const approved = audit?.byCategory["matched"] ?? 0;
   const blocked =
     (audit?.byCategory["over_allocated"] ?? 0) + (audit?.byCategory["missing_buy"] ?? 0);
-  const batchesData = (batchesQ.data ?? []) as BatchRow[];
+  const batchesData = (batchesQ.data ?? []) as unknown as BatchRow[];
   const batchErrors = batchesData.reduce(
     (sum, b) => sum + (b.total_errors ?? 0),
     0,
@@ -296,14 +296,27 @@ function ReconciliationPanel() {
   );
 }
 
+type LegacyBatchRow = {
+  id: string;
+  started_at?: string | null;
+  finished_at?: string | null;
+  note?: string | null;
+  total_scanned?: number | null;
+  total_shadow_inserted?: number | null;
+  total_skipped?: number | null;
+  total_errors?: number | null;
+};
+
 function LegacyAuditAndBatches({
-  auditQ,
-  batchesQ,
+  auditLoading,
+  batchesLoading,
+  batches,
   totalAudit,
   audit,
 }: {
-  auditQ: { isLoading: boolean };
-  batchesQ: { isLoading: boolean; data?: any[] };
+  auditLoading: boolean;
+  batchesLoading: boolean;
+  batches: LegacyBatchRow[];
   totalAudit: number;
   audit: { total: number; byCategory: Record<string, number> } | undefined;
 }) {
