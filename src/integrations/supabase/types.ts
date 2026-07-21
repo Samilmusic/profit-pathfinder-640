@@ -478,7 +478,13 @@ export type Database = {
           reference_rate_source: string | null
           reference_rate_time: string | null
           reference_sell_rate: number | null
+          settled_by_remittance_id: string | null
+          settlement_source: Database["public"]["Enums"]["buy_settlement_source"]
           settlement_status: Database["public"]["Enums"]["settlement_status"]
+          supplier_delivered: boolean
+          supplier_delivered_at: string | null
+          supplier_delivery_note: string | null
+          supplier_settled_amount: number
           trade_cycle_id: string | null
           transaction_rate: number | null
           txn_owner: Database["public"]["Enums"]["txn_owner"]
@@ -518,7 +524,13 @@ export type Database = {
           reference_rate_source?: string | null
           reference_rate_time?: string | null
           reference_sell_rate?: number | null
+          settled_by_remittance_id?: string | null
+          settlement_source?: Database["public"]["Enums"]["buy_settlement_source"]
           settlement_status?: Database["public"]["Enums"]["settlement_status"]
+          supplier_delivered?: boolean
+          supplier_delivered_at?: string | null
+          supplier_delivery_note?: string | null
+          supplier_settled_amount?: number
           trade_cycle_id?: string | null
           transaction_rate?: number | null
           txn_owner?: Database["public"]["Enums"]["txn_owner"]
@@ -558,7 +570,13 @@ export type Database = {
           reference_rate_source?: string | null
           reference_rate_time?: string | null
           reference_sell_rate?: number | null
+          settled_by_remittance_id?: string | null
+          settlement_source?: Database["public"]["Enums"]["buy_settlement_source"]
           settlement_status?: Database["public"]["Enums"]["settlement_status"]
+          supplier_delivered?: boolean
+          supplier_delivered_at?: string | null
+          supplier_delivery_note?: string | null
+          supplier_settled_amount?: number
           trade_cycle_id?: string | null
           transaction_rate?: number | null
           txn_owner?: Database["public"]["Enums"]["txn_owner"]
@@ -641,6 +659,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_balance_reconciliation"
             referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "buy_transactions_settled_by_remittance_id_fkey"
+            columns: ["settled_by_remittance_id"]
+            isOneToOne: false
+            referencedRelation: "remittances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buy_transactions_settled_by_remittance_id_fkey"
+            columns: ["settled_by_remittance_id"]
+            isOneToOne: false
+            referencedRelation: "v_remittance_settlement_path"
+            referencedColumns: ["remittance_id"]
           },
           {
             foreignKeyName: "buy_transactions_trade_cycle_id_fkey"
@@ -1182,6 +1214,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "buy_transactions"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_related_buy_id_fkey"
+            columns: ["related_buy_id"]
+            isOneToOne: false
+            referencedRelation: "v_remittance_settlement_path"
+            referencedColumns: ["linked_buy_id"]
           },
           {
             foreignKeyName: "expenses_related_sell_id_fkey"
@@ -1935,6 +1974,13 @@ export type Database = {
             referencedRelation: "remittances"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "remittance_expenses_remittance_id_fkey"
+            columns: ["remittance_id"]
+            isOneToOne: false
+            referencedRelation: "v_remittance_settlement_path"
+            referencedColumns: ["remittance_id"]
+          },
         ]
       }
       remittances: {
@@ -1959,17 +2005,28 @@ export type Database = {
           customer_reference: string | null
           doc_no: string | null
           entry_date: string
+          excess_allocation: Database["public"]["Enums"]["remittance_excess_allocation"]
+          excess_allocation_note: string | null
+          excess_allocation_target_id: string | null
           gross_commission_aed: number
           gross_commission_pay_ccy: number
           id: string
+          linked_buy_id: string | null
           linked_expenses_aed: number
           net_commission_aed: number
           notes: string | null
+          payment_destination: Database["public"]["Enums"]["remittance_payment_destination"]
           payment_received_account_id: string | null
           payment_status: string | null
           reference_rate: number
+          settlement_amount: number | null
+          settlement_currency: string | null
+          settlement_date: string | null
+          settlement_proof_url: string | null
           source_account_id: string | null
           status: Database["public"]["Enums"]["remittance_status"]
+          third_party_customer_id: string | null
+          third_party_name: string | null
           transfer_currency: string
           transfer_date: string | null
           transfer_method: Database["public"]["Enums"]["remittance_transfer_method"]
@@ -1997,17 +2054,28 @@ export type Database = {
           customer_reference?: string | null
           doc_no?: string | null
           entry_date?: string
+          excess_allocation?: Database["public"]["Enums"]["remittance_excess_allocation"]
+          excess_allocation_note?: string | null
+          excess_allocation_target_id?: string | null
           gross_commission_aed?: number
           gross_commission_pay_ccy?: number
           id?: string
+          linked_buy_id?: string | null
           linked_expenses_aed?: number
           net_commission_aed?: number
           notes?: string | null
+          payment_destination?: Database["public"]["Enums"]["remittance_payment_destination"]
           payment_received_account_id?: string | null
           payment_status?: string | null
           reference_rate?: number
+          settlement_amount?: number | null
+          settlement_currency?: string | null
+          settlement_date?: string | null
+          settlement_proof_url?: string | null
           source_account_id?: string | null
           status?: Database["public"]["Enums"]["remittance_status"]
+          third_party_customer_id?: string | null
+          third_party_name?: string | null
           transfer_currency: string
           transfer_date?: string | null
           transfer_method?: Database["public"]["Enums"]["remittance_transfer_method"]
@@ -2035,17 +2103,28 @@ export type Database = {
           customer_reference?: string | null
           doc_no?: string | null
           entry_date?: string
+          excess_allocation?: Database["public"]["Enums"]["remittance_excess_allocation"]
+          excess_allocation_note?: string | null
+          excess_allocation_target_id?: string | null
           gross_commission_aed?: number
           gross_commission_pay_ccy?: number
           id?: string
+          linked_buy_id?: string | null
           linked_expenses_aed?: number
           net_commission_aed?: number
           notes?: string | null
+          payment_destination?: Database["public"]["Enums"]["remittance_payment_destination"]
           payment_received_account_id?: string | null
           payment_status?: string | null
           reference_rate?: number
+          settlement_amount?: number | null
+          settlement_currency?: string | null
+          settlement_date?: string | null
+          settlement_proof_url?: string | null
           source_account_id?: string | null
           status?: Database["public"]["Enums"]["remittance_status"]
+          third_party_customer_id?: string | null
+          third_party_name?: string | null
           transfer_currency?: string
           transfer_date?: string | null
           transfer_method?: Database["public"]["Enums"]["remittance_transfer_method"]
@@ -2061,6 +2140,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "remittances_linked_buy_id_fkey"
+            columns: ["linked_buy_id"]
+            isOneToOne: false
+            referencedRelation: "buy_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remittances_linked_buy_id_fkey"
+            columns: ["linked_buy_id"]
+            isOneToOne: false
+            referencedRelation: "v_remittance_settlement_path"
+            referencedColumns: ["linked_buy_id"]
+          },
+          {
             foreignKeyName: "remittances_payment_received_account_id_fkey"
             columns: ["payment_received_account_id"]
             isOneToOne: false
@@ -2129,6 +2222,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_balance_reconciliation"
             referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "remittances_third_party_customer_id_fkey"
+            columns: ["third_party_customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -4037,6 +4137,55 @@ export type Database = {
           },
         ]
       }
+      v_remittance_settlement_path: {
+        Row: {
+          entry_date: string | null
+          excess_allocation:
+            | Database["public"]["Enums"]["remittance_excess_allocation"]
+            | null
+          linked_buy_code: string | null
+          linked_buy_id: string | null
+          net_commission_aed: number | null
+          payer_customer_id: string | null
+          payer_name: string | null
+          payment_destination:
+            | Database["public"]["Enums"]["remittance_payment_destination"]
+            | null
+          remittance_code: string | null
+          remittance_id: string | null
+          remittance_sent_amount: number | null
+          remittance_sent_currency: string | null
+          settlement_amount: number | null
+          settlement_currency: string | null
+          settlement_date: string | null
+          settlement_proof_url: string | null
+          status: Database["public"]["Enums"]["remittance_status"] | null
+          supplier_bought_amount: number | null
+          supplier_bought_currency: string | null
+          supplier_delivered: boolean | null
+          supplier_delivered_at: string | null
+          supplier_rate: number | null
+          supplier_settled_amount: number | null
+          third_party_customer_id: string | null
+          third_party_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "remittances_customer_id_fkey"
+            columns: ["payer_customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remittances_third_party_customer_id_fkey"
+            columns: ["third_party_customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_today_profit: {
         Row: {
           ali_profit: number | null
@@ -4150,12 +4299,20 @@ export type Database = {
         Args: { _trade_id: string }
         Returns: undefined
       }
+      record_supplier_delivery: {
+        Args: { _buy_id: string; _note?: string }
+        Returns: undefined
+      }
       set_edit_context: {
         Args: { _device?: string; _reason: string }
         Returns: undefined
       }
       sync_sell_received_lot: { Args: { _sell_id: string }; Returns: undefined }
       validate_close: { Args: { _sell_id: string }; Returns: Json }
+      validate_third_party_settlement: {
+        Args: { _remittance_id: string }
+        Returns: Json
+      }
     }
     Enums: {
       account_node_type: "box" | "location" | "currency_account"
@@ -4178,6 +4335,7 @@ export type Database = {
         | "customer_payment"
         | "temporary_deposit"
         | "other"
+      buy_settlement_source: "own_funds" | "remittance_payment" | "mixed"
       doc_type:
         | "payment_receipt"
         | "bank_transfer_screenshot"
@@ -4215,6 +4373,7 @@ export type Database = {
         | "service_charge"
         | "sell_payment"
         | "remittance"
+        | "third_party_settlement"
       money_location:
         | "cash_box"
         | "aed_bank"
@@ -4260,6 +4419,19 @@ export type Database = {
         | "other"
       profit_status: "pending" | "received" | "waived" | "kept_in_wallet"
       remittance_commission_method: "fixed" | "percentage" | "included" | "free"
+      remittance_excess_allocation:
+        | "none"
+        | "our_account"
+        | "another_supplier"
+        | "customer_balance"
+        | "pending"
+        | "commission"
+      remittance_payment_destination:
+        | "into_account"
+        | "cash_to_us"
+        | "to_third_party"
+        | "settles_linked_buy"
+        | "pending"
       remittance_status:
         | "open"
         | "waiting_customer_payment"
@@ -4270,6 +4442,10 @@ export type Database = {
         | "ready_to_close"
         | "closed"
         | "cancelled"
+        | "customer_paid_supplier"
+        | "waiting_settlement_proof"
+        | "waiting_supplier_delivery"
+        | "partially_settled"
       remittance_transfer_method:
         | "bank_transfer"
         | "cash_delivery"
@@ -4457,6 +4633,7 @@ export const Constants = {
         "temporary_deposit",
         "other",
       ],
+      buy_settlement_source: ["own_funds", "remittance_payment", "mixed"],
       doc_type: [
         "payment_receipt",
         "bank_transfer_screenshot",
@@ -4496,6 +4673,7 @@ export const Constants = {
         "service_charge",
         "sell_payment",
         "remittance",
+        "third_party_settlement",
       ],
       money_location: [
         "cash_box",
@@ -4547,6 +4725,21 @@ export const Constants = {
       ],
       profit_status: ["pending", "received", "waived", "kept_in_wallet"],
       remittance_commission_method: ["fixed", "percentage", "included", "free"],
+      remittance_excess_allocation: [
+        "none",
+        "our_account",
+        "another_supplier",
+        "customer_balance",
+        "pending",
+        "commission",
+      ],
+      remittance_payment_destination: [
+        "into_account",
+        "cash_to_us",
+        "to_third_party",
+        "settles_linked_buy",
+        "pending",
+      ],
       remittance_status: [
         "open",
         "waiting_customer_payment",
@@ -4557,6 +4750,10 @@ export const Constants = {
         "ready_to_close",
         "closed",
         "cancelled",
+        "customer_paid_supplier",
+        "waiting_settlement_proof",
+        "waiting_supplier_delivery",
+        "partially_settled",
       ],
       remittance_transfer_method: [
         "bank_transfer",
