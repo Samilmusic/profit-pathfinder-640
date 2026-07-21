@@ -118,6 +118,18 @@ function MigrationStatusPage() {
   const v2Flag = flagMap.get("remittance_v2_enabled");
   const postingFlag = flagMap.get("allocation_layer_posting");
 
+  const audit = auditQ.data;
+  const totalAudit = audit?.total ?? 0;
+  const migrated = totalAudit;
+  const approved = audit?.byCategory["matched"] ?? 0;
+  const blocked =
+    (audit?.byCategory["over_allocated"] ?? 0) +
+    (audit?.byCategory["missing_buy"] ?? 0);
+  const batchErrors = (batchesQ.data ?? []).reduce(
+    (sum: number, b: any) => sum + (b.total_errors ?? 0),
+    0,
+  );
+
   return (
     <div className="space-y-6 p-4 md:p-6">
       <PageHeader
@@ -383,19 +395,6 @@ function LegacyAuditAndBatches({
     </>
   );
 }
-
-  const audit = auditQ.data;
-  const totalAudit = audit?.total ?? 0;
-  const migrated = totalAudit;
-  const approved = audit?.byCategory["matched"] ?? 0;
-  const blocked =
-    (audit?.byCategory["over_allocated"] ?? 0) +
-    (audit?.byCategory["missing_buy"] ?? 0);
-  const batchErrors = (batchesQ.data ?? []).reduce(
-    (sum: number, b: any) => sum + (b.total_errors ?? 0),
-    0,
-  );
-
 
 function FlagRow({
   label,
