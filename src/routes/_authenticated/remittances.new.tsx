@@ -80,14 +80,6 @@ function NewRemittancePage() {
   >("none");
   const [excessNote, setExcessNote] = useState("");
 
-  // Inline "Create new linked buy"
-  const [newBuy, setNewBuy] = useState({
-    supplierId: "",
-    boughtCurrency: "AED",
-    boughtAmount: "",
-    supplierRate: "",
-  });
-
   const isThirdParty = paymentDestination === "to_third_party" || paymentDestination === "settles_linked_buy";
 
   // Auto-mirror settlement currency/amount from customer payment inputs
