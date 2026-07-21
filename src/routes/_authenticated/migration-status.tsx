@@ -169,13 +169,13 @@ function MigrationStatusPage() {
         <Stat label="Approved" value={approved} />
         <Stat label="Blocked" value={blocked} />
         <Stat label="Batch errors" value={batchErrors} />
-        <Stat label="Batches" value={batches.length} hint="last 20 shown" />
+        <Stat label="Batches" value={batchesData.length} hint="last 20 shown" />
       </div>
 
       {/* Audit + batches unchanged */}
       <LegacyAuditAndBatches
-        auditLoading={auditLoading}
-        batchesLoading={batchesLoading}
+        auditLoading={auditQ.isLoading}
+        batchesLoading={batchesQ.isLoading}
         batches={batchesData}
         totalAudit={totalAudit}
         audit={audit}
