@@ -70,7 +70,9 @@ export type AuditTimelineArgs = {
   search?: string | null;
 };
 
-export async function fetchAuditTimeline(a: AuditTimelineArgs = {}): Promise<AuditTimelineResponse> {
+export async function fetchAuditTimeline(
+  a: AuditTimelineArgs = {},
+): Promise<AuditTimelineResponse> {
   const { data, error } = await supabase.rpc("report_audit_timeline", {
     _limit: a.limit ?? 100,
     _cursor_ts: a.cursor?.ts ?? undefined,
@@ -118,7 +120,17 @@ export async function fetchAuditActors(): Promise<AuditActor[]> {
 
 export function buildAuditCsv(rows: AuditRow[], meta: ReportMeta): string {
   const header = [
-    "created_at","kind","entity_type","entity_id","action","summary","actor_id","reason","correlation_id","source_table","source_id",
+    "created_at",
+    "kind",
+    "entity_type",
+    "entity_id",
+    "action",
+    "summary",
+    "actor_id",
+    "reason",
+    "correlation_id",
+    "source_table",
+    "source_id",
   ];
   const metaLines = [
     `# report=${meta.report_key}`,
@@ -144,7 +156,9 @@ export function buildAuditCsv(rows: AuditRow[], meta: ReportMeta): string {
       r.correlation_id,
       r.source_table,
       r.source_id,
-    ].map(esc).join(","),
+    ]
+      .map(esc)
+      .join(","),
   );
   return [...metaLines, header.join(","), ...body].join("\n");
 }

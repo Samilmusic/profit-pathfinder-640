@@ -7,7 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -32,7 +38,11 @@ export const Route = createFileRoute("/_authenticated/reports/audit-explorer")({
   head: () => ({
     meta: [
       { title: "Audit Explorer — Reports" },
-      { name: "description", content: "Read-only chronological timeline of workflow, settlement, allocation, posting, and permission events." },
+      {
+        name: "description",
+        content:
+          "Read-only chronological timeline of workflow, settlement, allocation, posting, and permission events.",
+      },
     ],
   }),
   component: AuditExplorerPage,
@@ -83,8 +93,7 @@ function AuditExplorerPage() {
   const timelineQ = useInfiniteQuery({
     queryKey: ["audit-timeline", args],
     initialPageParam: null as { ts: string; id: string } | null,
-    queryFn: ({ pageParam }) =>
-      fetchAuditTimeline({ ...args, limit: 100, cursor: pageParam }),
+    queryFn: ({ pageParam }) => fetchAuditTimeline({ ...args, limit: 100, cursor: pageParam }),
     getNextPageParam: (last) => (last.has_more ? last.next_cursor : undefined),
     staleTime: 15_000,
   });
@@ -137,23 +146,35 @@ function AuditExplorerPage() {
         description="Read-only chronological timeline. Immutable. Admin/manager only."
         actions={
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="gap-1"><ShieldCheck className="h-3.5 w-3.5" />Immutable</Badge>
-            <Button variant="outline" size="sm" onClick={() => timelineQ.refetch()} disabled={timelineQ.isFetching}>
+            <Badge variant="outline" className="gap-1">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Immutable
+            </Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => timelineQ.refetch()}
+              disabled={timelineQ.isFetching}
+            >
               <RefreshCw className={`h-4 w-4 mr-1 ${timelineQ.isFetching ? "animate-spin" : ""}`} />
               Refresh
             </Button>
             <Button variant="outline" size="sm" onClick={exportCsv} disabled={!rows.length}>
-              <Download className="h-4 w-4 mr-1" />CSV
+              <Download className="h-4 w-4 mr-1" />
+              CSV
             </Button>
             <Button variant="outline" size="sm" onClick={() => window.print()}>
-              <Printer className="h-4 w-4 mr-1" />Print
+              <Printer className="h-4 w-4 mr-1" />
+              Print
             </Button>
           </div>
         }
       />
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Filters</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle className="text-base">Filters</CardTitle>
+        </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-2">
             {AUDIT_KINDS.map((k) => {
@@ -164,7 +185,9 @@ function AuditExplorerPage() {
                   type="button"
                   onClick={() => toggleKind(k.value)}
                   className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                    on ? kindColor[k.value] : "bg-background text-muted-foreground border-input hover:bg-muted"
+                    on
+                      ? kindColor[k.value]
+                      : "bg-background text-muted-foreground border-input hover:bg-muted"
                   }`}
                 >
                   {k.label}
@@ -175,8 +198,13 @@ function AuditExplorerPage() {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-1.5">
               <Label className="text-xs">Actor</Label>
-              <Select value={actor ?? "any"} onValueChange={(v) => setActor(v === "any" ? null : v)}>
-                <SelectTrigger><SelectValue placeholder="Any user" /></SelectTrigger>
+              <Select
+                value={actor ?? "any"}
+                onValueChange={(v) => setActor(v === "any" ? null : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Any user" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="any">Any user</SelectItem>
                   {actorsQ.data?.map((a) => (
@@ -189,20 +217,37 @@ function AuditExplorerPage() {
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Entity type</Label>
-              <Input value={entityType} onChange={(e) => setEntityType(e.target.value)} placeholder="e.g. remittance" />
+              <Input
+                value={entityType}
+                onChange={(e) => setEntityType(e.target.value)}
+                placeholder="e.g. remittance"
+              />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Entity ID</Label>
-              <Input value={entityId} onChange={(e) => setEntityId(e.target.value)} placeholder="uuid" />
+              <Input
+                value={entityId}
+                onChange={(e) => setEntityId(e.target.value)}
+                placeholder="uuid"
+              />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Search</Label>
               <form
-                onSubmit={(e) => { e.preventDefault(); setSearch(searchInput.trim()); }}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  setSearch(searchInput.trim());
+                }}
                 className="flex gap-1"
               >
-                <Input value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="Summary / reason / payload" />
-                <Button type="submit" size="icon" variant="outline"><Search className="h-4 w-4" /></Button>
+                <Input
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  placeholder="Summary / reason / payload"
+                />
+                <Button type="submit" size="icon" variant="outline">
+                  <Search className="h-4 w-4" />
+                </Button>
               </form>
             </div>
             <div className="space-y-1.5">
@@ -214,7 +259,9 @@ function AuditExplorerPage() {
               <Input type="datetime-local" value={to} onChange={(e) => setTo(e.target.value)} />
             </div>
             <div className="sm:col-span-2 lg:col-span-2 flex items-end">
-              <Button variant="ghost" size="sm" onClick={resetFilters}>Reset filters</Button>
+              <Button variant="ghost" size="sm" onClick={resetFilters}>
+                Reset filters
+              </Button>
             </div>
           </div>
         </CardContent>
@@ -237,7 +284,9 @@ function AuditExplorerPage() {
             </div>
           )}
           {!timelineQ.isError && rows.length === 0 && !timelineQ.isLoading && (
-            <div className="p-8 text-sm text-muted-foreground text-center">No events match the current filters.</div>
+            <div className="p-8 text-sm text-muted-foreground text-center">
+              No events match the current filters.
+            </div>
           )}
           <ul className="divide-y">
             {rows.map((r) => (
@@ -247,12 +296,17 @@ function AuditExplorerPage() {
                 onClick={() => setSelected(r)}
               >
                 <div className="flex items-start gap-3">
-                  <Badge variant="outline" className={`${kindColor[r.kind]} shrink-0`}>{r.kind}</Badge>
+                  <Badge variant="outline" className={`${kindColor[r.kind]} shrink-0`}>
+                    {r.kind}
+                  </Badge>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium truncate">{r.summary}</div>
                     <div className="text-xs text-muted-foreground mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5">
                       <span>{new Date(r.created_at).toLocaleString()}</span>
-                      <span>{r.entity_type}{r.entity_id ? ` · ${r.entity_id.slice(0, 8)}` : ""}</span>
+                      <span>
+                        {r.entity_type}
+                        {r.entity_id ? ` · ${r.entity_id.slice(0, 8)}` : ""}
+                      </span>
                       {r.actor_id && <span>actor: {r.actor_id.slice(0, 8)}</span>}
                       {r.reason && <span className="italic truncate max-w-xs">“{r.reason}”</span>}
                     </div>
@@ -263,13 +317,19 @@ function AuditExplorerPage() {
           </ul>
           <div ref={sentinelRef} className="p-4 text-center text-xs text-muted-foreground">
             {timelineQ.isFetchingNextPage ? (
-              <span className="inline-flex items-center gap-2"><Loader2 className="h-3.5 w-3.5 animate-spin" />Loading more…</span>
+              <span className="inline-flex items-center gap-2">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Loading more…
+              </span>
             ) : timelineQ.hasNextPage ? (
               "Scroll for more"
             ) : rows.length > 0 ? (
               "End of timeline"
             ) : timelineQ.isLoading ? (
-              <span className="inline-flex items-center gap-2"><Loader2 className="h-3.5 w-3.5 animate-spin" />Loading…</span>
+              <span className="inline-flex items-center gap-2">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Loading…
+              </span>
             ) : null}
           </div>
         </CardContent>
@@ -278,8 +338,9 @@ function AuditExplorerPage() {
       <EventDetailDialog row={selected} onOpenChange={(o) => !o && setSelected(null)} />
 
       <p className="text-xs text-muted-foreground">
-        Known limitations: login events and Postgres-level auth are stored in Supabase analytics logs and are not part of this timeline.
-        Reconciliation runs are non-mutating and only surface here if they produce audit rows.
+        Known limitations: login events and Postgres-level auth are stored in Supabase analytics
+        logs and are not part of this timeline. Reconciliation runs are non-mutating and only
+        surface here if they produce audit rows.
       </p>
     </div>
   );
@@ -304,7 +365,11 @@ function EventDetailDialog({
       <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {row && <Badge variant="outline" className={kindColor[row.kind]}>{row.kind}</Badge>}
+            {row && (
+              <Badge variant="outline" className={kindColor[row.kind]}>
+                {row.kind}
+              </Badge>
+            )}
             <span className="truncate">{row?.summary}</span>
           </DialogTitle>
           <DialogDescription>
@@ -312,7 +377,9 @@ function EventDetailDialog({
           </DialogDescription>
         </DialogHeader>
         {q.isLoading ? (
-          <div className="p-6 text-center text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin inline" /> Loading…</div>
+          <div className="p-6 text-center text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin inline" /> Loading…
+          </div>
         ) : q.data?.found ? (
           <DetailBody detail={q.data} />
         ) : (
@@ -329,7 +396,10 @@ function DetailBody({ detail }: { detail: AuditDetail }) {
     <div className="space-y-4 text-sm">
       <div className="grid gap-2 sm:grid-cols-2">
         <Field label="Timestamp" value={new Date(e.created_at).toLocaleString()} />
-        <Field label="Actor" value={detail.actor?.display_name || detail.actor?.email || e.actor_id || "system"} />
+        <Field
+          label="Actor"
+          value={detail.actor?.display_name || detail.actor?.email || e.actor_id || "system"}
+        />
         <Field label="Entity" value={`${e.entity_type} · ${e.entity_id ?? "—"}`} mono />
         <Field label="Action" value={e.action} />
         <Field label="Correlation ID" value={e.correlation_id ?? "—"} mono />
@@ -338,22 +408,32 @@ function DetailBody({ detail }: { detail: AuditDetail }) {
       <div className="grid gap-3 md:grid-cols-2">
         <div>
           <div className="text-xs font-medium text-muted-foreground mb-1">Before</div>
-          <pre className="rounded border bg-muted/40 p-2 text-xs overflow-auto max-h-64">{e.before ? JSON.stringify(e.before, null, 2) : "—"}</pre>
+          <pre className="rounded border bg-muted/40 p-2 text-xs overflow-auto max-h-64">
+            {e.before ? JSON.stringify(e.before, null, 2) : "—"}
+          </pre>
         </div>
         <div>
           <div className="text-xs font-medium text-muted-foreground mb-1">After</div>
-          <pre className="rounded border bg-muted/40 p-2 text-xs overflow-auto max-h-64">{e.after ? JSON.stringify(e.after, null, 2) : "—"}</pre>
+          <pre className="rounded border bg-muted/40 p-2 text-xs overflow-auto max-h-64">
+            {e.after ? JSON.stringify(e.after, null, 2) : "—"}
+          </pre>
         </div>
       </div>
       {detail.related && detail.related.length > 0 && (
         <div>
-          <div className="text-xs font-medium text-muted-foreground mb-1">Related records ({detail.related.length})</div>
+          <div className="text-xs font-medium text-muted-foreground mb-1">
+            Related records ({detail.related.length})
+          </div>
           <ul className="divide-y border rounded">
             {detail.related.map((r) => (
               <li key={r.event_id} className="p-2 text-xs flex gap-2">
-                <Badge variant="outline" className={`${kindColor[r.kind]} shrink-0`}>{r.kind}</Badge>
+                <Badge variant="outline" className={`${kindColor[r.kind]} shrink-0`}>
+                  {r.kind}
+                </Badge>
                 <span className="flex-1 truncate">{r.summary}</span>
-                <span className="text-muted-foreground shrink-0">{new Date(r.created_at).toLocaleString()}</span>
+                <span className="text-muted-foreground shrink-0">
+                  {new Date(r.created_at).toLocaleString()}
+                </span>
               </li>
             ))}
           </ul>
