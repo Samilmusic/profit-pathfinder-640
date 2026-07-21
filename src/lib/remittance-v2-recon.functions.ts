@@ -12,8 +12,8 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export type ReconCheck = {
-
   check_id: number;
+
   check_name: string;
   severity: "critical" | "warning" | "info";
   passed: boolean;
