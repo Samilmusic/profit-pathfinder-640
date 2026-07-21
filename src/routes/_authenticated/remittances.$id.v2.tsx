@@ -70,7 +70,7 @@ function RemittanceV2DetailPage() {
 
   const expenses = useQuery({
     queryKey: ["remittance-v2", "expenses", id],
-    enabled: !!q.data && (q.data as any).workflow_version === "v2",
+    enabled: !!q.data && (q.data as { workflow_version?: string }).workflow_version === "v2",
     queryFn: async () => {
       const { data, error } = await supabase
         .from("remittance_expenses")
@@ -86,7 +86,31 @@ function RemittanceV2DetailPage() {
   if (q.isError) return <ErrorView error={q.error as Error} />;
   if (!q.data) return <NotFoundView />;
 
-  const r = q.data as any;
+  const r = q.data as unknown as Record<string, unknown> & {
+    workflow_version?: string;
+    doc_no?: string;
+    workflow_state?: string;
+    status?: string;
+    entry_date?: string;
+    transfer_currency?: string;
+    transferred_amount?: number;
+    customer_payment_currency?: string;
+    customer_payment_amount?: number;
+    reference_rate?: number;
+    payment_destination?: string;
+    settlement_currency?: string;
+    settlement_amount?: number;
+    total_profit_aed?: number;
+    gross_commission_aed?: number;
+    fx_trading_profit_aed?: number;
+    net_commission_aed?: number;
+    linked_expenses_aed?: number;
+    customer?: { id: string; name: string } | null;
+    third_party?: { id: string; name: string } | null;
+    source?: { id: string; name: string; currency: string } | null;
+    payment?: { id: string; name: string; currency: string } | null;
+    linked_buy?: { id: string; doc_no?: string | null; supplier_delivered?: boolean | null } | null;
+  };
   const isV2 = r.workflow_version === "v2";
   const v2Enabled = !!flags.data?.remittance_v2_enabled;
   const postingEnabled = !!flags.data?.allocation_layer_posting;
