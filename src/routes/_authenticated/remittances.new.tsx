@@ -478,11 +478,11 @@ function NewRemittancePage() {
                   </div>
                 </div>
 
-                {paymentDestination === "settles_linked_buy" && (
+                {paymentDestination === "settles_linked_buy" && (openBuysQ.data ?? []).length > 0 && (
                   <div className="space-y-2 rounded-md bg-muted/30 p-3">
-                    <div className="text-xs font-semibold text-muted-foreground">Link to a buy deal</div>
+                    <div className="text-xs font-semibold text-muted-foreground">Attach to an existing open buy (optional)</div>
                     <Select value={linkedBuyId} onValueChange={setLinkedBuyId}>
-                      <SelectTrigger className="h-11"><SelectValue placeholder="Pick an open buy…" /></SelectTrigger>
+                      <SelectTrigger className="h-11"><SelectValue placeholder="Leave empty to auto-create" /></SelectTrigger>
                       <SelectContent>
                         {(openBuysQ.data ?? []).map((b) => (
                           <SelectItem key={b.id} value={b.id}>
@@ -491,31 +491,21 @@ function NewRemittancePage() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <div className="text-[11px] text-muted-foreground">Or leave empty and create a new buy inline:</div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      <div className="space-y-1.5">
-                        <Label className="text-xs">Bought currency</Label>
-                        <Select value={newBuy.boughtCurrency} onValueChange={(v) => setNewBuy((s) => ({ ...s, boughtCurrency: v }))}>
-                          <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
-                          <SelectContent>{CURRENCIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-xs">Bought amount</Label>
-                        <NumberInput currency={newBuy.boughtCurrency} value={newBuy.boughtAmount} onChange={(e) => setNewBuy((s) => ({ ...s, boughtAmount: (e.target as HTMLInputElement).value }))} className="h-10" />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-xs">Supplier rate</Label>
-                        <NumberInput rate value={newBuy.supplierRate} onChange={(e) => setNewBuy((s) => ({ ...s, supplierRate: (e.target as HTMLInputElement).value }))} className="h-10" />
-                      </div>
-                      <div className="space-y-1.5 flex items-end text-[11px] text-muted-foreground">
-                        {newBuy.boughtAmount && newBuy.supplierRate
-                          ? <>Paid ≈ {fmt(Number(newBuy.boughtAmount) * Number(newBuy.supplierRate), settlementCurrency || payCurrency)}</>
-                          : <span>Inventory created on delivery.</span>}
-                      </div>
-                    </div>
                   </div>
                 )}
+
+                <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-xs space-y-1">
+                  <div className="font-semibold text-primary">Linked Buy will be created automatically</div>
+                  <div className="text-muted-foreground">
+                    Supplier: <span className="text-foreground font-medium">{fxSupplierName || thirdPartyName || "third party"}</span> ·
+                    Expected: <span className="text-foreground font-medium">{fmt(Number(fxPurchasedAmount) || Number(transferredAmount) || 0, transferCurrency)}</span> @
+                    <span className="text-foreground font-medium"> {Number(fxPurchaseRate) || Number(refRate) || 0}</span> {settlementCurrency || payCurrency}/{transferCurrency}
+                  </div>
+                  <div className="text-muted-foreground">
+                    Status: <span className="text-foreground font-medium">Waiting currency delivery</span>. When the supplier delivers,
+                    open the remittance and click <span className="text-foreground font-medium">Receive Currency</span>.
+                  </div>
+                </div>
 
                 {settlementSummary.absDiff > 0.001 && (
                   <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 space-y-2">
