@@ -12,6 +12,7 @@ import {
   AlertTriangle, CheckCircle2, Clock, Wallet, Activity, Package, Users, Landmark,
 } from "lucide-react";
 import { toast } from "sonner";
+import { CurrencyLedger } from "@/components/currency-ledger";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
