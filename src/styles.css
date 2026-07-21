@@ -225,6 +225,61 @@
 /* Prevent horizontal overflow globally without clipping vertical scroll. */
 html, body { overflow-x: clip; }
 
+/* iOS: use dynamic viewport height so the mobile URL bar + keyboard don't
+   cover sticky UI. */
+html, body { min-height: 100dvh; }
+
+/* Enterprise defaults for interactive controls on mobile:
+   - larger tap targets on coarse pointers (no visual change on desktop)
+   - remove blue tap flash on iOS/Android
+   - honor reduced-motion preference */
+@media (pointer: coarse) {
+  button:not([data-no-min]),
+  a[role="button"]:not([data-no-min]),
+  [role="menuitem"],
+  [role="tab"],
+  [role="option"] {
+    min-height: 44px;
+  }
+  button[data-icon-only],
+  a[data-icon-only] {
+    min-width: 44px;
+  }
+}
+button, a, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Numeric alignment for money/rate displays. Apply via .num utility. */
+@utility num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Focus ring — 2px, high-contrast, respects design token. */
+:where(button, a, input, textarea, select, [role="button"], [role="link"], [tabindex]):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Reduced-motion: disable non-essential transitions/animations. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Overscroll containment on scroll containers marked with .scroll-safe. */
+@utility scroll-safe {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* Numbers that must fit in narrow cards without breaking layout. */
 @utility num-fit {
   font-size: clamp(0.95rem, 3.4vw, 1.5rem);

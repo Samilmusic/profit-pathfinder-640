@@ -39,9 +39,9 @@ export function ResponsiveTable<T>({
       {/* Desktop / tablet — real table */}
       <div className="hidden md:block">
         <Card>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto scroll-safe">
             <Table>
-              <TableHeader>
+              <TableHeader className="sticky top-0 z-10 bg-card">
                 <TableRow>
                   {columns.map((c) => (
                     <TableHead key={c.key} className={c.headerClassName}>{c.header}</TableHead>

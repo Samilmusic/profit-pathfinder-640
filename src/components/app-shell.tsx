@@ -182,7 +182,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen flex w-full bg-background">
+    <div className="min-h-dvh flex w-full bg-background">
       {/* Sidebar - desktop */}
       <aside
         className={cn(
@@ -229,8 +229,12 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-14 border-b bg-card px-4 flex items-center gap-3 sticky top-0 z-20">
-          <button onClick={() => setOpen(true)} className="text-foreground md:hidden">
+        <header className="h-14 border-b bg-card px-4 flex items-center gap-3 sticky top-0 z-20 pt-[env(safe-area-inset-top)]">
+          <button
+            onClick={() => setOpen(true)}
+            className="text-foreground md:hidden inline-grid place-items-center h-11 w-11 -ml-2 rounded-md"
+            aria-label="Open menu"
+          >
             <Menu className="h-5 w-5" />
           </button>
           <div className="font-semibold md:hidden">Exchange Portal</div>
@@ -249,8 +253,8 @@ export function AppShell({ children }: { children: ReactNode }) {
               "flex items-center gap-2 px-5 py-3 text-sm hover:opacity-95 transition-opacity",
               // desktop: bottom-right
               "md:bottom-6 md:right-6",
-              // mobile: bottom-center above bottom nav
-              "bottom-[calc(4.5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0",
+              // mobile: bottom-right above bottom nav (avoids covering center tab)
+              "bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 md:right-6",
             )}
             aria-label="New Trade"
           >

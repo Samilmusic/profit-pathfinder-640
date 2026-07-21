@@ -10,6 +10,9 @@ export function EmptyState({
   title,
   body,
   action,
+  secondaryAction,
+  docsHref,
+  docsLabel,
   className,
   compact,
 }: {
@@ -17,6 +20,9 @@ export function EmptyState({
   title: string;
   body?: string;
   action?: ReactNode;
+  secondaryAction?: ReactNode;
+  docsHref?: string;
+  docsLabel?: string;
   className?: string;
   compact?: boolean;
 }) {
@@ -27,6 +33,7 @@ export function EmptyState({
         compact ? "py-6 px-4" : "py-10 px-6",
         className,
       )}
+      role="status"
     >
       {Icon && (
         <div className="mb-3 grid h-11 w-11 place-items-center rounded-full bg-background border">
@@ -35,7 +42,22 @@ export function EmptyState({
       )}
       <div className="font-medium">{title}</div>
       {body && <div className="mt-1 text-xs text-muted-foreground max-w-sm">{body}</div>}
-      {action && <div className="mt-4">{action}</div>}
+      {(action || secondaryAction) && (
+        <div className="mt-4 flex flex-col sm:flex-row gap-2 justify-center">
+          {action}
+          {secondaryAction}
+        </div>
+      )}
+      {docsHref && (
+        <a
+          href={docsHref}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-3 text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
+        >
+          {docsLabel ?? "Learn more"}
+        </a>
+      )}
     </div>
   );
 }
