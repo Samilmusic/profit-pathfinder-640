@@ -182,7 +182,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen flex w-full bg-background">
+    <div className="min-h-dvh flex w-full bg-background">
       {/* Sidebar - desktop */}
       <aside
         className={cn(
