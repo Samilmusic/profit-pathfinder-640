@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowDown, ArrowUp, Search, X, FileText, Package, ArrowRightLeft, CreditCard, Receipt, Landmark, RefreshCw } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+// Detail links open as anchors to avoid strict typed-route issues
 
 const nfInt = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
 const fmtAmt = (n: number) => nfInt.format(Math.abs(n));
