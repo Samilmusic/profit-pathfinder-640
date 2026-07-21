@@ -1,6 +1,11 @@
 import { z } from "zod";
 
-export const TRANSFER_METHODS = ["bank_transfer", "cash_delivery", "wallet_transfer", "other"] as const;
+export const TRANSFER_METHODS = [
+  "bank_transfer",
+  "cash_delivery",
+  "wallet_transfer",
+  "other",
+] as const;
 export const COMMISSION_METHODS = ["fixed", "percentage", "included", "free"] as const;
 export const PAYMENT_DESTINATIONS = [
   "into_account",
@@ -11,7 +16,13 @@ export const PAYMENT_DESTINATIONS = [
 ] as const;
 
 const uuid = z.string().uuid();
-const optStr = z.string().trim().min(1).nullable().optional().or(z.literal("").transform(() => null));
+const optStr = z
+  .string()
+  .trim()
+  .min(1)
+  .nullable()
+  .optional()
+  .or(z.literal("").transform(() => null));
 const posNum = z.number().finite().positive();
 const nonNegNum = z.number().finite().nonnegative();
 const optPosNum = z.number().finite().positive().nullable().optional();
@@ -42,7 +53,11 @@ export const remittanceV2CreateSchema = z
     notes: optStr,
   })
   .superRefine((v, ctx) => {
-    if (v.payment_destination === "to_third_party" && !v.third_party_customer_id && !v.third_party_name) {
+    if (
+      v.payment_destination === "to_third_party" &&
+      !v.third_party_customer_id &&
+      !v.third_party_name
+    ) {
       ctx.addIssue({
         code: "custom",
         path: ["third_party_name"],
@@ -51,15 +66,27 @@ export const remittanceV2CreateSchema = z
     }
     if (v.commission_method === "fixed") {
       if (v.commission_fixed_amount == null || v.commission_fixed_amount <= 0) {
-        ctx.addIssue({ code: "custom", path: ["commission_fixed_amount"], message: "Fixed amount required" });
+        ctx.addIssue({
+          code: "custom",
+          path: ["commission_fixed_amount"],
+          message: "Fixed amount required",
+        });
       }
       if (!v.commission_fixed_currency) {
-        ctx.addIssue({ code: "custom", path: ["commission_fixed_currency"], message: "Currency required" });
+        ctx.addIssue({
+          code: "custom",
+          path: ["commission_fixed_currency"],
+          message: "Currency required",
+        });
       }
     }
     if (v.commission_method === "percentage") {
       if (v.commission_percentage == null || v.commission_percentage <= 0) {
-        ctx.addIssue({ code: "custom", path: ["commission_percentage"], message: "Percentage required" });
+        ctx.addIssue({
+          code: "custom",
+          path: ["commission_percentage"],
+          message: "Percentage required",
+        });
       }
     }
   });

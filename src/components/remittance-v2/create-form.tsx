@@ -402,9 +402,7 @@ export function RemittanceV2CreateForm() {
           <Field label="Method">
             <Select
               value={form.commission_method}
-              onValueChange={(v) =>
-                set("commission_method", v as FormState["commission_method"])
-              }
+              onValueChange={(v) => set("commission_method", v as FormState["commission_method"])}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -424,9 +422,7 @@ export function RemittanceV2CreateForm() {
                 <NumberInput
                   currency={form.commission_fixed_currency}
                   value={form.commission_fixed_amount ?? ""}
-                  onChange={(e) =>
-                    set("commission_fixed_amount", parseNumOrNull(e.target.value))
-                  }
+                  onChange={(e) => set("commission_fixed_amount", parseNumOrNull(e.target.value))}
                 />
               </Field>
               <Field label="Fixed currency">
@@ -453,11 +449,7 @@ export function RemittanceV2CreateForm() {
           <CardTitle className="text-base">Notes</CardTitle>
         </CardHeader>
         <CardContent>
-          <Textarea
-            value={form.notes}
-            onChange={(e) => set("notes", e.target.value)}
-            rows={3}
-          />
+          <Textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={3} />
         </CardContent>
       </Card>
 
@@ -485,13 +477,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function CurrencySelect({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-}) {
+function CurrencySelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger>
