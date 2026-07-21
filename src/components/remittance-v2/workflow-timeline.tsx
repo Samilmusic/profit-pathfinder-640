@@ -31,7 +31,9 @@ export function WorkflowTimeline({ remittanceId }: { remittanceId: string }) {
         ) : q.isError ? (
           <div className="text-sm text-destructive">Unable to load workflow transitions.</div>
         ) : (q.data?.length ?? 0) === 0 ? (
-          <div className="text-sm text-muted-foreground">No records are available or visible to your role.</div>
+          <div className="text-sm text-muted-foreground">
+            No records are available or visible to your role.
+          </div>
         ) : (
           <ol className="relative border-l border-border pl-4 space-y-4">
             {q.data!.map((t) => {
@@ -40,13 +42,23 @@ export function WorkflowTimeline({ remittanceId }: { remittanceId: string }) {
                 <li key={t.id} className="relative">
                   <Icon className="absolute -left-[22px] top-0 h-4 w-4 text-muted-foreground" />
                   <div className="flex flex-wrap items-center gap-2">
-                    {t.from_state ? <WorkflowStateBadge state={String(t.from_state)} /> : <span className="text-xs text-muted-foreground">initial</span>}
+                    {t.from_state ? (
+                      <WorkflowStateBadge state={String(t.from_state)} />
+                    ) : (
+                      <span className="text-xs text-muted-foreground">initial</span>
+                    )}
                     <span className="text-muted-foreground">→</span>
                     <WorkflowStateBadge state={String(t.to_state)} />
-                    <span className="text-xs text-muted-foreground ml-auto">{new Date(t.created_at as string).toLocaleString()}</span>
+                    <span className="text-xs text-muted-foreground ml-auto">
+                      {new Date(t.created_at as string).toLocaleString()}
+                    </span>
                   </div>
                   {t.reason ? <div className="mt-1 text-sm">{t.reason}</div> : null}
-                  {t.actor ? <div className="mt-0.5 text-xs text-muted-foreground">actor: {String(t.actor).slice(0, 8)}…</div> : null}
+                  {t.actor ? (
+                    <div className="mt-0.5 text-xs text-muted-foreground">
+                      actor: {String(t.actor).slice(0, 8)}…
+                    </div>
+                  ) : null}
                 </li>
               );
             })}

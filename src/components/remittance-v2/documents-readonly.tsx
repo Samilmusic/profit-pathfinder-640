@@ -21,7 +21,9 @@ export function DocumentsReadonly({ remittanceId }: { remittanceId: string }) {
   });
 
   async function openDoc(storage_path: string) {
-    const { data, error } = await supabase.storage.from("documents").createSignedUrl(storage_path, 600);
+    const { data, error } = await supabase.storage
+      .from("documents")
+      .createSignedUrl(storage_path, 600);
     if (error || !data?.signedUrl) {
       toast.error(error?.message ?? "Unable to open document");
       return;
@@ -40,14 +42,18 @@ export function DocumentsReadonly({ remittanceId }: { remittanceId: string }) {
         ) : q.isError ? (
           <div className="text-sm text-destructive">Unable to load documents.</div>
         ) : (q.data?.length ?? 0) === 0 ? (
-          <div className="text-sm text-muted-foreground">No records are available or visible to your role.</div>
+          <div className="text-sm text-muted-foreground">
+            No records are available or visible to your role.
+          </div>
         ) : (
           <ul className="space-y-2">
             {q.data!.map((d) => (
               <li key={d.id} className="flex items-center gap-2 rounded-md border p-2 text-sm">
                 <div className="min-w-0 flex-1">
                   <div className="truncate">{d.file_name ?? "(unnamed)"}</div>
-                  <div className="text-xs text-muted-foreground">{String(d.doc_type)} · {new Date(d.created_at as string).toLocaleString()}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {String(d.doc_type)} · {new Date(d.created_at as string).toLocaleString()}
+                  </div>
                 </div>
                 <Button size="sm" variant="ghost" onClick={() => openDoc(d.storage_path as string)}>
                   <ExternalLink className="h-4 w-4" />
