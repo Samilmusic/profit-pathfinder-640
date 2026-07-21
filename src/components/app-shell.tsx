@@ -95,6 +95,7 @@ const navGroups: NavGroup[] = [
     label: "Administration",
     items: [
       { to: "/roles", label: "Roles", icon: Shield },
+      { to: "/migration-status", label: "Migration Status", icon: ClipboardList },
       { to: "/settings", label: "Settings", icon: Shield },
     ],
   },
