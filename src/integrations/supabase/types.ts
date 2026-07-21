@@ -695,6 +695,13 @@ export type Database = {
             foreignKeyName: "buy_transactions_settled_by_remittance_id_fkey"
             columns: ["settled_by_remittance_id"]
             isOneToOne: false
+            referencedRelation: "v_remittance_migration_diff"
+            referencedColumns: ["remittance_id"]
+          },
+          {
+            foreignKeyName: "buy_transactions_settled_by_remittance_id_fkey"
+            columns: ["settled_by_remittance_id"]
+            isOneToOne: false
             referencedRelation: "v_remittance_settlement_path"
             referencedColumns: ["remittance_id"]
           },
@@ -2055,6 +2062,13 @@ export type Database = {
             foreignKeyName: "remittance_allocations_remittance_id_fkey"
             columns: ["remittance_id"]
             isOneToOne: false
+            referencedRelation: "v_remittance_migration_diff"
+            referencedColumns: ["remittance_id"]
+          },
+          {
+            foreignKeyName: "remittance_allocations_remittance_id_fkey"
+            columns: ["remittance_id"]
+            isOneToOne: false
             referencedRelation: "v_remittance_settlement_path"
             referencedColumns: ["remittance_id"]
           },
@@ -2110,10 +2124,148 @@ export type Database = {
             foreignKeyName: "remittance_expenses_remittance_id_fkey"
             columns: ["remittance_id"]
             isOneToOne: false
+            referencedRelation: "v_remittance_migration_diff"
+            referencedColumns: ["remittance_id"]
+          },
+          {
+            foreignKeyName: "remittance_expenses_remittance_id_fkey"
+            columns: ["remittance_id"]
+            isOneToOne: false
             referencedRelation: "v_remittance_settlement_path"
             referencedColumns: ["remittance_id"]
           },
         ]
+      }
+      remittance_migration_audit: {
+        Row: {
+          actual_amount: number | null
+          allocation_id: string | null
+          batch_id: string
+          created_at: string
+          details: Json | null
+          diff_category: Database["public"]["Enums"]["migration_diff_category"]
+          expected_amount: number | null
+          expected_currency: string | null
+          id: string
+          linked_buy_id: string | null
+          remittance_id: string
+        }
+        Insert: {
+          actual_amount?: number | null
+          allocation_id?: string | null
+          batch_id: string
+          created_at?: string
+          details?: Json | null
+          diff_category: Database["public"]["Enums"]["migration_diff_category"]
+          expected_amount?: number | null
+          expected_currency?: string | null
+          id?: string
+          linked_buy_id?: string | null
+          remittance_id: string
+        }
+        Update: {
+          actual_amount?: number | null
+          allocation_id?: string | null
+          batch_id?: string
+          created_at?: string
+          details?: Json | null
+          diff_category?: Database["public"]["Enums"]["migration_diff_category"]
+          expected_amount?: number | null
+          expected_currency?: string | null
+          id?: string
+          linked_buy_id?: string | null
+          remittance_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "remittance_migration_audit_allocation_id_fkey"
+            columns: ["allocation_id"]
+            isOneToOne: false
+            referencedRelation: "remittance_allocations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remittance_migration_audit_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "remittance_migration_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remittance_migration_audit_linked_buy_id_fkey"
+            columns: ["linked_buy_id"]
+            isOneToOne: false
+            referencedRelation: "buy_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remittance_migration_audit_linked_buy_id_fkey"
+            columns: ["linked_buy_id"]
+            isOneToOne: false
+            referencedRelation: "v_remittance_settlement_path"
+            referencedColumns: ["linked_buy_id"]
+          },
+          {
+            foreignKeyName: "remittance_migration_audit_remittance_id_fkey"
+            columns: ["remittance_id"]
+            isOneToOne: false
+            referencedRelation: "remittances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remittance_migration_audit_remittance_id_fkey"
+            columns: ["remittance_id"]
+            isOneToOne: false
+            referencedRelation: "v_remittance_migration_diff"
+            referencedColumns: ["remittance_id"]
+          },
+          {
+            foreignKeyName: "remittance_migration_audit_remittance_id_fkey"
+            columns: ["remittance_id"]
+            isOneToOne: false
+            referencedRelation: "v_remittance_settlement_path"
+            referencedColumns: ["remittance_id"]
+          },
+        ]
+      }
+      remittance_migration_batches: {
+        Row: {
+          eligible_count: number
+          error_count: number
+          finished_at: string | null
+          id: string
+          inserted_count: number
+          is_dry_run: boolean
+          note: string | null
+          run_by: string | null
+          skipped_count: number
+          started_at: string
+        }
+        Insert: {
+          eligible_count?: number
+          error_count?: number
+          finished_at?: string | null
+          id?: string
+          inserted_count?: number
+          is_dry_run?: boolean
+          note?: string | null
+          run_by?: string | null
+          skipped_count?: number
+          started_at?: string
+        }
+        Update: {
+          eligible_count?: number
+          error_count?: number
+          finished_at?: string | null
+          id?: string
+          inserted_count?: number
+          is_dry_run?: boolean
+          note?: string | null
+          run_by?: string | null
+          skipped_count?: number
+          started_at?: string
+        }
+        Relationships: []
       }
       remittance_profit_components: {
         Row: {
@@ -2172,6 +2324,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "remittances"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remittance_profit_components_remittance_id_fkey"
+            columns: ["remittance_id"]
+            isOneToOne: false
+            referencedRelation: "v_remittance_migration_diff"
+            referencedColumns: ["remittance_id"]
           },
           {
             foreignKeyName: "remittance_profit_components_remittance_id_fkey"
@@ -4433,6 +4592,44 @@ export type Database = {
           },
         ]
       }
+      v_remittance_migration_diff: {
+        Row: {
+          actual_buy_amount: number | null
+          actual_buy_currency: string | null
+          already_allocated: number | null
+          buy_capacity_remaining: number | null
+          buy_delivered: boolean | null
+          doc_no: string | null
+          existing_alloc_count: number | null
+          expected_settlement_amount: number | null
+          expected_settlement_currency: string | null
+          linked_buy_id: string | null
+          lot_count: number | null
+          payment_destination:
+            | Database["public"]["Enums"]["remittance_payment_destination"]
+            | null
+          remittance_id: string | null
+          workflow_version:
+            | Database["public"]["Enums"]["workflow_version"]
+            | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "remittances_linked_buy_id_fkey"
+            columns: ["linked_buy_id"]
+            isOneToOne: false
+            referencedRelation: "buy_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remittances_linked_buy_id_fkey"
+            columns: ["linked_buy_id"]
+            isOneToOne: false
+            referencedRelation: "v_remittance_settlement_path"
+            referencedColumns: ["linked_buy_id"]
+          },
+        ]
+      }
       v_remittance_settlement_path: {
         Row: {
           entry_date: string | null
@@ -4614,6 +4811,10 @@ export type Database = {
         Args: { _buy_id: string; _note?: string }
         Returns: undefined
       }
+      run_remittance_shadow_backfill: {
+        Args: { _note?: string }
+        Returns: Json
+      }
       set_edit_context: {
         Args: { _device?: string; _reason: string }
         Returns: undefined
@@ -4694,6 +4895,15 @@ export type Database = {
         | "sell_payment"
         | "remittance"
         | "third_party_settlement"
+      migration_diff_category:
+        | "matched"
+        | "amount_mismatch"
+        | "missing_buy"
+        | "missing_lot"
+        | "over_allocated"
+        | "no_op"
+        | "error"
+        | "skipped_v2"
       money_location:
         | "cash_box"
         | "aed_bank"
@@ -5006,6 +5216,16 @@ export const Constants = {
         "sell_payment",
         "remittance",
         "third_party_settlement",
+      ],
+      migration_diff_category: [
+        "matched",
+        "amount_mismatch",
+        "missing_buy",
+        "missing_lot",
+        "over_allocated",
+        "no_op",
+        "error",
+        "skipped_v2",
       ],
       money_location: [
         "cash_box",
