@@ -221,17 +221,24 @@ export function CurrencyLedger({ ccy, marketRate = 0, avgCost = 0 }: { ccy: stri
           <Tile label="Today In"  value={`+${fmtAmt(summary.inSum)}`}  tone="ok" />
           <Tile label="Today Out" value={`-${fmtAmt(summary.outSum)}`} tone="danger" />
           <Tile label="Net Today" value={`${summary.net >= 0 ? "+" : "-"}${fmtAmt(summary.net)}`} tone={summary.net >= 0 ? "ok" : "danger"} />
-          <Tile label="Avg Cost"  value={avgCost > 0 ? nfInt.format(avgCost) : "—"} />
-          <Tile label="Market"    value={marketRate > 0 ? nfInt.format(marketRate) : "—"} />
-          <Tile
-            label="Floating P/L"
-            value={floating ? `${floating.positive ? "+" : ""}${fmtAmt(floating.amount)}` : "—"}
-            tone={floating ? (floating.positive ? "ok" : "danger") : undefined}
-          />
+          {ccy !== "IRR" && <Tile label="Avg Cost"  value={avgCost > 0 ? nfInt.format(avgCost) : "—"} />}
+          {ccy !== "IRR" && <Tile label="Market"    value={marketRate > 0 ? nfInt.format(marketRate) : "—"} />}
+          {ccy !== "IRR" && (
+            <Tile
+              label="Floating P/L"
+              value={floating ? `${floating.positive ? "+" : ""}${fmtAmt(floating.amount)}` : "—"}
+              tone={floating ? (floating.positive ? "ok" : "danger") : undefined}
+            />
+          )}
         </div>
-        {totalMkt > 0 && (
+        {ccy !== "IRR" && totalMkt > 0 && (
           <div className="mt-2 text-[11px] text-muted-foreground tabular-nums">
             Market value ≈ {nfInt.format(totalMkt)} {ccy === "AED" ? "IRR" : "IRR"}
+          </div>
+        )}
+        {ccy === "IRR" && (
+          <div className="mt-2 text-[11px] text-muted-foreground">
+            IRR is settlement cash — no market P/L is shown here. Profit is realized when IRR is converted back into AED/USD.
           </div>
         )}
       </div>
