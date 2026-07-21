@@ -95,9 +95,7 @@ function MigrationStatusPage() {
   });
 
   if (isAdmin === null) {
-    return (
-      <div className="p-6 text-sm text-muted-foreground">Checking permissions…</div>
-    );
+    return <div className="p-6 text-sm text-muted-foreground">Checking permissions…</div>;
   }
 
   if (!isAdmin) {
@@ -113,8 +111,19 @@ function MigrationStatusPage() {
     );
   }
 
-  const flags = flagsQ.data ?? [];
-  const flagMap = new Map(flags.map((f: any) => [f.key, f]));
+  type FlagRow = { key: string; enabled: boolean; updated_at?: string };
+  type BatchRow = {
+    id: string;
+    started_at?: string | null;
+    finished_at?: string | null;
+    note?: string | null;
+    total_scanned?: number | null;
+    total_shadow_inserted?: number | null;
+    total_skipped?: number | null;
+    total_errors?: number | null;
+  };
+  const flags = (flagsQ.data ?? []) as FlagRow[];
+  const flagMap = new Map(flags.map((f) => [f.key, f] as const));
   const v2Flag = flagMap.get("remittance_v2_enabled");
   const postingFlag = flagMap.get("allocation_layer_posting");
 
@@ -123,12 +132,9 @@ function MigrationStatusPage() {
   const migrated = totalAudit;
   const approved = audit?.byCategory["matched"] ?? 0;
   const blocked =
-    (audit?.byCategory["over_allocated"] ?? 0) +
-    (audit?.byCategory["missing_buy"] ?? 0);
-  const batchErrors = (batchesQ.data ?? []).reduce(
-    (sum: number, b: any) => sum + (b.total_errors ?? 0),
-    0,
-  );
+    (audit?.byCategory["over_allocated"] ?? 0) + (audit?.byCategory["missing_buy"] ?? 0);
+  const batchesData = (batchesQ.data ?? []) as unknown as BatchRow[];
+  const batchErrors = batchesData.reduce((sum, b) => sum + (b.total_errors ?? 0), 0);
 
   return (
     <div className="space-y-6 p-4 md:p-6">
@@ -160,17 +166,14 @@ function MigrationStatusPage() {
         <Stat label="Approved" value={approved} />
         <Stat label="Blocked" value={blocked} />
         <Stat label="Batch errors" value={batchErrors} />
-        <Stat
-          label="Batches"
-          value={batchesQ.data?.length ?? 0}
-          hint="last 20 shown"
-        />
+        <Stat label="Batches" value={batchesData.length} hint="last 20 shown" />
       </div>
 
       {/* Audit + batches unchanged */}
       <LegacyAuditAndBatches
-        auditQ={auditQ}
-        batchesQ={batchesQ}
+        auditLoading={auditQ.isLoading}
+        batchesLoading={batchesQ.isLoading}
+        batches={batchesData}
         totalAudit={totalAudit}
         audit={audit}
       />
@@ -199,9 +202,7 @@ function ReconciliationPanel() {
   const failedCritical = (results ?? []).filter(
     (c) => !c.passed && c.severity === "critical",
   ).length;
-  const failedWarning = (results ?? []).filter(
-    (c) => !c.passed && c.severity === "warning",
-  ).length;
+  const failedWarning = (results ?? []).filter((c) => !c.passed && c.severity === "warning").length;
 
   return (
     <Card>
@@ -214,11 +215,7 @@ function ReconciliationPanel() {
                 Last run {lastRunAt.toLocaleString()}
               </span>
             ) : null}
-            <Button
-              size="sm"
-              onClick={() => runMutation.mutate()}
-              disabled={runMutation.isPending}
-            >
+            <Button size="sm" onClick={() => runMutation.mutate()} disabled={runMutation.isPending}>
               {runMutation.isPending ? "Running…" : "Run reconciliation"}
             </Button>
           </div>
@@ -227,8 +224,8 @@ function ReconciliationPanel() {
       <CardContent>
         {results === null ? (
           <p className="text-sm text-muted-foreground">
-            Reconciliation has not been run in this session. Nightly automation is
-            optional — you can run the full suite on demand at any time.
+            Reconciliation has not been run in this session. Nightly automation is optional — you
+            can run the full suite on demand at any time.
           </p>
         ) : (
           <div className="space-y-3">
@@ -256,12 +253,8 @@ function ReconciliationPanel() {
                 <TableBody>
                   {results.map((c) => (
                     <TableRow key={c.check_id}>
-                      <TableCell className="tabular-nums text-xs">
-                        {c.check_id}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">
-                        {c.check_name}
-                      </TableCell>
+                      <TableCell className="tabular-nums text-xs">{c.check_id}</TableCell>
+                      <TableCell className="font-mono text-xs">{c.check_name}</TableCell>
                       <TableCell className="text-xs uppercase text-muted-foreground">
                         {c.severity}
                       </TableCell>
@@ -278,9 +271,7 @@ function ReconciliationPanel() {
                           {c.passed ? "PASS" : "FAIL"}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right tabular-nums text-xs">
-                        {c.delta}
-                      </TableCell>
+                      <TableCell className="text-right tabular-nums text-xs">{c.delta}</TableCell>
                       <TableCell className="max-w-[36ch] truncate text-xs text-muted-foreground">
                         <code>{JSON.stringify(c.details)}</code>
                       </TableCell>
@@ -292,8 +283,8 @@ function ReconciliationPanel() {
             <p className="text-xs text-muted-foreground">
               This suite is also executable directly as
               <code className="mx-1">select * from public.remittance_v2_reconcile();</code>
-              (admin session required). Nightly scheduling via pg_cron is optional
-              and not required for the system to operate.
+              (admin session required). Nightly scheduling via pg_cron is optional and not required
+              for the system to operate.
             </p>
           </div>
         )}
@@ -302,14 +293,27 @@ function ReconciliationPanel() {
   );
 }
 
+type LegacyBatchRow = {
+  id: string;
+  started_at?: string | null;
+  finished_at?: string | null;
+  note?: string | null;
+  total_scanned?: number | null;
+  total_shadow_inserted?: number | null;
+  total_skipped?: number | null;
+  total_errors?: number | null;
+};
+
 function LegacyAuditAndBatches({
-  auditQ,
-  batchesQ,
+  auditLoading,
+  batchesLoading,
+  batches,
   totalAudit,
   audit,
 }: {
-  auditQ: { isLoading: boolean };
-  batchesQ: { isLoading: boolean; data?: any[] };
+  auditLoading: boolean;
+  batchesLoading: boolean;
+  batches: LegacyBatchRow[];
   totalAudit: number;
   audit: { total: number; byCategory: Record<string, number> } | undefined;
 }) {
@@ -320,7 +324,7 @@ function LegacyAuditAndBatches({
           <CardTitle className="text-base">Migration audit</CardTitle>
         </CardHeader>
         <CardContent>
-          {auditQ.isLoading ? (
+          {auditLoading ? (
             <div className="text-sm text-muted-foreground">Loading…</div>
           ) : totalAudit === 0 ? (
             <div className="text-sm text-muted-foreground">
@@ -336,9 +340,8 @@ function LegacyAuditAndBatches({
                 ))}
               </div>
               <p className="text-xs text-muted-foreground">
-                Legacy adoption is intentionally not exposed here. It is a
-                separate administrative migration project, run after production
-                stabilization.
+                Legacy adoption is intentionally not exposed here. It is a separate administrative
+                migration project, run after production stabilization.
               </p>
             </div>
           )}
@@ -350,9 +353,9 @@ function LegacyAuditAndBatches({
           <CardTitle className="text-base">Recent batches</CardTitle>
         </CardHeader>
         <CardContent className="overflow-x-auto p-0">
-          {batchesQ.isLoading ? (
+          {batchesLoading ? (
             <div className="p-4 text-sm text-muted-foreground">Loading…</div>
-          ) : (batchesQ.data?.length ?? 0) === 0 ? (
+          ) : batches.length === 0 ? (
             <div className="p-4 text-sm text-muted-foreground">No batches yet.</div>
           ) : (
             <Table>
@@ -368,7 +371,7 @@ function LegacyAuditAndBatches({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {batchesQ.data!.map((b: any) => (
+                {batches.map((b: LegacyBatchRow) => (
                   <TableRow key={b.id}>
                     <TableCell className="whitespace-nowrap text-xs">
                       {b.started_at ? new Date(b.started_at).toLocaleString() : "—"}
@@ -377,9 +380,7 @@ function LegacyAuditAndBatches({
                       {b.finished_at ? new Date(b.finished_at).toLocaleString() : "—"}
                     </TableCell>
                     <TableCell className="text-right">{b.total_scanned ?? 0}</TableCell>
-                    <TableCell className="text-right">
-                      {b.total_shadow_inserted ?? 0}
-                    </TableCell>
+                    <TableCell className="text-right">{b.total_shadow_inserted ?? 0}</TableCell>
                     <TableCell className="text-right">{b.total_skipped ?? 0}</TableCell>
                     <TableCell className="text-right">{b.total_errors ?? 0}</TableCell>
                     <TableCell className="max-w-[24ch] truncate text-xs text-muted-foreground">
@@ -416,22 +417,12 @@ function FlagRow({
           <div className="text-xs text-muted-foreground">Not set</div>
         )}
       </div>
-      <Badge variant={enabled ? "default" : "secondary"}>
-        {enabled ? "ON" : "OFF"}
-      </Badge>
+      <Badge variant={enabled ? "default" : "secondary"}>{enabled ? "ON" : "OFF"}</Badge>
     </div>
   );
 }
 
-function Stat({
-  label,
-  value,
-  hint,
-}: {
-  label: string;
-  value: number;
-  hint?: string;
-}) {
+function Stat({ label, value, hint }: { label: string; value: number; hint?: string }) {
   return (
     <Card>
       <CardContent className="p-4">
