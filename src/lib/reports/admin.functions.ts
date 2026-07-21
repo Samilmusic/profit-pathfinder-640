@@ -19,7 +19,12 @@ export type SystemHealth = {
     timezone: string;
   };
   extensions: { name: string; version: string }[];
-  feature_flags: { key: string; enabled: boolean; description: string | null; updated_at: string }[];
+  feature_flags: {
+    key: string;
+    enabled: boolean;
+    description: string | null;
+    updated_at: string;
+  }[];
   data_quality: { total: number; invalid: number; suspicious: number; valid: number };
   last_reconciliation: { run_at: string | null; row_count: number };
   matviews: { schema: string; name: string }[];
@@ -43,10 +48,20 @@ export async function fetchSystemHealth(): Promise<SystemHealth> {
 export type ReportingHealth = {
   meta: ReportMeta;
   summary: {
-    total: number; valid: number; suspicious: number; invalid: number;
-    included_in_executive: number; excluded_in_executive: number;
+    total: number;
+    valid: number;
+    suspicious: number;
+    invalid: number;
+    included_in_executive: number;
+    excluded_in_executive: number;
   };
-  by_source: { source_table: string; total: number; valid: number; suspicious: number; invalid: number }[];
+  by_source: {
+    source_table: string;
+    total: number;
+    valid: number;
+    suspicious: number;
+    invalid: number;
+  }[];
   report_query_stats: SlowQueryRow[];
   pg_stat_statements_available: boolean;
 };
@@ -110,7 +125,11 @@ export type Alert = {
   metric: Record<string, unknown>;
   raised_at: string;
   dismissed: boolean;
-  dismissed_meta: { dismissed_at: string; dismissed_by: string | null; reason: string | null } | null;
+  dismissed_meta: {
+    dismissed_at: string;
+    dismissed_by: string | null;
+    reason: string | null;
+  } | null;
 };
 
 export type BusinessAlertsResponse = {
@@ -120,7 +139,10 @@ export type BusinessAlertsResponse = {
   alerts: Alert[];
 };
 
-export async function fetchBusinessAlerts(includeDismissed = false, thresholds: Record<string, number> = {}): Promise<BusinessAlertsResponse> {
+export async function fetchBusinessAlerts(
+  includeDismissed = false,
+  thresholds: Record<string, number> = {},
+): Promise<BusinessAlertsResponse> {
   const { data, error } = await supabase.rpc("report_business_alerts", {
     _include_dismissed: includeDismissed,
     _thresholds: thresholds as unknown as Record<string, never>,
@@ -130,7 +152,10 @@ export async function fetchBusinessAlerts(includeDismissed = false, thresholds: 
 }
 
 export async function dismissAlert(key: string, reason?: string): Promise<string> {
-  const { data, error } = await supabase.rpc("admin_alert_dismiss", { _key: key, _reason: reason ?? undefined });
+  const { data, error } = await supabase.rpc("admin_alert_dismiss", {
+    _key: key,
+    _reason: reason ?? undefined,
+  });
   if (error) throw error;
   return data as unknown as string;
 }
@@ -150,14 +175,21 @@ export type DismissHistoryRow = {
   active: boolean;
 };
 
-export async function fetchAlertHistory(limit = 200): Promise<{ meta: ReportMeta; rows: DismissHistoryRow[] }> {
+export async function fetchAlertHistory(
+  limit = 200,
+): Promise<{ meta: ReportMeta; rows: DismissHistoryRow[] }> {
   const { data, error } = await supabase.rpc("admin_alert_dismiss_history", { _limit: limit });
   if (error) throw error;
   return data as unknown as { meta: ReportMeta; rows: DismissHistoryRow[] };
 }
 
 // Generic export helpers (CSV with standard metadata header)
-export function buildCsv(headers: string[], rows: (string | number | null | undefined)[][], meta: ReportMeta, extras: Record<string, unknown> = {}): string {
+export function buildCsv(
+  headers: string[],
+  rows: (string | number | null | undefined)[][],
+  meta: ReportMeta,
+  extras: Record<string, unknown> = {},
+): string {
   const esc = (v: unknown) => {
     const s = v === null || v === undefined ? "" : String(v);
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
@@ -170,11 +202,9 @@ export function buildCsv(headers: string[], rows: (string | number | null | unde
     `# data_cutoff=${meta.data_cutoff}`,
     ...Object.entries(extras).map(([k, v]) => `# ${k}=${String(v)}`),
   ];
-  return [
-    ...metaLines,
-    headers.map(esc).join(","),
-    ...rows.map((r) => r.map(esc).join(",")),
-  ].join("\n");
+  return [...metaLines, headers.map(esc).join(","), ...rows.map((r) => r.map(esc).join(","))].join(
+    "\n",
+  );
 }
 
 export function downloadCsv(filename: string, csv: string) {
