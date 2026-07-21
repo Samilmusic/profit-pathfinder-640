@@ -211,25 +211,27 @@ function NewRemittancePage() {
         if (!settlementAmount || Number(settlementAmount) <= 0) throw new Error("Enter the settlement amount");
       }
 
-      // Optionally create linked buy first
+      // Auto-create a hidden Linked Buy from remittance data. The operator will
+      // finalise it later via "Receive Currency" on the remittance detail page.
       let linkedBuyIdFinal: string | null = linkedBuyId || null;
-      if (isThirdParty && !linkedBuyIdFinal && newBuy.boughtAmount && newBuy.supplierRate) {
-        const bAmt = Number(newBuy.boughtAmount);
-        const rate = Number(newBuy.supplierRate);
-        if (!bAmt || !rate) throw new Error("Linked buy amount and rate are required");
-        const paidAmt = bAmt * rate;
+      if (isThirdParty && !linkedBuyIdFinal) {
+        const bAmt = Number(fxPurchasedAmount) || Number(transferredAmount) || 0;
+        const rate = Number(fxPurchaseRate) || Number(refRate) || 0;
+        const paidAmt = Number(settlementAmount) || (bAmt * rate) || 0;
+        if (!bAmt) throw new Error("Cannot create linked buy — enter transfer amount");
+        if (!rate) throw new Error("Cannot create linked buy — enter reference or supplier rate");
         const { data: u2 } = await supabase.auth.getUser();
         const { data: newB, error: bErr } = await supabase.from("buy_transactions").insert({
           entry_date: entryDate,
-          bought_currency: newBuy.boughtCurrency,
+          bought_currency: transferCurrency,
           bought_amount: bAmt,
           buy_rate: rate,
           paid_currency: settlementCurrency || payCurrency,
           paid_amount: paidAmt,
           paid_from_account_id: null,
           received_into_account_id: null,
-          customer_id: newBuy.supplierId || thirdPartyCustomerId || null,
-          counterparty: thirdPartyName || null,
+          customer_id: fxSupplierId || thirdPartyCustomerId || null,
+          counterparty: fxSupplierName || thirdPartyName || null,
           settlement_source: "remittance_payment",
           created_by: u2.user?.id,
         } as any).select("id").single();
