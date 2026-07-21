@@ -204,8 +204,8 @@ export async function fetchProfitSeries(a: SeriesArgs): Promise<ProfitSeriesResp
   const { data, error } = await supabase.rpc("report_profit_series", {
     _quality_mode: a.quality_mode,
     _granularity: a.granularity,
-    _from: a.from ?? null,
-    _to: a.to ?? null,
+    _from: a.from ?? undefined,
+    _to: a.to ?? undefined,
   });
   if (error) throw error;
   return data as unknown as ProfitSeriesResponse;
@@ -215,8 +215,8 @@ export async function fetchProfitBreakdown(a: BreakdownArgs): Promise<ProfitBrea
   const { data, error } = await supabase.rpc("report_profit_breakdown", {
     _quality_mode: a.quality_mode,
     _dimension: a.dimension,
-    _from: a.from ?? null,
-    _to: a.to ?? null,
+    _from: a.from ?? undefined,
+    _to: a.to ?? undefined,
     _limit: a.limit ?? 25,
   });
   if (error) throw error;
@@ -226,8 +226,8 @@ export async function fetchProfitBreakdown(a: BreakdownArgs): Promise<ProfitBrea
 export async function fetchProfitSummary(a: SummaryArgs): Promise<ProfitSummaryResponse> {
   const { data, error } = await supabase.rpc("report_profit_summary", {
     _quality_mode: a.quality_mode,
-    _from: a.from ?? null,
-    _to: a.to ?? null,
+    _from: a.from ?? undefined,
+    _to: a.to ?? undefined,
     _limit: a.limit ?? 10,
   });
   if (error) throw error;
