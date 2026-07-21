@@ -77,18 +77,15 @@ function MigrationStatusPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("remittance_migration_audit")
-        .select("diff_category,status");
+        .select("diff_category");
       if (error) throw error;
       const rows = data ?? [];
-      const byStatus: Record<string, number> = {};
       const byCategory: Record<string, number> = {};
-      for (const r of rows as Array<{ diff_category: string | null; status: string | null }>) {
-        const s = r.status ?? "unknown";
-        byStatus[s] = (byStatus[s] ?? 0) + 1;
+      for (const r of rows as Array<{ diff_category: string | null }>) {
         const c = r.diff_category ?? "uncategorized";
         byCategory[c] = (byCategory[c] ?? 0) + 1;
       }
-      return { total: rows.length, byStatus, byCategory };
+      return { total: rows.length, byCategory };
     },
   });
 
@@ -119,9 +116,14 @@ function MigrationStatusPage() {
   const audit = auditQ.data;
   const totalAudit = audit?.total ?? 0;
   const migrated = totalAudit;
-  const approved = audit?.byStatus["approved"] ?? 0;
-  const blocked = audit?.byStatus["blocked"] ?? 0;
-  const errors = audit?.byStatus["error"] ?? 0;
+  const approved = audit?.byCategory["matched"] ?? 0;
+  const blocked =
+    (audit?.byCategory["over_allocated"] ?? 0) +
+    (audit?.byCategory["missing_buy"] ?? 0);
+  const batchErrors = (batchesQ.data ?? []).reduce(
+    (sum: number, b: any) => sum + (b.total_errors ?? 0),
+    0,
+  );
 
   return (
     <div className="space-y-6 p-4 md:p-6">
@@ -149,7 +151,7 @@ function MigrationStatusPage() {
         <Stat label="Migrated rows" value={migrated} />
         <Stat label="Approved" value={approved} />
         <Stat label="Blocked" value={blocked} />
-        <Stat label="Errors" value={errors} />
+        <Stat label="Batch errors" value={batchErrors} />
         <Stat
           label="Batches"
           value={batchesQ.data?.length ?? 0}
