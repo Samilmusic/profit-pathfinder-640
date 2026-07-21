@@ -1886,6 +1886,242 @@ export type Database = {
           },
         ]
       }
+      remittance_expenses: {
+        Row: {
+          amount: number
+          amount_aed: number
+          created_at: string
+          currency: string
+          id: string
+          label: string
+          notes: string | null
+          remittance_id: string
+        }
+        Insert: {
+          amount: number
+          amount_aed?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          label: string
+          notes?: string | null
+          remittance_id: string
+        }
+        Update: {
+          amount?: number
+          amount_aed?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          label?: string
+          notes?: string | null
+          remittance_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "remittance_expenses_remittance_id_fkey"
+            columns: ["remittance_id"]
+            isOneToOne: false
+            referencedRelation: "remittances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      remittances: {
+        Row: {
+          beneficiary_account_number: string | null
+          beneficiary_bank: string | null
+          beneficiary_card_number: string | null
+          beneficiary_country: string | null
+          beneficiary_iban: string | null
+          beneficiary_name: string | null
+          beneficiary_notes: string | null
+          commission_fixed_amount: number | null
+          commission_fixed_currency: string | null
+          commission_method: Database["public"]["Enums"]["remittance_commission_method"]
+          commission_percentage: number | null
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          customer_payment_amount: number
+          customer_payment_currency: string
+          customer_phone: string | null
+          customer_reference: string | null
+          doc_no: string | null
+          entry_date: string
+          gross_commission_aed: number
+          gross_commission_pay_ccy: number
+          id: string
+          linked_expenses_aed: number
+          net_commission_aed: number
+          notes: string | null
+          payment_received_account_id: string | null
+          payment_status: string | null
+          reference_rate: number
+          source_account_id: string | null
+          status: Database["public"]["Enums"]["remittance_status"]
+          transfer_currency: string
+          transfer_date: string | null
+          transfer_method: Database["public"]["Enums"]["remittance_transfer_method"]
+          transferred_amount: number
+          updated_at: string
+        }
+        Insert: {
+          beneficiary_account_number?: string | null
+          beneficiary_bank?: string | null
+          beneficiary_card_number?: string | null
+          beneficiary_country?: string | null
+          beneficiary_iban?: string | null
+          beneficiary_name?: string | null
+          beneficiary_notes?: string | null
+          commission_fixed_amount?: number | null
+          commission_fixed_currency?: string | null
+          commission_method?: Database["public"]["Enums"]["remittance_commission_method"]
+          commission_percentage?: number | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          customer_payment_amount?: number
+          customer_payment_currency: string
+          customer_phone?: string | null
+          customer_reference?: string | null
+          doc_no?: string | null
+          entry_date?: string
+          gross_commission_aed?: number
+          gross_commission_pay_ccy?: number
+          id?: string
+          linked_expenses_aed?: number
+          net_commission_aed?: number
+          notes?: string | null
+          payment_received_account_id?: string | null
+          payment_status?: string | null
+          reference_rate?: number
+          source_account_id?: string | null
+          status?: Database["public"]["Enums"]["remittance_status"]
+          transfer_currency: string
+          transfer_date?: string | null
+          transfer_method?: Database["public"]["Enums"]["remittance_transfer_method"]
+          transferred_amount: number
+          updated_at?: string
+        }
+        Update: {
+          beneficiary_account_number?: string | null
+          beneficiary_bank?: string | null
+          beneficiary_card_number?: string | null
+          beneficiary_country?: string | null
+          beneficiary_iban?: string | null
+          beneficiary_name?: string | null
+          beneficiary_notes?: string | null
+          commission_fixed_amount?: number | null
+          commission_fixed_currency?: string | null
+          commission_method?: Database["public"]["Enums"]["remittance_commission_method"]
+          commission_percentage?: number | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          customer_payment_amount?: number
+          customer_payment_currency?: string
+          customer_phone?: string | null
+          customer_reference?: string | null
+          doc_no?: string | null
+          entry_date?: string
+          gross_commission_aed?: number
+          gross_commission_pay_ccy?: number
+          id?: string
+          linked_expenses_aed?: number
+          net_commission_aed?: number
+          notes?: string | null
+          payment_received_account_id?: string | null
+          payment_status?: string | null
+          reference_rate?: number
+          source_account_id?: string | null
+          status?: Database["public"]["Enums"]["remittance_status"]
+          transfer_currency?: string
+          transfer_date?: string | null
+          transfer_method?: Database["public"]["Enums"]["remittance_transfer_method"]
+          transferred_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "remittances_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remittances_payment_received_account_id_fkey"
+            columns: ["payment_received_account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "remittances_payment_received_account_id_fkey"
+            columns: ["payment_received_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remittances_payment_received_account_id_fkey"
+            columns: ["payment_received_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "remittances_payment_received_account_id_fkey"
+            columns: ["payment_received_account_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "remittances_payment_received_account_id_fkey"
+            columns: ["payment_received_account_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "remittances_source_account_id_fkey"
+            columns: ["source_account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "remittances_source_account_id_fkey"
+            columns: ["source_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remittances_source_account_id_fkey"
+            columns: ["source_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "remittances_source_account_id_fkey"
+            columns: ["source_account_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "remittances_source_account_id_fkey"
+            columns: ["source_account_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
+            referencedColumns: ["account_id"]
+          },
+        ]
+      }
       sell_payments: {
         Row: {
           amount: number
@@ -3811,6 +4047,7 @@ export type Database = {
         | "payment_order"
         | "service_charge"
         | "sell_payment"
+        | "remittance"
       money_location:
         | "cash_box"
         | "aed_bank"
@@ -3855,6 +4092,22 @@ export type Database = {
         | "international"
         | "other"
       profit_status: "pending" | "received" | "waived" | "kept_in_wallet"
+      remittance_commission_method: "fixed" | "percentage" | "included" | "free"
+      remittance_status:
+        | "open"
+        | "waiting_customer_payment"
+        | "payment_received"
+        | "waiting_transfer"
+        | "transfer_completed"
+        | "waiting_transfer_proof"
+        | "ready_to_close"
+        | "closed"
+        | "cancelled"
+      remittance_transfer_method:
+        | "bank_transfer"
+        | "cash_delivery"
+        | "wallet_transfer"
+        | "other"
       sell_deal_status:
         | "open"
         | "waiting_payment"
@@ -4075,6 +4328,7 @@ export const Constants = {
         "payment_order",
         "service_charge",
         "sell_payment",
+        "remittance",
       ],
       money_location: [
         "cash_box",
@@ -4125,6 +4379,24 @@ export const Constants = {
         "other",
       ],
       profit_status: ["pending", "received", "waived", "kept_in_wallet"],
+      remittance_commission_method: ["fixed", "percentage", "included", "free"],
+      remittance_status: [
+        "open",
+        "waiting_customer_payment",
+        "payment_received",
+        "waiting_transfer",
+        "transfer_completed",
+        "waiting_transfer_proof",
+        "ready_to_close",
+        "closed",
+        "cancelled",
+      ],
+      remittance_transfer_method: [
+        "bank_transfer",
+        "cash_delivery",
+        "wallet_transfer",
+        "other",
+      ],
       sell_deal_status: [
         "open",
         "waiting_payment",
