@@ -70,6 +70,7 @@ const TYPE_TABS = [
   { key: "expense",     label: "Expense" },
   { key: "deposit",     label: "Deposit" },
   { key: "payment_order", label: "Payment Order" },
+  { key: "remittance", label: "Remittance" },
 ];
 
 const RECEIPT_TYPES = new Set(["payment_receipt","bank_transfer_screenshot","cash_delivery_receipt","whatsapp_confirmation"]);
@@ -83,7 +84,7 @@ function DealCenterPage() {
   const dealsQ = useQuery({
     queryKey: ["deal_center_all"],
     queryFn: async () => {
-      const [sells, buys, brought, transfers, expenses, deposits, pos] = await Promise.all([
+      const [sells, buys, brought, transfers, expenses, deposits, pos, rems] = await Promise.all([
         supabase.from("sell_transactions")
           .select("id,doc_no,entry_date,created_at,customer_name,sold_currency,sold_amount,received_currency,received_amount,sell_rate,deal_status,settlement_status,currency_delivered,cancel_reason")
           .is("deleted_at", null).order("entry_date", { ascending: false }).limit(500),
@@ -105,6 +106,9 @@ function DealCenterPage() {
         supabase.from("payment_orders")
           .select("id,entry_date,created_at,currency,amount,settlement_status,cancel_reason,customer_id")
           .is("deleted_at", null).order("entry_date", { ascending: false }).limit(500),
+        supabase.from("remittances")
+          .select("id,doc_no,entry_date,created_at,status,transfer_currency,transferred_amount,customer_payment_currency,customer_payment_amount,reference_rate,beneficiary_name,customers(name)")
+          .order("entry_date", { ascending: false }).limit(500),
       ]);
 
       // Load payment/doc sub-tables for open sells so we can classify status.
@@ -255,6 +259,26 @@ function DealCenterPage() {
         });
       }
 
+      for (const r of (rems.data ?? []) as any[]) {
+        const st = r.status;
+        const bucket = st === "closed" ? "closed"
+          : st === "cancelled" ? "cancelled"
+          : st === "ready_to_close" ? "ready_to_close"
+          : st === "waiting_customer_payment" ? "waiting_payment"
+          : (st === "waiting_transfer" || st === "waiting_transfer_proof") ? "waiting_delivery"
+          : "open";
+        out.push({
+          id: r.id, kind: "remittance" as any, code: dealCode("remittance" as any, r), date: r.entry_date,
+          customer: r.customers?.name || r.beneficiary_name,
+          currencyOut: r.transfer_currency, amountOut: Number(r.transferred_amount ?? 0),
+          currencyIn: r.customer_payment_currency, amountIn: Number(r.customer_payment_amount ?? 0),
+          rate: r.reference_rate ? Number(r.reference_rate) : null,
+          status: bucket,
+          statusLabel: String(st).replace(/_/g, " "),
+          missing: null, raw: r,
+        });
+      }
+
       out.sort((a, b) => (a.date < b.date ? 1 : -1));
       return out;
     },
@@ -317,6 +341,7 @@ function DealCenterPage() {
             <Button asChild size="sm" variant="outline"><Link to="/transfers"><ArrowLeftRight className="h-4 w-4 mr-1.5" /> Transfer</Link></Button>
             <Button asChild size="sm" variant="outline"><Link to="/deposits"><ArrowUpFromLine className="h-4 w-4 mr-1.5" /> Deposit</Link></Button>
             <Button asChild size="sm" variant="outline"><Link to="/payment-orders"><Send className="h-4 w-4 mr-1.5" /> Payment Order</Link></Button>
+            <Button asChild size="sm" variant="outline"><Link to="/remittances/new"><Send className="h-4 w-4 mr-1.5" /> Remittance</Link></Button>
           </>
         }
       />
