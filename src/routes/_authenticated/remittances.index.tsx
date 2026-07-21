@@ -96,11 +96,13 @@ function RemittanceListPage() {
                 <div className="font-mono text-xs">{r.doc_no || r.id.slice(0, 8)}</div>
                 <div className="text-muted-foreground">{r.entry_date}</div>
                 <div className="min-w-0">
-                  <div className="truncate font-medium">{r.customers?.name || "—"}</div>
-                  <div className="truncate text-xs text-muted-foreground">→ {r.beneficiary_name || "—"}</div>
+                  <div className="truncate text-base font-semibold leading-tight">{r.customers?.name || r.beneficiary_name || "Unnamed"}</div>
+                  <div className="truncate text-xs text-muted-foreground">
+                    {r.customers?.name && r.beneficiary_name ? <>→ {r.beneficiary_name}</> : r.customers?.name ? "" : "Beneficiary"}
+                  </div>
                 </div>
-                <div>{fmt(r.transferred_amount, r.transfer_currency)}</div>
-                <div>{fmt(r.customer_payment_amount, r.customer_payment_currency)}</div>
+                <div className="tabular-nums">{fmt(r.transferred_amount, r.transfer_currency)}</div>
+                <div className="tabular-nums">{fmt(r.customer_payment_amount, r.customer_payment_currency)}</div>
                 <div className="text-right font-semibold text-emerald-400">{fmt(r.net_commission_aed, "AED")}</div>
                 <div>
                   <Badge className={STATUS_COLOR[r.status] ?? ""} variant="secondary">
