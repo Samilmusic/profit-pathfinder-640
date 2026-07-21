@@ -379,18 +379,147 @@ function NewRemittancePage() {
                 <Label>Reference rate ({payCurrency}/{transferCurrency})</Label>
                 <NumberInput rate value={refRate} onChange={(e) => setRefRate((e.target as HTMLInputElement).value)} className="h-11" placeholder="e.g. 500,000" />
               </div>
-              <div className="space-y-1.5 md:col-span-4">
-                <Label>Received into account</Label>
-                <AccountSelect value={paymentAccountId} onChange={setPaymentAccountId} currency={payCurrency} placeholder="Account that received customer payment" />
-              </div>
+              {paymentDestination === "into_account" && (
+                <div className="space-y-1.5 md:col-span-4">
+                  <Label>Received into account *</Label>
+                  <AccountSelect value={paymentAccountId} onChange={setPaymentAccountId} currency={payCurrency} placeholder="Account that received customer payment" />
+                </div>
+              )}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Settlement Method */}
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="text-sm font-semibold">5. Settlement Method</div>
+              <Badge variant="outline" className="text-[10px]">where did the customer pay?</Badge>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+              {([
+                { v: "into_account", label: "Our account" },
+                { v: "cash_to_us", label: "Cash to us" },
+                { v: "to_third_party", label: "Third party" },
+                { v: "settles_linked_buy", label: "Settles a buy" },
+                { v: "pending", label: "Pending" },
+              ] as const).map((o) => (
+                <button key={o.v} type="button" onClick={() => setPaymentDestination(o.v)}
+                  className={`h-11 rounded-md border text-xs font-medium transition ${paymentDestination === o.v ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:bg-accent"}`}>
+                  {o.label}
+                </button>
+              ))}
+            </div>
+
+            {isThirdParty && (
+              <div className="space-y-3 rounded-md border border-dashed p-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label>Paid to (existing supplier/customer)</Label>
+                    <Select value={thirdPartyCustomerId} onValueChange={(v) => { setThirdPartyCustomerId(v); if (v) setThirdPartyName(""); }}>
+                      <SelectTrigger className="h-11"><SelectValue placeholder="— optional —" /></SelectTrigger>
+                      <SelectContent>
+                        {(customers.data ?? []).map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>…or name (free text)</Label>
+                    <Input value={thirdPartyName} onChange={(e) => { setThirdPartyName(e.target.value); if (e.target.value) setThirdPartyCustomerId(""); }} className="h-11" placeholder="Supplier / receiver" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="space-y-1.5">
+                    <Label>Settlement currency</Label>
+                    <Select value={settlementCurrency} onValueChange={setSettlementCurrency}>
+                      <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                      <SelectContent>{CURRENCIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5 col-span-1 md:col-span-2">
+                    <Label>Settlement amount *</Label>
+                    <NumberInput currency={settlementCurrency} value={settlementAmount} onChange={(e) => setSettlementAmount((e.target as HTMLInputElement).value)} className="h-11" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Date</Label>
+                    <Input type="date" value={settlementDate} onChange={(e) => setSettlementDate(e.target.value)} className="h-11" />
+                  </div>
+                </div>
+
+                {paymentDestination === "settles_linked_buy" && (
+                  <div className="space-y-2 rounded-md bg-muted/30 p-3">
+                    <div className="text-xs font-semibold text-muted-foreground">Link to a buy deal</div>
+                    <Select value={linkedBuyId} onValueChange={setLinkedBuyId}>
+                      <SelectTrigger className="h-11"><SelectValue placeholder="Pick an open buy…" /></SelectTrigger>
+                      <SelectContent>
+                        {(openBuysQ.data ?? []).map((b) => (
+                          <SelectItem key={b.id} value={b.id}>
+                            {b.doc_no || b.id.slice(0, 8)} — {fmt(b.bought_amount, b.bought_currency)} @ {b.buy_rate}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <div className="text-[11px] text-muted-foreground">Or leave empty and create a new buy inline:</div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Bought currency</Label>
+                        <Select value={newBuy.boughtCurrency} onValueChange={(v) => setNewBuy((s) => ({ ...s, boughtCurrency: v }))}>
+                          <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                          <SelectContent>{CURRENCIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Bought amount</Label>
+                        <NumberInput currency={newBuy.boughtCurrency} value={newBuy.boughtAmount} onChange={(e) => setNewBuy((s) => ({ ...s, boughtAmount: (e.target as HTMLInputElement).value }))} className="h-10" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Supplier rate</Label>
+                        <NumberInput rate value={newBuy.supplierRate} onChange={(e) => setNewBuy((s) => ({ ...s, supplierRate: (e.target as HTMLInputElement).value }))} className="h-10" />
+                      </div>
+                      <div className="space-y-1.5 flex items-end text-[11px] text-muted-foreground">
+                        {newBuy.boughtAmount && newBuy.supplierRate
+                          ? <>Paid ≈ {fmt(Number(newBuy.boughtAmount) * Number(newBuy.supplierRate), settlementCurrency || payCurrency)}</>
+                          : <span>Inventory created on delivery.</span>}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {settlementSummary.absDiff > 0.001 && (
+                  <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 space-y-2">
+                    <div className="text-xs font-semibold">
+                      {settlementSummary.diff > 0 ? "Excess" : "Shortfall"}: {fmt(settlementSummary.absDiff, settlementCurrency || payCurrency)}
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {([
+                        { v: "our_account", label: "Keep in our account" },
+                        { v: "another_supplier", label: "To another supplier" },
+                        { v: "customer_balance", label: "Customer balance" },
+                        { v: "commission", label: "Add to commission" },
+                        { v: "pending", label: "Pending" },
+                        { v: "none", label: "Ignore" },
+                      ] as const).map((o) => (
+                        <button key={o.v} type="button" onClick={() => setExcessAllocation(o.v)}
+                          className={`h-9 rounded-md border text-[11px] transition ${excessAllocation === o.v ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:bg-accent"}`}>
+                          {o.label}
+                        </button>
+                      ))}
+                    </div>
+                    {excessAllocation !== "none" && (
+                      <Input value={excessNote} onChange={(e) => setExcessNote(e.target.value)} className="h-9" placeholder="Optional note" />
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
         {/* Commission */}
         <Card>
           <CardContent className="p-4 space-y-3">
-            <div className="text-sm font-semibold">5. Commission Method</div>
+            <div className="text-sm font-semibold">6. Commission Method</div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               {(["fixed", "percentage", "included", "free"] as CommissionMethod[]).map((m) => (
                 <button key={m} type="button" onClick={() => setCommMethod(m)}
