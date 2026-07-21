@@ -19,8 +19,8 @@ import { z } from "zod";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 
 const searchSchema = z.object({
-  customer: fallback(z.string().optional(), undefined),
-  src: fallback(z.string().optional(), undefined),
+  customer: fallback(z.string(), "").default(""),
+  src: fallback(z.string(), "").default(""),
 });
 
 export const Route = createFileRoute("/_authenticated/quick-sell")({
