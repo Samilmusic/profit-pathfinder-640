@@ -4893,6 +4893,28 @@ export type Database = {
         }
         Relationships: []
       }
+      v_profit_events_ext: {
+        Row: {
+          actor_id: string | null
+          amount_aed: number | null
+          classification: string | null
+          commission_aed: number | null
+          currency: string | null
+          customer_id: string | null
+          destination_account_id: string | null
+          doc_no: string | null
+          event_at: string | null
+          event_date: string | null
+          gross_profit_aed: number | null
+          primary_lot_id: string | null
+          ref_id: string | null
+          severity: string | null
+          source: string | null
+          spread_aed: number | null
+          supplier_id: string | null
+        }
+        Relationships: []
+      }
       v_remittance_data_quality: {
         Row: {
           classification: string | null
@@ -5335,8 +5357,38 @@ export type Database = {
       remittance_v2_validate_close: { Args: { _id: string }; Returns: Json }
       report_data_quality_summary: { Args: never; Returns: Json }
       report_executive_kpis: { Args: { _quality_mode?: string }; Returns: Json }
-      report_meta: { Args: { _report_key: string }; Returns: Json }
+      report_meta:
+        | { Args: { _report_key: string }; Returns: Json }
+        | { Args: { _report_key: string; _version: string }; Returns: Json }
       report_operational_kpis: { Args: never; Returns: Json }
+      report_profit_breakdown: {
+        Args: {
+          _dimension?: string
+          _from?: string
+          _limit?: number
+          _quality_mode?: string
+          _to?: string
+        }
+        Returns: Json
+      }
+      report_profit_series: {
+        Args: {
+          _from?: string
+          _granularity?: string
+          _quality_mode?: string
+          _to?: string
+        }
+        Returns: Json
+      }
+      report_profit_summary: {
+        Args: {
+          _from?: string
+          _limit?: number
+          _quality_mode?: string
+          _to?: string
+        }
+        Returns: Json
+      }
       rpc_idempotency_gc: { Args: { _days?: number }; Returns: number }
       run_remittance_shadow_backfill: {
         Args: { _note?: string }
