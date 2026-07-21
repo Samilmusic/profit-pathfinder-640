@@ -53,6 +53,7 @@ const navGroups: NavGroup[] = [
     label: "Trading",
     items: [
       { to: "/deals", label: "Deal Center", icon: Briefcase },
+      { to: "/remittances", label: "Remittances", icon: Send },
       { to: "/pending-settlements", label: "Pending Settlements", icon: ClipboardList },
     ],
   },
