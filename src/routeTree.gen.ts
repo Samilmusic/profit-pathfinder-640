@@ -50,6 +50,7 @@ import { Route as AuthenticatedAccountsIndexRouteImport } from './routes/_authen
 import { Route as AuthenticatedTradesNewRouteImport } from './routes/_authenticated/trades.new'
 import { Route as AuthenticatedTradesIdRouteImport } from './routes/_authenticated/trades.$id'
 import { Route as AuthenticatedSellsIdRouteImport } from './routes/_authenticated/sells.$id'
+import { Route as AuthenticatedReportsExecutiveRouteImport } from './routes/_authenticated/reports.executive'
 import { Route as AuthenticatedRemittancesNewV2RouteImport } from './routes/_authenticated/remittances.new-v2'
 import { Route as AuthenticatedRemittancesNewRouteImport } from './routes/_authenticated/remittances.new'
 import { Route as AuthenticatedRemittancesIdRouteImport } from './routes/_authenticated/remittances.$id'
@@ -279,6 +280,12 @@ const AuthenticatedSellsIdRoute = AuthenticatedSellsIdRouteImport.update({
   path: '/sells/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedReportsExecutiveRoute =
+  AuthenticatedReportsExecutiveRouteImport.update({
+    id: '/reports/executive',
+    path: '/reports/executive',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedRemittancesNewV2Route =
   AuthenticatedRemittancesNewV2RouteImport.update({
     id: '/remittances/new-v2',
@@ -372,6 +379,7 @@ export interface FileRoutesByFullPath {
   '/remittances/$id': typeof AuthenticatedRemittancesIdRouteWithChildren
   '/remittances/new': typeof AuthenticatedRemittancesNewRoute
   '/remittances/new-v2': typeof AuthenticatedRemittancesNewV2Route
+  '/reports/executive': typeof AuthenticatedReportsExecutiveRoute
   '/sells/$id': typeof AuthenticatedSellsIdRoute
   '/trades/$id': typeof AuthenticatedTradesIdRoute
   '/trades/new': typeof AuthenticatedTradesNewRoute
@@ -419,6 +427,7 @@ export interface FileRoutesByTo {
   '/remittances/$id': typeof AuthenticatedRemittancesIdRouteWithChildren
   '/remittances/new': typeof AuthenticatedRemittancesNewRoute
   '/remittances/new-v2': typeof AuthenticatedRemittancesNewV2Route
+  '/reports/executive': typeof AuthenticatedReportsExecutiveRoute
   '/sells/$id': typeof AuthenticatedSellsIdRoute
   '/trades/$id': typeof AuthenticatedTradesIdRoute
   '/trades/new': typeof AuthenticatedTradesNewRoute
@@ -472,6 +481,7 @@ export interface FileRoutesById {
   '/_authenticated/remittances/$id': typeof AuthenticatedRemittancesIdRouteWithChildren
   '/_authenticated/remittances/new': typeof AuthenticatedRemittancesNewRoute
   '/_authenticated/remittances/new-v2': typeof AuthenticatedRemittancesNewV2Route
+  '/_authenticated/reports/executive': typeof AuthenticatedReportsExecutiveRoute
   '/_authenticated/sells/$id': typeof AuthenticatedSellsIdRoute
   '/_authenticated/trades/$id': typeof AuthenticatedTradesIdRoute
   '/_authenticated/trades/new': typeof AuthenticatedTradesNewRoute
@@ -525,6 +535,7 @@ export interface FileRouteTypes {
     | '/remittances/$id'
     | '/remittances/new'
     | '/remittances/new-v2'
+    | '/reports/executive'
     | '/sells/$id'
     | '/trades/$id'
     | '/trades/new'
@@ -572,6 +583,7 @@ export interface FileRouteTypes {
     | '/remittances/$id'
     | '/remittances/new'
     | '/remittances/new-v2'
+    | '/reports/executive'
     | '/sells/$id'
     | '/trades/$id'
     | '/trades/new'
@@ -624,6 +636,7 @@ export interface FileRouteTypes {
     | '/_authenticated/remittances/$id'
     | '/_authenticated/remittances/new'
     | '/_authenticated/remittances/new-v2'
+    | '/_authenticated/reports/executive'
     | '/_authenticated/sells/$id'
     | '/_authenticated/trades/$id'
     | '/_authenticated/trades/new'
@@ -934,6 +947,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSellsIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/reports/executive': {
+      id: '/_authenticated/reports/executive'
+      path: '/reports/executive'
+      fullPath: '/reports/executive'
+      preLoaderRoute: typeof AuthenticatedReportsExecutiveRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/remittances/new-v2': {
       id: '/_authenticated/remittances/new-v2'
       path: '/remittances/new-v2'
@@ -1108,6 +1128,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRemittancesIdRoute: typeof AuthenticatedRemittancesIdRouteWithChildren
   AuthenticatedRemittancesNewRoute: typeof AuthenticatedRemittancesNewRoute
   AuthenticatedRemittancesNewV2Route: typeof AuthenticatedRemittancesNewV2Route
+  AuthenticatedReportsExecutiveRoute: typeof AuthenticatedReportsExecutiveRoute
   AuthenticatedSellsIdRoute: typeof AuthenticatedSellsIdRoute
   AuthenticatedBroughtInIndexRoute: typeof AuthenticatedBroughtInIndexRoute
   AuthenticatedRemittancesIndexRoute: typeof AuthenticatedRemittancesIndexRoute
@@ -1147,6 +1168,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRemittancesIdRoute: AuthenticatedRemittancesIdRouteWithChildren,
   AuthenticatedRemittancesNewRoute: AuthenticatedRemittancesNewRoute,
   AuthenticatedRemittancesNewV2Route: AuthenticatedRemittancesNewV2Route,
+  AuthenticatedReportsExecutiveRoute: AuthenticatedReportsExecutiveRoute,
   AuthenticatedSellsIdRoute: AuthenticatedSellsIdRoute,
   AuthenticatedBroughtInIndexRoute: AuthenticatedBroughtInIndexRoute,
   AuthenticatedRemittancesIndexRoute: AuthenticatedRemittancesIndexRoute,
