@@ -169,13 +169,13 @@ function MigrationStatusPage() {
         <Stat label="Approved" value={approved} />
         <Stat label="Blocked" value={blocked} />
         <Stat label="Batch errors" value={batchErrors} />
-        <Stat label="Batches" value={batchesQ.data?.length ?? 0} hint="last 20 shown" />
+        <Stat label="Batches" value={batches.length} hint="last 20 shown" />
       </div>
 
       {/* Audit + batches unchanged */}
       <LegacyAuditAndBatches
-        auditLoading={auditQ.isLoading}
-        batchesLoading={batchesQ.isLoading}
+        auditLoading={auditLoading}
+        batchesLoading={batchesLoading}
         batches={batchesData}
         totalAudit={totalAudit}
         audit={audit}
@@ -327,7 +327,7 @@ function LegacyAuditAndBatches({
           <CardTitle className="text-base">Migration audit</CardTitle>
         </CardHeader>
         <CardContent>
-          {auditQ.isLoading ? (
+          {auditLoading ? (
             <div className="text-sm text-muted-foreground">Loading…</div>
           ) : totalAudit === 0 ? (
             <div className="text-sm text-muted-foreground">
@@ -356,9 +356,9 @@ function LegacyAuditAndBatches({
           <CardTitle className="text-base">Recent batches</CardTitle>
         </CardHeader>
         <CardContent className="overflow-x-auto p-0">
-          {batchesQ.isLoading ? (
+          {batchesLoading ? (
             <div className="p-4 text-sm text-muted-foreground">Loading…</div>
-          ) : (batchesQ.data?.length ?? 0) === 0 ? (
+          ) : (batches.length) === 0 ? (
             <div className="p-4 text-sm text-muted-foreground">No batches yet.</div>
           ) : (
             <Table>
@@ -374,7 +374,7 @@ function LegacyAuditAndBatches({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {batchesQ.data!.map((b: any) => (
+                {batches.map((b: LegacyBatchRow) => (
                   <TableRow key={b.id}>
                     <TableCell className="whitespace-nowrap text-xs">
                       {b.started_at ? new Date(b.started_at).toLocaleString() : "—"}
