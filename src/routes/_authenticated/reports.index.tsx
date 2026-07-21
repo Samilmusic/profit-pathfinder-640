@@ -42,7 +42,7 @@ const cards: Card[] = [
   { to: "/reports/data-quality",    label: "Data Quality",        desc: "Read-only classification of every financial row.",     icon: ShieldAlert, status: "ready" },
   { to: "/reports/profits",         label: "Profit Analytics",    desc: "Charts by day/week/month, breakdowns by dimension.",   icon: TrendingUp,  status: "ready" },
   { to: "/reports/remittances",     label: "Remittance Analytics",desc: "Lifecycle durations, completion rates, trends.",       icon: Send,        status: "coming" },
-  { to: "/reports/inventory",       label: "Inventory Dashboard", desc: "FIFO lots, remaining, age, turnover.",                 icon: Package,     status: "coming" },
+  { to: "/reports/inventory",       label: "Inventory Dashboard", desc: "FIFO lots, remaining, age, turnover, unrealized market P&L.", icon: Package,     status: "ready" },
   { to: "/reports/cash-position",   label: "Cash Position",       desc: "Balances by account/currency, net exposure.",          icon: Wallet,      status: "coming" },
   { to: "/reports/counterparties",  label: "Customers & Suppliers",desc: "Profiles, lifetime volume, profit, rankings.",         icon: Users,       status: "ready" },
   { to: "/reports/audit-explorer",  label: "Audit Explorer",      desc: "Searchable timeline of transitions and events.",       icon: History,     status: "coming" },
