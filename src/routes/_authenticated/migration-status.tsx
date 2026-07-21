@@ -95,9 +95,7 @@ function MigrationStatusPage() {
   });
 
   if (isAdmin === null) {
-    return (
-      <div className="p-6 text-sm text-muted-foreground">Checking permissions…</div>
-    );
+    return <div className="p-6 text-sm text-muted-foreground">Checking permissions…</div>;
   }
 
   if (!isAdmin) {
@@ -123,8 +121,7 @@ function MigrationStatusPage() {
   const migrated = totalAudit;
   const approved = audit?.byCategory["matched"] ?? 0;
   const blocked =
-    (audit?.byCategory["over_allocated"] ?? 0) +
-    (audit?.byCategory["missing_buy"] ?? 0);
+    (audit?.byCategory["over_allocated"] ?? 0) + (audit?.byCategory["missing_buy"] ?? 0);
   const batchErrors = (batchesQ.data ?? []).reduce(
     (sum: number, b: any) => sum + (b.total_errors ?? 0),
     0,
@@ -160,11 +157,7 @@ function MigrationStatusPage() {
         <Stat label="Approved" value={approved} />
         <Stat label="Blocked" value={blocked} />
         <Stat label="Batch errors" value={batchErrors} />
-        <Stat
-          label="Batches"
-          value={batchesQ.data?.length ?? 0}
-          hint="last 20 shown"
-        />
+        <Stat label="Batches" value={batchesQ.data?.length ?? 0} hint="last 20 shown" />
       </div>
 
       {/* Audit + batches unchanged */}
@@ -199,9 +192,7 @@ function ReconciliationPanel() {
   const failedCritical = (results ?? []).filter(
     (c) => !c.passed && c.severity === "critical",
   ).length;
-  const failedWarning = (results ?? []).filter(
-    (c) => !c.passed && c.severity === "warning",
-  ).length;
+  const failedWarning = (results ?? []).filter((c) => !c.passed && c.severity === "warning").length;
 
   return (
     <Card>
@@ -214,11 +205,7 @@ function ReconciliationPanel() {
                 Last run {lastRunAt.toLocaleString()}
               </span>
             ) : null}
-            <Button
-              size="sm"
-              onClick={() => runMutation.mutate()}
-              disabled={runMutation.isPending}
-            >
+            <Button size="sm" onClick={() => runMutation.mutate()} disabled={runMutation.isPending}>
               {runMutation.isPending ? "Running…" : "Run reconciliation"}
             </Button>
           </div>
@@ -227,8 +214,8 @@ function ReconciliationPanel() {
       <CardContent>
         {results === null ? (
           <p className="text-sm text-muted-foreground">
-            Reconciliation has not been run in this session. Nightly automation is
-            optional — you can run the full suite on demand at any time.
+            Reconciliation has not been run in this session. Nightly automation is optional — you
+            can run the full suite on demand at any time.
           </p>
         ) : (
           <div className="space-y-3">
@@ -256,12 +243,8 @@ function ReconciliationPanel() {
                 <TableBody>
                   {results.map((c) => (
                     <TableRow key={c.check_id}>
-                      <TableCell className="tabular-nums text-xs">
-                        {c.check_id}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">
-                        {c.check_name}
-                      </TableCell>
+                      <TableCell className="tabular-nums text-xs">{c.check_id}</TableCell>
+                      <TableCell className="font-mono text-xs">{c.check_name}</TableCell>
                       <TableCell className="text-xs uppercase text-muted-foreground">
                         {c.severity}
                       </TableCell>
@@ -278,9 +261,7 @@ function ReconciliationPanel() {
                           {c.passed ? "PASS" : "FAIL"}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right tabular-nums text-xs">
-                        {c.delta}
-                      </TableCell>
+                      <TableCell className="text-right tabular-nums text-xs">{c.delta}</TableCell>
                       <TableCell className="max-w-[36ch] truncate text-xs text-muted-foreground">
                         <code>{JSON.stringify(c.details)}</code>
                       </TableCell>
@@ -292,8 +273,8 @@ function ReconciliationPanel() {
             <p className="text-xs text-muted-foreground">
               This suite is also executable directly as
               <code className="mx-1">select * from public.remittance_v2_reconcile();</code>
-              (admin session required). Nightly scheduling via pg_cron is optional
-              and not required for the system to operate.
+              (admin session required). Nightly scheduling via pg_cron is optional and not required
+              for the system to operate.
             </p>
           </div>
         )}
@@ -336,9 +317,8 @@ function LegacyAuditAndBatches({
                 ))}
               </div>
               <p className="text-xs text-muted-foreground">
-                Legacy adoption is intentionally not exposed here. It is a
-                separate administrative migration project, run after production
-                stabilization.
+                Legacy adoption is intentionally not exposed here. It is a separate administrative
+                migration project, run after production stabilization.
               </p>
             </div>
           )}
@@ -377,9 +357,7 @@ function LegacyAuditAndBatches({
                       {b.finished_at ? new Date(b.finished_at).toLocaleString() : "—"}
                     </TableCell>
                     <TableCell className="text-right">{b.total_scanned ?? 0}</TableCell>
-                    <TableCell className="text-right">
-                      {b.total_shadow_inserted ?? 0}
-                    </TableCell>
+                    <TableCell className="text-right">{b.total_shadow_inserted ?? 0}</TableCell>
                     <TableCell className="text-right">{b.total_skipped ?? 0}</TableCell>
                     <TableCell className="text-right">{b.total_errors ?? 0}</TableCell>
                     <TableCell className="max-w-[24ch] truncate text-xs text-muted-foreground">
@@ -416,22 +394,12 @@ function FlagRow({
           <div className="text-xs text-muted-foreground">Not set</div>
         )}
       </div>
-      <Badge variant={enabled ? "default" : "secondary"}>
-        {enabled ? "ON" : "OFF"}
-      </Badge>
+      <Badge variant={enabled ? "default" : "secondary"}>{enabled ? "ON" : "OFF"}</Badge>
     </div>
   );
 }
 
-function Stat({
-  label,
-  value,
-  hint,
-}: {
-  label: string;
-  value: number;
-  hint?: string;
-}) {
+function Stat({ label, value, hint }: { label: string; value: number; hint?: string }) {
   return (
     <Card>
       <CardContent className="p-4">
