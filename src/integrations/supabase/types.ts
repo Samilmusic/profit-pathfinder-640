@@ -1973,6 +1973,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           currency: string
+          entry_kind: Database["public"]["Enums"]["entry_kind"]
           frozen_at: string | null
           frozen_by: string | null
           frozen_commission_aed: number | null
@@ -1982,7 +1983,9 @@ export type Database = {
           frozen_spread_profit_aed: number | null
           frozen_total_profit_aed: number | null
           id: string
+          lot_id: string | null
           notes: string | null
+          parent_allocation_id: string | null
           posting_class: Database["public"]["Enums"]["posting_class"]
           remittance_id: string
           reversed_by_id: string | null
@@ -1996,6 +1999,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           currency: string
+          entry_kind?: Database["public"]["Enums"]["entry_kind"]
           frozen_at?: string | null
           frozen_by?: string | null
           frozen_commission_aed?: number | null
@@ -2005,7 +2009,9 @@ export type Database = {
           frozen_spread_profit_aed?: number | null
           frozen_total_profit_aed?: number | null
           id?: string
+          lot_id?: string | null
           notes?: string | null
+          parent_allocation_id?: string | null
           posting_class?: Database["public"]["Enums"]["posting_class"]
           remittance_id: string
           reversed_by_id?: string | null
@@ -2019,6 +2025,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           currency?: string
+          entry_kind?: Database["public"]["Enums"]["entry_kind"]
           frozen_at?: string | null
           frozen_by?: string | null
           frozen_commission_aed?: number | null
@@ -2028,7 +2035,9 @@ export type Database = {
           frozen_spread_profit_aed?: number | null
           frozen_total_profit_aed?: number | null
           id?: string
+          lot_id?: string | null
           notes?: string | null
+          parent_allocation_id?: string | null
           posting_class?: Database["public"]["Enums"]["posting_class"]
           remittance_id?: string
           reversed_by_id?: string | null
@@ -2050,6 +2059,41 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_remittance_settlement_path"
             referencedColumns: ["linked_buy_id"]
+          },
+          {
+            foreignKeyName: "remittance_allocations_lot_id_fkey"
+            columns: ["lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_lots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remittance_allocations_lot_id_fkey"
+            columns: ["lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_lots_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remittance_allocations_lot_id_fkey"
+            columns: ["lot_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_lot"
+            referencedColumns: ["lot_id"]
+          },
+          {
+            foreignKeyName: "remittance_allocations_lot_id_fkey"
+            columns: ["lot_id"]
+            isOneToOne: false
+            referencedRelation: "v_lot_detailed"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remittance_allocations_parent_allocation_id_fkey"
+            columns: ["parent_allocation_id"]
+            isOneToOne: false
+            referencedRelation: "remittance_allocations"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "remittance_allocations_remittance_id_fkey"
@@ -2341,6 +2385,113 @@ export type Database = {
           },
         ]
       }
+      remittance_settlement_events: {
+        Row: {
+          actor: string | null
+          created_at: string
+          event_type: string
+          id: string
+          payload: Json
+          remittance_id: string
+        }
+        Insert: {
+          actor?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          payload?: Json
+          remittance_id: string
+        }
+        Update: {
+          actor?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          payload?: Json
+          remittance_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "remittance_settlement_events_remittance_id_fkey"
+            columns: ["remittance_id"]
+            isOneToOne: false
+            referencedRelation: "remittances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remittance_settlement_events_remittance_id_fkey"
+            columns: ["remittance_id"]
+            isOneToOne: false
+            referencedRelation: "v_remittance_migration_diff"
+            referencedColumns: ["remittance_id"]
+          },
+          {
+            foreignKeyName: "remittance_settlement_events_remittance_id_fkey"
+            columns: ["remittance_id"]
+            isOneToOne: false
+            referencedRelation: "v_remittance_settlement_path"
+            referencedColumns: ["remittance_id"]
+          },
+        ]
+      }
+      remittance_workflow_transitions: {
+        Row: {
+          actor: string | null
+          created_at: string
+          from_state:
+            | Database["public"]["Enums"]["remittance_workflow_state"]
+            | null
+          id: string
+          reason: string | null
+          remittance_id: string
+          to_state: Database["public"]["Enums"]["remittance_workflow_state"]
+        }
+        Insert: {
+          actor?: string | null
+          created_at?: string
+          from_state?:
+            | Database["public"]["Enums"]["remittance_workflow_state"]
+            | null
+          id?: string
+          reason?: string | null
+          remittance_id: string
+          to_state: Database["public"]["Enums"]["remittance_workflow_state"]
+        }
+        Update: {
+          actor?: string | null
+          created_at?: string
+          from_state?:
+            | Database["public"]["Enums"]["remittance_workflow_state"]
+            | null
+          id?: string
+          reason?: string | null
+          remittance_id?: string
+          to_state?: Database["public"]["Enums"]["remittance_workflow_state"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "remittance_workflow_transitions_remittance_id_fkey"
+            columns: ["remittance_id"]
+            isOneToOne: false
+            referencedRelation: "remittances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remittance_workflow_transitions_remittance_id_fkey"
+            columns: ["remittance_id"]
+            isOneToOne: false
+            referencedRelation: "v_remittance_migration_diff"
+            referencedColumns: ["remittance_id"]
+          },
+          {
+            foreignKeyName: "remittance_workflow_transitions_remittance_id_fkey"
+            columns: ["remittance_id"]
+            isOneToOne: false
+            referencedRelation: "v_remittance_settlement_path"
+            referencedColumns: ["remittance_id"]
+          },
+        ]
+      }
       remittances: {
         Row: {
           beneficiary_account_number: string | null
@@ -2398,6 +2549,9 @@ export type Database = {
           transfer_method: Database["public"]["Enums"]["remittance_transfer_method"]
           transferred_amount: number
           updated_at: string
+          workflow_state:
+            | Database["public"]["Enums"]["remittance_workflow_state"]
+            | null
           workflow_version: Database["public"]["Enums"]["workflow_version"]
         }
         Insert: {
@@ -2456,6 +2610,9 @@ export type Database = {
           transfer_method?: Database["public"]["Enums"]["remittance_transfer_method"]
           transferred_amount: number
           updated_at?: string
+          workflow_state?:
+            | Database["public"]["Enums"]["remittance_workflow_state"]
+            | null
           workflow_version?: Database["public"]["Enums"]["workflow_version"]
         }
         Update: {
@@ -2514,6 +2671,9 @@ export type Database = {
           transfer_method?: Database["public"]["Enums"]["remittance_transfer_method"]
           transferred_amount?: number
           updated_at?: string
+          workflow_state?:
+            | Database["public"]["Enums"]["remittance_workflow_state"]
+            | null
           workflow_version?: Database["public"]["Enums"]["workflow_version"]
         }
         Relationships: [
@@ -4982,6 +5142,14 @@ export type Database = {
         | "cash_delivery"
         | "wallet_transfer"
         | "other"
+      remittance_workflow_state:
+        | "draft"
+        | "funds_received"
+        | "settlement_pending"
+        | "allocating"
+        | "ready_to_close"
+        | "closed"
+        | "cancelled"
       sell_deal_status:
         | "open"
         | "waiting_payment"
@@ -5313,6 +5481,15 @@ export const Constants = {
         "cash_delivery",
         "wallet_transfer",
         "other",
+      ],
+      remittance_workflow_state: [
+        "draft",
+        "funds_received",
+        "settlement_pending",
+        "allocating",
+        "ready_to_close",
+        "closed",
+        "cancelled",
       ],
       sell_deal_status: [
         "open",
