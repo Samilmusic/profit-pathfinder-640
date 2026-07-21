@@ -468,7 +468,7 @@ export type Database = {
           notes: string | null
           paid_amount: number
           paid_currency: string
-          paid_from_account_id: string
+          paid_from_account_id: string | null
           rate_difference: number | null
           rate_difference_percent: number | null
           received_into_account_id: string
@@ -514,7 +514,7 @@ export type Database = {
           notes?: string | null
           paid_amount: number
           paid_currency: string
-          paid_from_account_id: string
+          paid_from_account_id?: string | null
           rate_difference?: number | null
           rate_difference_percent?: number | null
           received_into_account_id: string
@@ -560,7 +560,7 @@ export type Database = {
           notes?: string | null
           paid_amount?: number
           paid_currency?: string
-          paid_from_account_id?: string
+          paid_from_account_id?: string | null
           rate_difference?: number | null
           rate_difference_percent?: number | null
           received_into_account_id?: string

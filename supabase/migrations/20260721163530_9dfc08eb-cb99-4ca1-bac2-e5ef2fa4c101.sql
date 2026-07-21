@@ -1,0 +1,1 @@
+ALTER TABLE public.buy_transactions ALTER COLUMN paid_from_account_id DROP NOT NULL;
