@@ -24,6 +24,7 @@ import { Route as AuthenticatedQuickSellRouteImport } from './routes/_authentica
 import { Route as AuthenticatedProfitsRouteImport } from './routes/_authenticated/profits'
 import { Route as AuthenticatedPendingSettlementsRouteImport } from './routes/_authenticated/pending-settlements'
 import { Route as AuthenticatedPaymentOrdersRouteImport } from './routes/_authenticated/payment-orders'
+import { Route as AuthenticatedMigrationStatusRouteImport } from './routes/_authenticated/migration-status'
 import { Route as AuthenticatedMarketIntelligenceRouteImport } from './routes/_authenticated/market-intelligence'
 import { Route as AuthenticatedInventoryRouteImport } from './routes/_authenticated/inventory'
 import { Route as AuthenticatedHeldByPersonRouteImport } from './routes/_authenticated/held-by-person'
@@ -130,6 +131,12 @@ const AuthenticatedPaymentOrdersRoute =
   AuthenticatedPaymentOrdersRouteImport.update({
     id: '/payment-orders',
     path: '/payment-orders',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedMigrationStatusRoute =
+  AuthenticatedMigrationStatusRouteImport.update({
+    id: '/migration-status',
+    path: '/migration-status',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedMarketIntelligenceRoute =
@@ -324,6 +331,7 @@ export interface FileRoutesByFullPath {
   '/held-by-person': typeof AuthenticatedHeldByPersonRoute
   '/inventory': typeof AuthenticatedInventoryRoute
   '/market-intelligence': typeof AuthenticatedMarketIntelligenceRoute
+  '/migration-status': typeof AuthenticatedMigrationStatusRoute
   '/payment-orders': typeof AuthenticatedPaymentOrdersRoute
   '/pending-settlements': typeof AuthenticatedPendingSettlementsRoute
   '/profits': typeof AuthenticatedProfitsRoute
@@ -368,6 +376,7 @@ export interface FileRoutesByTo {
   '/held-by-person': typeof AuthenticatedHeldByPersonRoute
   '/inventory': typeof AuthenticatedInventoryRoute
   '/market-intelligence': typeof AuthenticatedMarketIntelligenceRoute
+  '/migration-status': typeof AuthenticatedMigrationStatusRoute
   '/payment-orders': typeof AuthenticatedPaymentOrdersRoute
   '/pending-settlements': typeof AuthenticatedPendingSettlementsRoute
   '/profits': typeof AuthenticatedProfitsRoute
@@ -416,6 +425,7 @@ export interface FileRoutesById {
   '/_authenticated/held-by-person': typeof AuthenticatedHeldByPersonRoute
   '/_authenticated/inventory': typeof AuthenticatedInventoryRoute
   '/_authenticated/market-intelligence': typeof AuthenticatedMarketIntelligenceRoute
+  '/_authenticated/migration-status': typeof AuthenticatedMigrationStatusRoute
   '/_authenticated/payment-orders': typeof AuthenticatedPaymentOrdersRoute
   '/_authenticated/pending-settlements': typeof AuthenticatedPendingSettlementsRoute
   '/_authenticated/profits': typeof AuthenticatedProfitsRoute
@@ -465,6 +475,7 @@ export interface FileRouteTypes {
     | '/held-by-person'
     | '/inventory'
     | '/market-intelligence'
+    | '/migration-status'
     | '/payment-orders'
     | '/pending-settlements'
     | '/profits'
@@ -509,6 +520,7 @@ export interface FileRouteTypes {
     | '/held-by-person'
     | '/inventory'
     | '/market-intelligence'
+    | '/migration-status'
     | '/payment-orders'
     | '/pending-settlements'
     | '/profits'
@@ -556,6 +568,7 @@ export interface FileRouteTypes {
     | '/_authenticated/held-by-person'
     | '/_authenticated/inventory'
     | '/_authenticated/market-intelligence'
+    | '/_authenticated/migration-status'
     | '/_authenticated/payment-orders'
     | '/_authenticated/pending-settlements'
     | '/_authenticated/profits'
@@ -698,6 +711,13 @@ declare module '@tanstack/react-router' {
       path: '/payment-orders'
       fullPath: '/payment-orders'
       preLoaderRoute: typeof AuthenticatedPaymentOrdersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/migration-status': {
+      id: '/_authenticated/migration-status'
+      path: '/migration-status'
+      fullPath: '/migration-status'
+      preLoaderRoute: typeof AuthenticatedMigrationStatusRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/market-intelligence': {
@@ -997,6 +1017,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedHeldByPersonRoute: typeof AuthenticatedHeldByPersonRoute
   AuthenticatedInventoryRoute: typeof AuthenticatedInventoryRoute
   AuthenticatedMarketIntelligenceRoute: typeof AuthenticatedMarketIntelligenceRoute
+  AuthenticatedMigrationStatusRoute: typeof AuthenticatedMigrationStatusRoute
   AuthenticatedPaymentOrdersRoute: typeof AuthenticatedPaymentOrdersRoute
   AuthenticatedPendingSettlementsRoute: typeof AuthenticatedPendingSettlementsRoute
   AuthenticatedProfitsRoute: typeof AuthenticatedProfitsRoute
@@ -1033,6 +1054,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedHeldByPersonRoute: AuthenticatedHeldByPersonRoute,
   AuthenticatedInventoryRoute: AuthenticatedInventoryRoute,
   AuthenticatedMarketIntelligenceRoute: AuthenticatedMarketIntelligenceRoute,
+  AuthenticatedMigrationStatusRoute: AuthenticatedMigrationStatusRoute,
   AuthenticatedPaymentOrdersRoute: AuthenticatedPaymentOrdersRoute,
   AuthenticatedPendingSettlementsRoute: AuthenticatedPendingSettlementsRoute,
   AuthenticatedProfitsRoute: AuthenticatedProfitsRoute,
