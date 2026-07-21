@@ -16,7 +16,7 @@ export async function remittanceV2Create(
   clientRequestId: string,
 ): Promise<string> {
   const { data, error } = await supabase.rpc("remittance_v2_create", {
-    _payload: input as unknown as Record<string, unknown>,
+    _payload: input as unknown as never,
     _client_request_id: clientRequestId,
   });
   if (error) throw error;
