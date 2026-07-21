@@ -5,9 +5,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/number-input";
+import { AccountSelect } from "@/components/account-select";
+import { DocumentsPanel } from "@/components/documents-panel";
 import { fmt, fmtProfit } from "@/lib/exchange";
+import { MARKET_CURRENCIES } from "@/lib/market-currencies";
 import { ArrowLeft, Trash2, CheckCircle2, Circle, Truck } from "lucide-react";
 import { toast } from "sonner";
+import { useState } from "react";
 
 export const Route = createFileRoute("/_authenticated/remittances/$id")({
   component: RemittanceDetailPage,
@@ -23,6 +31,7 @@ function RemittanceDetailPage() {
   const { id } = Route.useParams();
   const nav = useNavigate();
   const qc = useQueryClient();
+  const [receiveOpen, setReceiveOpen] = useState(false);
 
   const q = useQuery({
     queryKey: ["remittance", id],
@@ -57,14 +66,31 @@ function RemittanceDetailPage() {
   });
 
   const recordDelivery = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (payload: {
+      account_id: string;
+      currency: string;
+      amount: number;
+      delivered_at: string;
+      note: string;
+    }) => {
       const buyId = (q.data as any)?.linked_buy?.id;
       if (!buyId) throw new Error("No linked buy");
-      const note = window.prompt("Delivery note (optional):") || "";
-      const { error } = await supabase.rpc("record_supplier_delivery" as any, { _buy_id: buyId, _note: note });
+      const { error } = await supabase.rpc("receive_linked_buy" as any, {
+        _buy_id: buyId,
+        _received_into_account_id: payload.account_id,
+        _bought_amount: payload.amount,
+        _bought_currency: payload.currency,
+        _delivered_at: new Date(payload.delivered_at).toISOString(),
+        _note: payload.note || null,
+      });
       if (error) throw error;
+      return buyId;
     },
-    onSuccess: () => { qc.invalidateQueries(); toast.success("Supplier delivery recorded — inventory posted."); },
+    onSuccess: () => {
+      qc.invalidateQueries();
+      toast.success("Currency received — inventory lot posted & linked buy closed.");
+      setReceiveOpen(false);
+    },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -180,8 +206,8 @@ function RemittanceDetailPage() {
                   <Cell label="Delivered at" value={r.linked_buy.supplier_delivered_at?.slice(0, 10) || "—"} />
                   <div className="flex items-end">
                     {!r.linked_buy.supplier_delivered && (
-                      <Button size="sm" onClick={() => recordDelivery.mutate()} disabled={recordDelivery.isPending} className="h-9">
-                        <Truck className="h-3.5 w-3.5 mr-1" /> Record supplier delivery
+                      <Button size="sm" onClick={() => setReceiveOpen(true)} className="h-9">
+                        <Truck className="h-3.5 w-3.5 mr-1" /> Receive Currency
                       </Button>
                     )}
                   </div>
@@ -230,6 +256,14 @@ function RemittanceDetailPage() {
           <div className="font-semibold mb-1">Notes</div>{r.notes}
         </CardContent></Card>
       )}
+
+      <ReceiveCurrencyDialog
+        open={receiveOpen}
+        onOpenChange={setReceiveOpen}
+        remittance={r as any}
+        onSubmit={(p) => recordDelivery.mutate(p)}
+        submitting={recordDelivery.isPending}
+      />
     </div>
   );
 }
@@ -248,5 +282,92 @@ function Row({ k, v }: { k: string; v: any }) {
       <span className="text-muted-foreground">{k}</span>
       <span className="font-medium text-right">{v || "—"}</span>
     </div>
+  );
+}
+
+function ReceiveCurrencyDialog({
+  open, onOpenChange, remittance, onSubmit, submitting,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  remittance: any;
+  onSubmit: (p: { account_id: string; currency: string; amount: number; delivered_at: string; note: string }) => void;
+  submitting: boolean;
+}) {
+  const buy = remittance?.linked_buy;
+  const [currency, setCurrency] = useState<string>(buy?.bought_currency || remittance?.transfer_currency || "AED");
+  const [amount, setAmount] = useState<string>(String(buy?.bought_amount ?? remittance?.transferred_amount ?? ""));
+  const [accountId, setAccountId] = useState<string>("");
+  const [deliveredAt, setDeliveredAt] = useState<string>(new Date().toISOString().slice(0, 10));
+  const [note, setNote] = useState("");
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2"><Truck className="h-4 w-4" /> Receive Currency</DialogTitle>
+        </DialogHeader>
+
+        <div className="text-xs text-muted-foreground rounded-md border bg-muted/30 p-3 space-y-1">
+          <div>Supplier, buy rate, and settlement are already stored on the linked buy — you only enter what actually arrived.</div>
+          {buy && (
+            <div className="font-mono">
+              Buy {buy.doc_no || buy.id?.slice(0, 8)} · expected {fmt(buy.bought_amount, buy.bought_currency)} @ {buy.buy_rate}
+            </div>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 pt-2">
+          <div className="space-y-1.5">
+            <Label>Currency</Label>
+            <Select value={currency} onValueChange={setCurrency}>
+              <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {MARKET_CURRENCIES.map((c) => <SelectItem key={c.code} value={c.code}>{c.code}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Amount received</Label>
+            <NumberInput currency={currency} value={amount} onChange={(e) => setAmount((e.target as HTMLInputElement).value)} className="h-11" />
+          </div>
+          <div className="space-y-1.5 col-span-2">
+            <Label>Received into account</Label>
+            <AccountSelect value={accountId} onChange={setAccountId} currency={currency} placeholder="Pick the account that holds the delivered currency" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Delivery date</Label>
+            <Input type="date" value={deliveredAt} onChange={(e) => setDeliveredAt(e.target.value)} className="h-11" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Note (optional)</Label>
+            <Input value={note} onChange={(e) => setNote(e.target.value)} className="h-11" placeholder="e.g. delivered by courier" />
+          </div>
+        </div>
+
+        {buy?.id && (
+          <div className="pt-2">
+            <Label className="text-xs text-muted-foreground">Receipt / proof (optional)</Label>
+            <DocumentsPanel refType="buy" refId={buy.id} docType="currency_handover_proof" />
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button
+            disabled={submitting || !accountId || !amount || Number(amount) <= 0}
+            onClick={() => onSubmit({
+              account_id: accountId,
+              currency,
+              amount: Number(amount) || 0,
+              delivered_at: deliveredAt,
+              note,
+            })}
+          >
+            {submitting ? "Recording…" : "Confirm & Post Inventory"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
