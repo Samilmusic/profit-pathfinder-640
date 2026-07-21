@@ -502,7 +502,7 @@ function QuickActionsBar(props: {
 function VerificationMethods({
   docsRef, onAdd,
 }: {
-  docsRef: React.RefObject<DocumentsPanelHandle>;
+  docsRef: React.RefObject<DocumentsPanelHandle | null>;
   onAdd: (v: Omit<Verification, "at" | "by">) => Promise<void>;
 }) {
   const [active, setActive] = useState<Verification["method"] | "upload" | "camera" | null>(null);
