@@ -5,9 +5,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/number-input";
+import { AccountSelect } from "@/components/account-select";
+import { DocumentsPanel } from "@/components/documents-panel";
 import { fmt, fmtProfit } from "@/lib/exchange";
+import { CURRENCIES } from "@/lib/market-currencies";
 import { ArrowLeft, Trash2, CheckCircle2, Circle, Truck } from "lucide-react";
 import { toast } from "sonner";
+import { useState } from "react";
 
 export const Route = createFileRoute("/_authenticated/remittances/$id")({
   component: RemittanceDetailPage,
@@ -57,14 +65,31 @@ function RemittanceDetailPage() {
   });
 
   const recordDelivery = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (payload: {
+      account_id: string;
+      currency: string;
+      amount: number;
+      delivered_at: string;
+      note: string;
+    }) => {
       const buyId = (q.data as any)?.linked_buy?.id;
       if (!buyId) throw new Error("No linked buy");
-      const note = window.prompt("Delivery note (optional):") || "";
-      const { error } = await supabase.rpc("record_supplier_delivery" as any, { _buy_id: buyId, _note: note });
+      const { error } = await supabase.rpc("receive_linked_buy" as any, {
+        _buy_id: buyId,
+        _received_into_account_id: payload.account_id,
+        _bought_amount: payload.amount,
+        _bought_currency: payload.currency,
+        _delivered_at: new Date(payload.delivered_at).toISOString(),
+        _note: payload.note || null,
+      });
       if (error) throw error;
+      return buyId;
     },
-    onSuccess: () => { qc.invalidateQueries(); toast.success("Supplier delivery recorded — inventory posted."); },
+    onSuccess: () => {
+      qc.invalidateQueries();
+      toast.success("Currency received — inventory lot posted & linked buy closed.");
+      setReceiveOpen(false);
+    },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -180,8 +205,8 @@ function RemittanceDetailPage() {
                   <Cell label="Delivered at" value={r.linked_buy.supplier_delivered_at?.slice(0, 10) || "—"} />
                   <div className="flex items-end">
                     {!r.linked_buy.supplier_delivered && (
-                      <Button size="sm" onClick={() => recordDelivery.mutate()} disabled={recordDelivery.isPending} className="h-9">
-                        <Truck className="h-3.5 w-3.5 mr-1" /> Record supplier delivery
+                      <Button size="sm" onClick={() => setReceiveOpen(true)} className="h-9">
+                        <Truck className="h-3.5 w-3.5 mr-1" /> Receive Currency
                       </Button>
                     )}
                   </div>
