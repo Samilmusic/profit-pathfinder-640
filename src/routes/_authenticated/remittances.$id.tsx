@@ -101,13 +101,29 @@ function RemittanceDetailPage() {
           <Cell label="Actual Transfer" value={fmt(r.transferred_amount, r.transfer_currency)} />
           <Cell label="Customer Paid" value={fmt(r.customer_payment_amount, r.customer_payment_currency)} />
           <Cell label={`Base Value (${r.customer_payment_currency})`} value={fmt(Number(r.transferred_amount) * Number(r.reference_rate), r.customer_payment_currency)} />
-          <Cell label={`Commission (${r.customer_payment_currency})`} value={fmtProfit(r.gross_commission_pay_ccy, r.customer_payment_currency)} className="text-emerald-400 font-semibold" />
           <Cell label="Reference Rate" value={r.reference_rate ? `${Number(r.reference_rate).toLocaleString()} ${r.customer_payment_currency}/${r.transfer_currency}` : "—"} />
-          <Cell label="Gross Commission (AED)" value={fmtProfit(r.gross_commission_aed, "AED")} className="text-emerald-400" />
-          <Cell label="Linked Expenses (AED)" value={fmt(r.linked_expenses_aed, "AED")} />
-          <Cell label="Net Commission (AED)" value={fmtProfit(r.net_commission_aed, "AED")} className="text-emerald-400 font-bold text-base" />
+          <Cell label={`Trading Profit (${r.customer_payment_currency})`} value={fmtProfit((r as any).fx_trading_profit_pay_ccy || 0, r.customer_payment_currency)} className="text-emerald-400" />
+          <Cell label="Trading Profit (AED)" value={fmtProfit((r as any).fx_trading_profit_aed || 0, "AED")} className="text-emerald-400" />
+          <Cell label={`Commission Profit (${r.customer_payment_currency})`} value={fmtProfit(r.gross_commission_pay_ccy, r.customer_payment_currency)} className="text-emerald-400" />
+          <Cell label="Commission Profit (AED)" value={fmtProfit(r.net_commission_aed, "AED")} className="text-emerald-400" />
+          <Cell label={`TOTAL PROFIT (${r.customer_payment_currency})`} value={fmtProfit((r as any).total_profit_pay_ccy ?? (Number(r.gross_commission_pay_ccy || 0) + Number((r as any).fx_trading_profit_pay_ccy || 0)), r.customer_payment_currency)} className="text-emerald-400 font-bold" />
+          <Cell label="TOTAL PROFIT (AED)" value={fmtProfit((r as any).total_profit_aed ?? (Number(r.net_commission_aed || 0) + Number((r as any).fx_trading_profit_aed || 0)), "AED")} className="text-emerald-400 font-bold text-base" />
         </CardContent>
       </Card>
+
+      {((r as any).fx_purchase_rate) && (
+        <Card>
+          <CardContent className="p-4 space-y-2 text-sm">
+            <div className="font-semibold">FX Purchase</div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Cell label="Customer rate" value={r.reference_rate ? `${Number(r.reference_rate).toLocaleString()} ${r.customer_payment_currency}/${r.transfer_currency}` : "—"} />
+              <Cell label="Supplier rate" value={`${Number((r as any).fx_purchase_rate).toLocaleString()} ${r.customer_payment_currency}/${r.transfer_currency}`} />
+              <Cell label="Purchased amount" value={fmt((r as any).fx_purchased_amount || 0, r.transfer_currency)} />
+              <Cell label="Supplier" value={(r as any).fx_supplier_name || "—"} />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Customer & beneficiary */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
