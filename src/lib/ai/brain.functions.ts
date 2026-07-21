@@ -12,7 +12,7 @@ import {
 async function assertStaff(sb: any, userId: string) {
   const { data } = await sb.from("user_roles").select("role").eq("user_id", userId);
   const roles = new Set((data ?? []).map((r: any) => r.role));
-  if (!(roles.has("admin") || roles.has("milad") || roles.has("ali"))) {
+  if (!(roles.has("admin") || roles.has("partner") || roles.has("accountant"))) {
     throw new Error("Not authorised");
   }
 }
