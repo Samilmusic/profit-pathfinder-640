@@ -12,6 +12,8 @@ import { SettlementEventsList } from "@/components/remittance-v2/settlement-even
 import { AllocationsTable } from "@/components/remittance-v2/allocations-table";
 import { ProfitComponentsCard } from "@/components/remittance-v2/profit-components-card";
 import { DocumentsReadonly } from "@/components/remittance-v2/documents-readonly";
+import { SettlementActions } from "@/components/remittance-v2/settlement-actions";
+import { SettlementProgressCard } from "@/components/remittance-v2/settlement-progress-card";
 
 export const Route = createFileRoute("/_authenticated/remittances/$id/v2")({
   component: RemittanceV2DetailPage,
@@ -250,6 +252,22 @@ function RemittanceV2DetailPage() {
       </div>
 
       <ProfitComponentsCard remittanceId={id} allocationPostingEnabled={postingEnabled} />
+      <SettlementProgressCard
+        remittanceId={id}
+        settlementAmount={r.settlement_amount}
+        settlementCurrency={r.settlement_currency}
+      />
+      <SettlementActions
+        remittanceId={id}
+        workflowState={r.workflow_state}
+        paymentDestination={r.payment_destination}
+        settlementAmount={r.settlement_amount}
+        settlementCurrency={r.settlement_currency}
+        thirdPartyCustomerId={r.third_party?.id ?? null}
+        linkedBuyId={r.linked_buy?.id ?? null}
+        linkedBuyDelivered={r.linked_buy?.supplier_delivered ?? null}
+        v2Enabled={v2Enabled}
+      />
       <AllocationsTable remittanceId={id} />
       <WorkflowTimeline remittanceId={id} />
       <SettlementEventsList remittanceId={id} />
