@@ -2008,6 +2008,12 @@ export type Database = {
           excess_allocation: Database["public"]["Enums"]["remittance_excess_allocation"]
           excess_allocation_note: string | null
           excess_allocation_target_id: string | null
+          fx_purchase_rate: number | null
+          fx_purchased_amount: number | null
+          fx_supplier_customer_id: string | null
+          fx_supplier_name: string | null
+          fx_trading_profit_aed: number
+          fx_trading_profit_pay_ccy: number
           gross_commission_aed: number
           gross_commission_pay_ccy: number
           id: string
@@ -2027,6 +2033,8 @@ export type Database = {
           status: Database["public"]["Enums"]["remittance_status"]
           third_party_customer_id: string | null
           third_party_name: string | null
+          total_profit_aed: number | null
+          total_profit_pay_ccy: number | null
           transfer_currency: string
           transfer_date: string | null
           transfer_method: Database["public"]["Enums"]["remittance_transfer_method"]
@@ -2057,6 +2065,12 @@ export type Database = {
           excess_allocation?: Database["public"]["Enums"]["remittance_excess_allocation"]
           excess_allocation_note?: string | null
           excess_allocation_target_id?: string | null
+          fx_purchase_rate?: number | null
+          fx_purchased_amount?: number | null
+          fx_supplier_customer_id?: string | null
+          fx_supplier_name?: string | null
+          fx_trading_profit_aed?: number
+          fx_trading_profit_pay_ccy?: number
           gross_commission_aed?: number
           gross_commission_pay_ccy?: number
           id?: string
@@ -2076,6 +2090,8 @@ export type Database = {
           status?: Database["public"]["Enums"]["remittance_status"]
           third_party_customer_id?: string | null
           third_party_name?: string | null
+          total_profit_aed?: number | null
+          total_profit_pay_ccy?: number | null
           transfer_currency: string
           transfer_date?: string | null
           transfer_method?: Database["public"]["Enums"]["remittance_transfer_method"]
@@ -2106,6 +2122,12 @@ export type Database = {
           excess_allocation?: Database["public"]["Enums"]["remittance_excess_allocation"]
           excess_allocation_note?: string | null
           excess_allocation_target_id?: string | null
+          fx_purchase_rate?: number | null
+          fx_purchased_amount?: number | null
+          fx_supplier_customer_id?: string | null
+          fx_supplier_name?: string | null
+          fx_trading_profit_aed?: number
+          fx_trading_profit_pay_ccy?: number
           gross_commission_aed?: number
           gross_commission_pay_ccy?: number
           id?: string
@@ -2125,6 +2147,8 @@ export type Database = {
           status?: Database["public"]["Enums"]["remittance_status"]
           third_party_customer_id?: string | null
           third_party_name?: string | null
+          total_profit_aed?: number | null
+          total_profit_pay_ccy?: number | null
           transfer_currency?: string
           transfer_date?: string | null
           transfer_method?: Database["public"]["Enums"]["remittance_transfer_method"]
@@ -2135,6 +2159,13 @@ export type Database = {
           {
             foreignKeyName: "remittances_customer_id_fkey"
             columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remittances_fx_supplier_customer_id_fkey"
+            columns: ["fx_supplier_customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
