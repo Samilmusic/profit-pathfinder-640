@@ -219,7 +219,6 @@ function InventoryDashboard() {
       <PageHeader
         title="Inventory Analytics"
         description="FIFO lots as the accounting engine sees them. All math server-side."
-        icon={<Package className="h-5 w-5" />}
       />
 
       {/* Filters */}
