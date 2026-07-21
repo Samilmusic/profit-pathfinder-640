@@ -111,8 +111,19 @@ function MigrationStatusPage() {
     );
   }
 
-  const flags = flagsQ.data ?? [];
-  const flagMap = new Map(flags.map((f: any) => [f.key, f]));
+  type FlagRow = { key: string; enabled: boolean; updated_at?: string };
+  type BatchRow = {
+    id: string;
+    started_at?: string | null;
+    finished_at?: string | null;
+    note?: string | null;
+    total_scanned?: number | null;
+    total_shadow_inserted?: number | null;
+    total_skipped?: number | null;
+    total_errors?: number | null;
+  };
+  const flags = (flagsQ.data ?? []) as FlagRow[];
+  const flagMap = new Map(flags.map((f) => [f.key, f] as const));
   const v2Flag = flagMap.get("remittance_v2_enabled");
   const postingFlag = flagMap.get("allocation_layer_posting");
 
@@ -122,8 +133,9 @@ function MigrationStatusPage() {
   const approved = audit?.byCategory["matched"] ?? 0;
   const blocked =
     (audit?.byCategory["over_allocated"] ?? 0) + (audit?.byCategory["missing_buy"] ?? 0);
-  const batchErrors = (batchesQ.data ?? []).reduce(
-    (sum: number, b: any) => sum + (b.total_errors ?? 0),
+  const batchesData = (batchesQ.data ?? []) as BatchRow[];
+  const batchErrors = batchesData.reduce(
+    (sum, b) => sum + (b.total_errors ?? 0),
     0,
   );
 
@@ -162,8 +174,9 @@ function MigrationStatusPage() {
 
       {/* Audit + batches unchanged */}
       <LegacyAuditAndBatches
-        auditQ={auditQ}
-        batchesQ={batchesQ}
+        auditLoading={auditQ.isLoading}
+        batchesLoading={batchesQ.isLoading}
+        batches={batchesData}
         totalAudit={totalAudit}
         audit={audit}
       />
