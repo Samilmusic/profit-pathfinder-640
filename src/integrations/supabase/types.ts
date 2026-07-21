@@ -695,6 +695,13 @@ export type Database = {
             foreignKeyName: "buy_transactions_settled_by_remittance_id_fkey"
             columns: ["settled_by_remittance_id"]
             isOneToOne: false
+            referencedRelation: "v_remittance_data_quality"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buy_transactions_settled_by_remittance_id_fkey"
+            columns: ["settled_by_remittance_id"]
+            isOneToOne: false
             referencedRelation: "v_remittance_migration_diff"
             referencedColumns: ["remittance_id"]
           },
@@ -1265,6 +1272,13 @@ export type Database = {
             columns: ["related_sell_id"]
             isOneToOne: false
             referencedRelation: "sell_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_related_sell_id_fkey"
+            columns: ["related_sell_id"]
+            isOneToOne: false
+            referencedRelation: "v_sell_data_quality"
             referencedColumns: ["id"]
           },
           {
@@ -2106,6 +2120,13 @@ export type Database = {
             foreignKeyName: "remittance_allocations_remittance_id_fkey"
             columns: ["remittance_id"]
             isOneToOne: false
+            referencedRelation: "v_remittance_data_quality"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remittance_allocations_remittance_id_fkey"
+            columns: ["remittance_id"]
+            isOneToOne: false
             referencedRelation: "v_remittance_migration_diff"
             referencedColumns: ["remittance_id"]
           },
@@ -2162,6 +2183,13 @@ export type Database = {
             columns: ["remittance_id"]
             isOneToOne: false
             referencedRelation: "remittances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remittance_expenses_remittance_id_fkey"
+            columns: ["remittance_id"]
+            isOneToOne: false
+            referencedRelation: "v_remittance_data_quality"
             referencedColumns: ["id"]
           },
           {
@@ -2254,6 +2282,13 @@ export type Database = {
             columns: ["remittance_id"]
             isOneToOne: false
             referencedRelation: "remittances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remittance_migration_audit_remittance_id_fkey"
+            columns: ["remittance_id"]
+            isOneToOne: false
+            referencedRelation: "v_remittance_data_quality"
             referencedColumns: ["id"]
           },
           {
@@ -2373,6 +2408,13 @@ export type Database = {
             foreignKeyName: "remittance_profit_components_remittance_id_fkey"
             columns: ["remittance_id"]
             isOneToOne: false
+            referencedRelation: "v_remittance_data_quality"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remittance_profit_components_remittance_id_fkey"
+            columns: ["remittance_id"]
+            isOneToOne: false
             referencedRelation: "v_remittance_migration_diff"
             referencedColumns: ["remittance_id"]
           },
@@ -2416,6 +2458,13 @@ export type Database = {
             columns: ["remittance_id"]
             isOneToOne: false
             referencedRelation: "remittances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remittance_settlement_events_remittance_id_fkey"
+            columns: ["remittance_id"]
+            isOneToOne: false
+            referencedRelation: "v_remittance_data_quality"
             referencedColumns: ["id"]
           },
           {
@@ -2474,6 +2523,13 @@ export type Database = {
             columns: ["remittance_id"]
             isOneToOne: false
             referencedRelation: "remittances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remittance_workflow_transitions_remittance_id_fkey"
+            columns: ["remittance_id"]
+            isOneToOne: false
+            referencedRelation: "v_remittance_data_quality"
             referencedColumns: ["id"]
           },
           {
@@ -2899,6 +2955,13 @@ export type Database = {
             columns: ["sell_id"]
             isOneToOne: false
             referencedRelation: "sell_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sell_payments_sell_id_fkey"
+            columns: ["sell_id"]
+            isOneToOne: false
+            referencedRelation: "v_sell_data_quality"
             referencedColumns: ["id"]
           },
         ]
@@ -4535,6 +4598,22 @@ export type Database = {
         }
         Relationships: []
       }
+      v_data_quality: {
+        Row: {
+          classification: string | null
+          closed_at: string | null
+          created_by: string | null
+          customer_id: string | null
+          details: Json | null
+          entry_date: string | null
+          id: string | null
+          reason: string | null
+          severity: string | null
+          source_table: string | null
+          suggested_remediation: string | null
+        }
+        Relationships: []
+      }
       v_inventory_by_currency: {
         Row: {
           cost_basis_currency: string | null
@@ -4802,15 +4881,91 @@ export type Database = {
         Row: {
           actor_id: string | null
           amount_aed: number | null
+          classification: string | null
           currency: string | null
           customer_id: string | null
           doc_no: string | null
           event_at: string | null
           event_date: string | null
           ref_id: string | null
+          severity: string | null
           source: string | null
         }
         Relationships: []
+      }
+      v_remittance_data_quality: {
+        Row: {
+          classification: string | null
+          closed_at: string | null
+          created_by: string | null
+          customer_id: string | null
+          doc_no: string | null
+          entry_date: string | null
+          fx_trading_profit_aed: number | null
+          id: string | null
+          net_commission_aed: number | null
+          reason: string | null
+          severity: string | null
+          source_table: string | null
+          status: string | null
+          suggested_remediation: string | null
+          total_profit_aed: number | null
+          transfer_currency: string | null
+          transferred_amount: number | null
+          workflow_state: string | null
+          workflow_version: string | null
+        }
+        Insert: {
+          classification?: never
+          closed_at?: string | null
+          created_by?: string | null
+          customer_id?: string | null
+          doc_no?: string | null
+          entry_date?: string | null
+          fx_trading_profit_aed?: number | null
+          id?: string | null
+          net_commission_aed?: number | null
+          reason?: never
+          severity?: never
+          source_table?: never
+          status?: never
+          suggested_remediation?: never
+          total_profit_aed?: number | null
+          transfer_currency?: string | null
+          transferred_amount?: number | null
+          workflow_state?: never
+          workflow_version?: never
+        }
+        Update: {
+          classification?: never
+          closed_at?: string | null
+          created_by?: string | null
+          customer_id?: string | null
+          doc_no?: string | null
+          entry_date?: string | null
+          fx_trading_profit_aed?: number | null
+          id?: string | null
+          net_commission_aed?: number | null
+          reason?: never
+          severity?: never
+          source_table?: never
+          status?: never
+          suggested_remediation?: never
+          total_profit_aed?: number | null
+          transfer_currency?: string | null
+          transferred_amount?: number | null
+          workflow_state?: never
+          workflow_version?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "remittances_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v_remittance_migration_diff: {
         Row: {
@@ -4906,6 +5061,36 @@ export type Database = {
           version: string | null
         }
         Relationships: []
+      }
+      v_sell_data_quality: {
+        Row: {
+          classification: string | null
+          closed_at: string | null
+          created_by: string | null
+          customer_id: string | null
+          deal_status: string | null
+          entry_date: string | null
+          gross_profit: number | null
+          id: string | null
+          net_profit_aed: number | null
+          net_profit_irr: number | null
+          reason: string | null
+          settlement_status: string | null
+          severity: string | null
+          sold_amount: number | null
+          sold_currency: string | null
+          source_table: string | null
+          suggested_remediation: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sell_transactions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v_today_profit: {
         Row: {
@@ -5148,7 +5333,8 @@ export type Database = {
         Returns: string
       }
       remittance_v2_validate_close: { Args: { _id: string }; Returns: Json }
-      report_executive_kpis: { Args: never; Returns: Json }
+      report_data_quality_summary: { Args: never; Returns: Json }
+      report_executive_kpis: { Args: { _quality_mode?: string }; Returns: Json }
       report_meta: { Args: { _report_key: string }; Returns: Json }
       report_operational_kpis: { Args: never; Returns: Json }
       rpc_idempotency_gc: { Args: { _days?: number }; Returns: number }
