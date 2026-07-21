@@ -1,6 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { adminForceCloseDeal } from "@/lib/admin-deal.functions";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -214,13 +216,11 @@ function DealPage() {
     },
   });
 
+  const forceCloseFn = useServerFn(adminForceCloseDeal);
   const forceClose = useMutation({
     mutationFn: async () => {
       if (!diffReason.trim()) throw new Error("Reason required for admin override");
-      const { error } = await (supabase as any).rpc("admin_force_close", {
-        _sell_id: id, _reason: diffReason.trim(),
-      });
-      if (error) throw error;
+      await forceCloseFn({ data: { sellId: id, reason: diffReason.trim() } });
     },
     onSuccess: () => { toast.success("Deal force-closed · audit logged"); qc.invalidateQueries(); },
     onError: (e: any) => toast.error(e.message),
