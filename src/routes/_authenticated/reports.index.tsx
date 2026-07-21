@@ -15,6 +15,7 @@ import {
   Download,
   ArrowRight,
   ShieldAlert,
+  Settings,
 } from "lucide-react";
 import type { ComponentType } from "react";
 
@@ -37,17 +38,90 @@ type Card = {
 };
 
 const cards: Card[] = [
-  { to: "/reports/executive",       label: "Executive Dashboard", desc: "Profit, remittance state, inventory value.",           icon: Gauge,       status: "ready" },
-  { to: "/reports/operations",      label: "Operational KPIs",    desc: "Live queue, operator workload, processing times.",     icon: Activity,    status: "ready" },
-  { to: "/reports/data-quality",    label: "Data Quality",        desc: "Read-only classification of every financial row.",     icon: ShieldAlert, status: "ready" },
-  { to: "/reports/profits",         label: "Profit Analytics",    desc: "Charts by day/week/month, breakdowns by dimension.",   icon: TrendingUp,  status: "ready" },
-  { to: "/reports/remittances",     label: "Remittance Analytics",desc: "Lifecycle durations, completion rates, trends.",       icon: Send,        status: "coming" },
-  { to: "/reports/inventory",       label: "Inventory Dashboard", desc: "FIFO lots, remaining, age, turnover, unrealized market P&L.", icon: Package,     status: "ready" },
-  { to: "/reports/treasury",        label: "Treasury & Cash",     desc: "Position, flow, forecast, exposure, bank analytics.",  icon: Wallet,      status: "ready" },
-  { to: "/reports/counterparties",  label: "Customers & Suppliers",desc: "Profiles, lifetime volume, profit, rankings.",         icon: Users,       status: "ready" },
-  { to: "/reports/audit-explorer",  label: "Audit Explorer",      desc: "Searchable timeline of transitions and events.",       icon: History,     status: "ready" },
-  { to: "/reports/reconciliation",  label: "Reconciliation",      desc: "Visual results history from the financial contract.",  icon: ShieldCheck, status: "coming" },
-  { to: "/reports/exports",         label: "Exports",             desc: "PDF / Excel / CSV of any report.",                     icon: Download,    status: "coming" },
+  {
+    to: "/reports/executive",
+    label: "Executive Dashboard",
+    desc: "Profit, remittance state, inventory value.",
+    icon: Gauge,
+    status: "ready",
+  },
+  {
+    to: "/reports/operations",
+    label: "Operational KPIs",
+    desc: "Live queue, operator workload, processing times.",
+    icon: Activity,
+    status: "ready",
+  },
+  {
+    to: "/reports/data-quality",
+    label: "Data Quality",
+    desc: "Read-only classification of every financial row.",
+    icon: ShieldAlert,
+    status: "ready",
+  },
+  {
+    to: "/reports/profits",
+    label: "Profit Analytics",
+    desc: "Charts by day/week/month, breakdowns by dimension.",
+    icon: TrendingUp,
+    status: "ready",
+  },
+  {
+    to: "/reports/remittances",
+    label: "Remittance Analytics",
+    desc: "Lifecycle durations, completion rates, trends.",
+    icon: Send,
+    status: "coming",
+  },
+  {
+    to: "/reports/inventory",
+    label: "Inventory Dashboard",
+    desc: "FIFO lots, remaining, age, turnover, unrealized market P&L.",
+    icon: Package,
+    status: "ready",
+  },
+  {
+    to: "/reports/treasury",
+    label: "Treasury & Cash",
+    desc: "Position, flow, forecast, exposure, bank analytics.",
+    icon: Wallet,
+    status: "ready",
+  },
+  {
+    to: "/reports/counterparties",
+    label: "Customers & Suppliers",
+    desc: "Profiles, lifetime volume, profit, rankings.",
+    icon: Users,
+    status: "ready",
+  },
+  {
+    to: "/reports/audit-explorer",
+    label: "Audit Explorer",
+    desc: "Searchable timeline of transitions and events.",
+    icon: History,
+    status: "ready",
+  },
+  {
+    to: "/reports/admin",
+    label: "Administration",
+    desc: "System health, alerts, and BI registry.",
+    icon: Settings,
+    status: "ready",
+  },
+  {
+    to: "/reports/reconciliation",
+    label: "Reconciliation",
+    desc: "Visual results history from the financial contract.",
+    icon: ShieldCheck,
+    status: "coming",
+  },
+  {
+    to: "/reports/exports",
+    label: "Exports",
+    desc: "PDF / Excel / CSV of any report.",
+    icon: Download,
+    status: "coming",
+  },
 ];
 
 function ReportsHub() {
@@ -71,7 +145,9 @@ function ReportsHub() {
                   <CardTitle className="text-base flex items-center gap-2">
                     {c.label}
                     {disabled ? (
-                      <Badge variant="outline" className="text-[10px]">Coming</Badge>
+                      <Badge variant="outline" className="text-[10px]">
+                        Coming
+                      </Badge>
                     ) : (
                       <ArrowRight className="h-4 w-4 text-muted-foreground" />
                     )}
@@ -84,7 +160,9 @@ function ReportsHub() {
           return disabled ? (
             <div key={c.to}>{body}</div>
           ) : (
-            <Link key={c.to} to={c.to}>{body}</Link>
+            <Link key={c.to} to={c.to}>
+              {body}
+            </Link>
           );
         })}
       </div>
