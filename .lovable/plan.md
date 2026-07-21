@@ -1,113 +1,148 @@
-# Third-Party Settlement for Remittances
+# Recommended architecture: Option C — Independent documents + allocation layer
 
-Add an optional settlement path where the remittance customer pays a **third party** (usually a supplier we're buying currency from) instead of paying us. No money enters our accounts. A linked Buy deal creates inventory only when the supplier delivers.
+## TL;DR
 
-The existing "Paid to our account / cash" remittance flow stays untouched — this is a new option on the same form.
+Neither A nor B is right long-term.
 
-## What we're changing
+- **Option A** (Buy first, link Remittance) forces supplier-first thinking. Real operators start with the customer.
+- **Option B** (Remittance auto-creates a hidden Buy) is what the app does today. It looks convenient but couples two independent economic events into one record. It cannot express N:1 or 1:N supplier/customer relationships, breaks when a buy already existed, and pollutes reports with "ghost" buys.
 
-### 1. Database (one migration)
+**Option C** is the clean model:
 
-Add third-party settlement columns to `public.remittances`:
-- `payment_destination` — `into_account | cash_to_us | to_third_party | settles_linked_buy | pending`
-- `third_party_customer_id` — who received the customer's payment
-- `linked_buy_id` — foreign key to `buy_transactions`
-- `settlement_amount`, `settlement_currency`, `settlement_date`
-- `settlement_proof_url` (documents table still used, this is a convenience mirror)
-- `excess_allocation` — `our_account | another_supplier | customer_balance | pending | commission | none`
-- `excess_allocation_target_id` (nullable)
+1. **Remittance** and **Buy** are both first-class, independent documents.
+2. A small **Allocation** table joins them (which lots fulfill which remittance).
+3. A **Third-Party Clearing** ledger account absorbs the customer-pays-supplier-directly leg with zero fake cash.
 
-Add to `public.buy_transactions`:
-- `settlement_source` — `own_funds | remittance_payment | mixed`
-- `settled_by_remittance_id` — FK back to `remittances`
-- `supplier_settled_amount` — how much of the buy has been settled
+The operator creates whichever comes first. Nothing is auto-generated behind their back.
 
-Rewrite the remittance ledger trigger so:
-- When `payment_destination in ('to_third_party','settles_linked_buy')`, **no** IRR ledger entry hits our accounts.
-- A `third_party_settlement` ledger row is written (memo-only, `account_id = null`, using a new `ref_type = 'third_party_settlement'`).
-- Commission is still tracked as profit.
+---
 
-Rewrite the buy inventory trigger so:
-- When `settlement_source = 'remittance_payment'`, the outflow leg on our IRR account is skipped.
-- Inventory lot is still created on the AED leg **only after delivery is recorded** (new `delivered_at` flag on buy_transactions — most flows already treat buy as immediate; we gate lot creation behind delivery when this settlement type is used).
+## Why the current setup fails
 
-Add a validation function `validate_third_party_settlement(_remittance_id)` returning a checklist (customer paid, proof uploaded, supplier delivered, remittance transferred, etc.).
+The remittance form silently inserts a `buy_transactions` row with nulled columns (paid_from, received_into). Each null we permit is a symptom of the wrong shape:
 
-Add `v_remittance_settlement_path` view returning the linked chain for Deal Center display.
+- A supplier buy that never touched an account of ours — but it lives in the Buys table as if it did.
+- Editing the supplier rate on the remittance and on the buy can diverge.
+- One supplier delivery cannot cover two customer remittances.
+- One customer remittance cannot be sourced from two suppliers.
+- If the remittance is voided, the hidden buy either orphans or cascade-deletes real inventory.
+- Reports list a "buy" that is not really a standalone buy.
 
-### 2. Remittance form (`remittances.new.tsx`)
+Every one of those is a modeling problem, not a validation problem.
 
-Add a **Settlement Method** section after the customer-payment amount:
-- Radio: `Paid to our account | Cash to us | Paid to third party | Settles linked buy | Pending`
-- When `third party` or `linked buy`: show
-  - Third-party recipient picker (customer/supplier)
-  - Settlement currency + amount (defaults from remittance)
-  - Settlement date, proof upload
-  - Linked Buy: existing (select from open buys where supplier matches) or **Create linked buy** inline (opens a mini form: supplier, AED amount, supplier rate → auto-fills settlement amount, marks `settlement_source='remittance_payment'`)
-- If settlement amount ≠ linked buy amount, show an **Excess/Shortfall** allocator (options: our account, another supplier, customer balance, pending, commission). No auto-allocation.
+---
 
-Live **Settlement Path** panel: `Customer A → Customer B`, plus a summary showing "IRR into our account: 0", "AED expected from supplier: X", "Commission: Y".
+## The mental model
 
-### 3. Remittance detail (`remittances.$id.tsx`)
-
-- New **Third-Party Settlement** card with the path, linked buy chip, delivery status, proof list, and a "Record supplier delivery" button that flips the buy's delivery flag and creates the AED lot.
-- **Close checklist** driven by `validate_third_party_settlement` — each unchecked item explains why close is blocked.
-- **Statuses** added to the badge: `Customer Paid Supplier`, `Waiting Supplier AED Delivery`, `Partially Settled`.
-
-### 4. Buy form (`buy.tsx` / trades new)
-
-Small addition: a **Settlement source** toggle (Own funds / From remittance payment). When "From remittance", user picks the open remittance; the buy is linked and its ledger IRR-out leg is skipped.
-
-### 5. Deal Center + Action Center
-
-- Deal Center: render remittance rows with their linked buy code as a chip; expanding shows the chain (REM → third party → BUY → delivery).
-- Action Center alerts:
-  - "Customer A paid X IRR directly to Customer B" (when settlement recorded, no proof yet)
-  - "Payment proof missing on REM-..."
-  - "Supplier still owes X AED on BUY-..."
-
-### 6. Profit / Inventory correctness
-
-- Remittance profit = commission only, unchanged.
-- Linked buy creates an inventory lot with cost rate = `settlement_amount / bought_amount`, source description referencing both the buy code and the settling remittance code.
-- IRR never appears in `v_currency_inventory_summary` from this path — verified by the trigger changes.
-
-## Not changing
-
-- Existing "paid into our account" and "cash to us" remittance flows.
-- Normal buy transactions where we pay from our own funds.
-- Sell / inventory / cost-preview logic shipped last turn.
-- Milad Box / account balances (third-party settlements are memo entries with `account_id = null`).
-
-## Technical layout
+Two independent economic events, joined by intent:
 
 ```text
-supabase migration
-  remittances.*  (new columns + status enum values)
-  buy_transactions.*  (settlement_source, settled_by_remittance_id, delivered_at)
-  ledger_ref_type += 'third_party_settlement'
-  fn: validate_third_party_settlement(uuid) -> jsonb
-  fn: record_supplier_delivery(uuid)  -- creates AED lot on demand
-  view: v_remittance_settlement_path
-  trigger rewrites: trg_remittance_ledger, trg_buy_ledger, trg_buy_lot
-
-src/lib/
-  remittance-settlement.ts  (rpc wrappers, path formatter)
-
-src/components/
-  settlement-method-picker.tsx
-  linked-buy-picker.tsx  (search open buys / create-new mini form)
-  excess-allocator.tsx
-  settlement-path-summary.tsx
-  third-party-settlement-card.tsx
-  supplier-delivery-dialog.tsx
-
-src/routes/_authenticated/
-  remittances.new.tsx  (add Settlement Method section)
-  remittances.$id.tsx  (add Third-Party card + expanded checklist)
-  buy.tsx  (settlement-source toggle)
-  deals.tsx  (render linked chain)
-  dashboard.tsx  (extra Action Center rules)
+CUSTOMER SIDE                        SUPPLIER SIDE
+-------------                        -------------
+Remittance                           Buy (SupplierDeal)
+  who: Customer A                      who: Supplier B
+  we owe:  IRR -> beneficiary          we owe:  AED cost, later
+  they owe: payment to us              they owe: AED delivery to us
+  profit:  commission + spread share   inventory: lot created on delivery
+                    \                 /
+                     \               /
+                    Allocation (join)
+                     - remittance_id
+                     - lot_id (FIFO or manual)
+                     - qty, cost_rate, sale_rate
+                     - realized_profit (frozen at close)
 ```
 
-Rollout order: migration first (approval), then RPC wrappers, then components, then wire the new form section, then detail-page card, then Deal Center / Action Center touches.
+Allocations are the **only** place spread profit is realized. That single rule replaces most of the current profit logic.
+
+---
+
+## Workflow (operator's view)
+
+The operator is never forced to create records in a specific order.
+
+**Path 1 — Customer walks in first (most common):**
+
+1. Create Remittance. Status: *Awaiting supply*.
+2. Record how the customer settled: cash to us, wallet, or "paid Supplier B directly" (third-party).
+3. When Supplier B delivers AED, either create a new Buy or pick an existing open Buy, then hit "Allocate to remittance". The allocation consumes the lot and closes the remittance.
+
+**Path 2 — We pre-bought AED yesterday:**
+
+1. The Buy already exists with a live inventory lot.
+2. Customer walks in. Create Remittance.
+3. On the remittance, click "Allocate from inventory" — FIFO picks the lot, or operator overrides.
+4. Close.
+
+**Path 3 — Pure broker trade (no remittance):**
+
+1. Create Buy. Create Sell. Done. Same tables, no allocation needed beyond the normal FIFO sell consumption.
+
+One workflow, three modes, zero duplicate entry.
+
+---
+
+## Third-party settlement without fake cash
+
+When Customer A pays Supplier B directly, no money moves through us. The correct entry is a two-sided offset against a clearing account:
+
+```text
+Dr  Customer A receivable       (they still "owe" us conceptually)
+Cr  Supplier B payable          (we still "owe" Supplier B conceptually)
+Dr  Third-party clearing        offset both sides on the settlement date
+Cr  Third-party clearing
+```
+
+Net effect: zero cash movement, both counterparty balances flattened, and the clearing account nets to zero once matched. No account of ours needs a nullable "paid_from". No ghost inflow appears in cash reports.
+
+The remittance stores *how* the customer settled (a payment_method enum: `cash_in`, `wallet`, `third_party_direct`). If third-party, it references the linked Buy and the settlement amount — but the Buy is not created from it, it is *linked* to it.
+
+---
+
+## Realized profit, defined once
+
+At allocation time, per allocated quantity:
+
+```text
+spread_profit = qty * (customer_sell_rate - lot_cost_rate)
+commission    = remittance.commission_amount (allocated pro-rata if multi-lot)
+realized      = spread_profit + commission
+```
+
+Realized profit is written to the allocation row and frozen when the remittance closes. Dashboards sum allocations. No recomputation from remittances or buys — those are input documents, allocations are the truth.
+
+FIFO stays intact because allocations consume `inventory_lots` by id + qty, the same primitive a normal Sell uses today.
+
+---
+
+## Requirements check
+
+- No duplicate data entry — each fact lives in one place; allocation is a pointer.
+- No duplicate ledger movements — cash entries only when cash actually moves; third-party legs go through clearing, not cash.
+- No fake cash movements — clearing account offsets, nothing debits a real box.
+- FIFO correct — allocations consume lots identically to sells.
+- Realized profit correct — one formula, one place.
+- Normal inventory buys — Buy alone, allocated later by Sell or Remittance.
+- Direct broker trades — Buy + Sell, no remittance.
+- Remittance with third-party settlement — Remittance + linked Buy + clearing entry.
+- Buy today, sell days later — allocation is time-independent by design.
+- Simple for operators — one "New Remittance", one "New Buy", one "Allocate" button; no hidden records.
+
+---
+
+## Technical details (for later, not this turn)
+
+- Tables: keep `remittances`, `buy_transactions`, `inventory_lots` as-is. Add `remittance_allocations (remittance_id, lot_id, qty, cost_rate, sale_rate, realized_profit_aed, allocated_at)`.
+- Add ledger account of type `third_party_clearing` (system-owned, one per currency pair or one global AED-denominated).
+- Remove the auto-insert of a hidden `buy_transactions` row from `remittances.new.tsx`. Replace with an explicit "Link supplier deal" step that either creates a Buy or picks an open one.
+- Roll back the two `DROP NOT NULL` migrations on `buy_transactions.paid_from_account_id` and `received_into_account_id` once the coupling is gone — a real Buy always has real accounts.
+- Existing hidden buys: migrate to the new shape by promoting them to real Buys and inserting a matching allocation row.
+- Profit reports read from `remittance_allocations` and existing `lot_consumptions` (for sells). Two sources, both allocation-shaped.
+
+---
+
+## Recommendation
+
+Adopt Option C. It is the only shape that models what actually happens: two counterparties, two obligations, one intent, one profit event at fulfillment. Options A and B both try to compress that into a single record and pay for it forever in null columns, ghost rows, and edge cases.
+
+If you approve, next step is a migration plan and a UI plan — not code yet.
