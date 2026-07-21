@@ -1218,6 +1218,7 @@ export type Database = {
           account_id: string | null
           cost_basis_currency: string
           cost_basis_rate: number
+          cost_basis_status: string
           created_at: string
           created_by: string | null
           currency: string
@@ -1237,6 +1238,7 @@ export type Database = {
           account_id?: string | null
           cost_basis_currency: string
           cost_basis_rate: number
+          cost_basis_status?: string
           created_at?: string
           created_by?: string | null
           currency: string
@@ -1256,6 +1258,7 @@ export type Database = {
           account_id?: string | null
           cost_basis_currency?: string
           cost_basis_rate?: number
+          cost_basis_status?: string
           created_at?: string
           created_by?: string | null
           currency?: string
@@ -1442,6 +1445,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profit_by_lot"
             referencedColumns: ["lot_id"]
+          },
+          {
+            foreignKeyName: "lot_consumptions_lot_id_fkey"
+            columns: ["lot_id"]
+            isOneToOne: false
+            referencedRelation: "v_lot_detailed"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -2221,6 +2231,9 @@ export type Database = {
         Row: {
           ali_profit: number | null
           ali_share_pct: number
+          allocated_cost_amount: number | null
+          allocated_cost_currency: string | null
+          allocation_mode: string | null
           amount_received: number
           attachment_url: string | null
           cancel_reason: string | null
@@ -2229,6 +2242,7 @@ export type Database = {
           completion_note: string | null
           cost_basis_amount: number | null
           cost_basis_rate: number | null
+          cost_basis_snapshot: Json | null
           created_at: string
           created_by: string | null
           creates_cycle: boolean
@@ -2253,12 +2267,22 @@ export type Database = {
           expected_payment_date: string | null
           gross_profit: number | null
           id: string
+          linked_expenses_amount: number | null
+          manual_allocation: Json | null
+          margin_pct: number | null
+          market_reference_rate: number | null
+          market_reference_source: string | null
+          market_reference_time: string | null
           milad_profit: number | null
           milad_share_pct: number
           money_holder_type: Database["public"]["Enums"]["holder_type"] | null
           money_location: Database["public"]["Enums"]["money_location"] | null
+          net_profit_aed: number | null
+          net_profit_irr: number | null
           notes: string | null
           payment_difference_reason: string | null
+          profit_frozen_at: string | null
+          profit_frozen_by: string | null
           rate_difference: number | null
           rate_difference_percent: number | null
           received_amount: number
@@ -2270,6 +2294,8 @@ export type Database = {
           reference_rate_source: string | null
           reference_rate_time: string | null
           reference_sell_rate: number | null
+          sale_value_amount: number | null
+          sale_value_currency: string | null
           sell_rate: number
           settlement_status: Database["public"]["Enums"]["settlement_status"]
           sold_amount: number
@@ -2282,6 +2308,9 @@ export type Database = {
         Insert: {
           ali_profit?: number | null
           ali_share_pct?: number
+          allocated_cost_amount?: number | null
+          allocated_cost_currency?: string | null
+          allocation_mode?: string | null
           amount_received?: number
           attachment_url?: string | null
           cancel_reason?: string | null
@@ -2290,6 +2319,7 @@ export type Database = {
           completion_note?: string | null
           cost_basis_amount?: number | null
           cost_basis_rate?: number | null
+          cost_basis_snapshot?: Json | null
           created_at?: string
           created_by?: string | null
           creates_cycle?: boolean
@@ -2314,12 +2344,22 @@ export type Database = {
           expected_payment_date?: string | null
           gross_profit?: number | null
           id?: string
+          linked_expenses_amount?: number | null
+          manual_allocation?: Json | null
+          margin_pct?: number | null
+          market_reference_rate?: number | null
+          market_reference_source?: string | null
+          market_reference_time?: string | null
           milad_profit?: number | null
           milad_share_pct?: number
           money_holder_type?: Database["public"]["Enums"]["holder_type"] | null
           money_location?: Database["public"]["Enums"]["money_location"] | null
+          net_profit_aed?: number | null
+          net_profit_irr?: number | null
           notes?: string | null
           payment_difference_reason?: string | null
+          profit_frozen_at?: string | null
+          profit_frozen_by?: string | null
           rate_difference?: number | null
           rate_difference_percent?: number | null
           received_amount: number
@@ -2331,6 +2371,8 @@ export type Database = {
           reference_rate_source?: string | null
           reference_rate_time?: string | null
           reference_sell_rate?: number | null
+          sale_value_amount?: number | null
+          sale_value_currency?: string | null
           sell_rate: number
           settlement_status?: Database["public"]["Enums"]["settlement_status"]
           sold_amount: number
@@ -2343,6 +2385,9 @@ export type Database = {
         Update: {
           ali_profit?: number | null
           ali_share_pct?: number
+          allocated_cost_amount?: number | null
+          allocated_cost_currency?: string | null
+          allocation_mode?: string | null
           amount_received?: number
           attachment_url?: string | null
           cancel_reason?: string | null
@@ -2351,6 +2396,7 @@ export type Database = {
           completion_note?: string | null
           cost_basis_amount?: number | null
           cost_basis_rate?: number | null
+          cost_basis_snapshot?: Json | null
           created_at?: string
           created_by?: string | null
           creates_cycle?: boolean
@@ -2375,12 +2421,22 @@ export type Database = {
           expected_payment_date?: string | null
           gross_profit?: number | null
           id?: string
+          linked_expenses_amount?: number | null
+          manual_allocation?: Json | null
+          margin_pct?: number | null
+          market_reference_rate?: number | null
+          market_reference_source?: string | null
+          market_reference_time?: string | null
           milad_profit?: number | null
           milad_share_pct?: number
           money_holder_type?: Database["public"]["Enums"]["holder_type"] | null
           money_location?: Database["public"]["Enums"]["money_location"] | null
+          net_profit_aed?: number | null
+          net_profit_irr?: number | null
           notes?: string | null
           payment_difference_reason?: string | null
+          profit_frozen_at?: string | null
+          profit_frozen_by?: string | null
           rate_difference?: number | null
           rate_difference_percent?: number | null
           received_amount?: number
@@ -2392,6 +2448,8 @@ export type Database = {
           reference_rate_source?: string | null
           reference_rate_time?: string | null
           reference_sell_rate?: number | null
+          sale_value_amount?: number | null
+          sale_value_currency?: string | null
           sell_rate?: number
           settlement_status?: Database["public"]["Enums"]["settlement_status"]
           sold_amount?: number
@@ -3710,6 +3768,25 @@ export type Database = {
         }
         Relationships: []
       }
+      v_currency_inventory_summary: {
+        Row: {
+          available_amount: number | null
+          capital_amount: number | null
+          cost_basis_currency: string | null
+          currency: string | null
+          estimated_value_irr: number | null
+          known_cost_amount: number | null
+          lot_count: number | null
+          market_buy: number | null
+          market_mid: number | null
+          market_sell: number | null
+          unknown_cost_amount: number | null
+          unrealized_profit_aed: number | null
+          unrealized_profit_irr: number | null
+          weighted_avg_cost_rate: number | null
+        }
+        Relationships: []
+      }
       v_daily_profit_series: {
         Row: {
           ali_profit: number | null
@@ -3718,6 +3795,69 @@ export type Database = {
           milad_profit: number | null
         }
         Relationships: []
+      }
+      v_lot_detailed: {
+        Row: {
+          account_id: string | null
+          account_name: string | null
+          account_path: string | null
+          age_days: number | null
+          cost_basis_currency: string | null
+          cost_basis_rate: number | null
+          cost_basis_status: string | null
+          currency: string | null
+          entry_date: string | null
+          id: string | null
+          lot_code: string | null
+          market_buy_rate: number | null
+          market_sell_rate: number | null
+          original_amount: number | null
+          remaining_amount: number | null
+          sold_amount: number | null
+          source_description: string | null
+          source_ref_id: string | null
+          source_ref_type: string | null
+          status: string | null
+          unrealized_pl: number | null
+          unrealized_pl_pct: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_lots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "inventory_lots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_lots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "inventory_lots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "inventory_lots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
+            referencedColumns: ["account_id"]
+          },
+        ]
       }
       v_money_in_circulation: {
         Row: {
@@ -3921,6 +4061,15 @@ export type Database = {
       }
       admin_recalculate_balances: { Args: never; Returns: Json }
       admin_reconcile: { Args: { _reason: string }; Returns: Json }
+      assign_lot_cost_basis: {
+        Args: {
+          _cost_currency: string
+          _cost_rate: number
+          _lot_id: string
+          _reason: string
+        }
+        Returns: undefined
+      }
       avg_buy_rate: {
         Args: { _as_of?: string; _currency: string; _quote_currency: string }
         Returns: number
@@ -3952,6 +4101,10 @@ export type Database = {
           total_cost: number
         }[]
       }
+      freeze_sell_profit: {
+        Args: { _recompute?: boolean; _sell_id: string }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -3960,6 +4113,10 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      mark_lot_capital: {
+        Args: { _lot_id: string; _reason: string }
+        Returns: undefined
+      }
       mark_sell_delivered: {
         Args: {
           _delivered_to?: string
@@ -3971,6 +4128,16 @@ export type Database = {
         Returns: undefined
       }
       next_doc_no: { Args: { _prefix: string; _year: number }; Returns: string }
+      preview_sell_allocation: {
+        Args: {
+          _amount: number
+          _currency: string
+          _manual?: Json
+          _mode?: string
+          _source_account_id?: string
+        }
+        Returns: Json
+      }
       recompute_cycle_profit: {
         Args: { _cycle_id: string }
         Returns: undefined

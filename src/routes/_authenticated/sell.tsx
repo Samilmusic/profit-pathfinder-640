@@ -30,6 +30,7 @@ import { RateComparison } from "@/components/rate-comparison";
 import { DealScoreCard } from "@/components/ai/deal-score-card";
 import { ResponsiveTable, type RTColumn } from "@/components/responsive-table";
 import { StickyActionBar } from "@/components/sticky-action-bar";
+import { InventoryCostPreview } from "@/components/inventory-cost-preview";
 
 export const Route = createFileRoute("/_authenticated/sell")({ component: Page });
 
@@ -47,6 +48,8 @@ function Page() {
     milad_pct: "50", ali_pct: "50", notes: "", expected_payment_date: "",
     creates_cycle: true,
   });
+  const [allocationMode, setAllocationMode] = useState<"fifo" | "weighted_average" | "manual">("fifo");
+  const [manualLots, setManualLots] = useState<Array<{ lot_id: string; take: number }>>([]);
 
   const received_amount = useMemo(() => {
     const a = Number(f.sold_amount); const r = Number(f.sell_rate);
@@ -230,61 +233,17 @@ function Page() {
                   <Input type="date" value={f.expected_payment_date} onChange={(e) => setF({ ...f, expected_payment_date: e.target.value })} />
                 </F>
                 <div className="md:col-span-2">
-                  <Card className="bg-muted/40 border-dashed">
-                    <CardContent className="p-3 space-y-2 text-sm">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium">FIFO cost preview</span>
-                        <Badge variant="outline" className="font-mono">Available: {fmt(preview.available, f.sold_currency)} {f.sold_currency}</Badge>
-                      </div>
-                      {preview.shortfall > 0 && Number(f.sold_amount) > 0 && (
-                        <div className="text-destructive text-xs">
-                          Not enough inventory — short by {fmt(preview.shortfall, f.sold_currency)} {f.sold_currency}.
-                        </div>
-                      )}
-                      {preview.rows.length > 0 && (
-                        <div className="space-y-1">
-                          {preview.rows.map(({ lot, take }) => (
-                            <div key={lot.id} className="flex justify-between font-mono text-xs">
-                              <span>{lot.lot_code} · {lot.account_name || "—"}</span>
-                              <span>{fmt(take, f.sold_currency)} × {fmt(lot.cost_basis_rate)} {lot.cost_basis_currency}/{f.sold_currency}</span>
-                            </div>
-                          ))}
-                          {preview.rows.some(r => r.profit !== null) && (
-                            <div className="mt-2 rounded border bg-background/60 p-2 space-y-1">
-                              <div className="text-[11px] font-medium text-muted-foreground">Per-lot profit</div>
-                              {preview.rows.map(({ lot, take, cost, received, profit }) => (
-                                <div key={"p-" + lot.id} className="grid grid-cols-4 gap-2 font-mono text-[11px]">
-                                  <span className="truncate">{lot.lot_code}</span>
-                                  <span className="text-right">{fmt(take, f.sold_currency)}</span>
-                                  <span className="text-right text-muted-foreground">c {fmt(cost)} / r {fmt(received)}</span>
-                                  <span className={"text-right " + (profit === null ? "text-muted-foreground" : profit >= 0 ? "text-accent" : "text-destructive")}>
-                                    {profit === null ? "—" : fmt(profit)} {lot.cost_basis_currency}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                          <div className="border-t pt-1 grid grid-cols-2 gap-2 text-xs">
-                            <div>Blended cost rate</div><div className="text-right font-mono">{fmt(preview.blended)} {preview.costCcy}/{f.sold_currency}</div>
-                            <div>Sell rate</div><div className="text-right font-mono">{fmt(Number(f.sell_rate) || 0)}</div>
-                            <div>Cost basis</div><div className="text-right font-mono">{fmt(preview.totalCost)} {preview.costCcy}</div>
-                            <div>Received</div><div className="text-right font-mono">{fmt(received_amount)} {f.received_currency}</div>
-                            <div className="font-medium">Expected profit</div>
-                            <div className={"text-right font-mono " + (preview.gross >= 0 ? "text-accent" : "text-destructive")}>
-                              {preview.receivedCcyMatchesCost ? `${fmt(preview.gross)} ${preview.costCcy}` : "—"}
-                            </div>
-                            <div>Milad share</div><div className="text-right font-mono">{fmt(preview.milad)}</div>
-                            <div>Ali share</div><div className="text-right font-mono">{fmt(preview.ali)}</div>
-                          </div>
-                          {!preview.receivedCcyMatchesCost && preview.costCcy && (
-                            <div className="text-xs text-muted-foreground">
-                              Profit not shown: received currency ({f.received_currency}) differs from cost basis currency ({preview.costCcy}).
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                  <InventoryCostPreview
+                    soldCurrency={f.sold_currency}
+                    soldAmount={Number(f.sold_amount) || 0}
+                    sellRate={Number(f.sell_rate) || 0}
+                    receivedCurrency={f.received_currency}
+                    sourceAccountId={f.sold_from_account_id || null}
+                    mode={allocationMode}
+                    manual={manualLots}
+                    onModeChange={(m) => { setAllocationMode(m); if (m !== "manual") setManualLots([]); }}
+                    onManualChange={setManualLots}
+                  />
                 </div>
                 <div className="md:col-span-2">
                   <DealScoreCard
