@@ -49,7 +49,7 @@ export function AllocationsTable({ remittanceId }: { remittanceId: string }) {
                 </tr>
               </thead>
               <tbody>
-                {q.data!.map((a: any) => (
+                {q.data!.map((a: Record<string, unknown> & { buy?: { doc_no?: string | null } | null }) => (
                   <tr key={a.id} className="border-t">
                     <td className="py-2 pr-3 font-mono text-xs">{String(a.id).slice(0, 8)}</td>
                     <td className="py-2 pr-3">
