@@ -138,6 +138,30 @@ export type Database = {
           },
         ]
       }
+      app_feature_flags: {
+        Row: {
+          description: string | null
+          enabled: boolean
+          key: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          description?: string | null
+          enabled?: boolean
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          description?: string | null
+          enabled?: boolean
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           alert_drop_pct_15min: number
@@ -1935,6 +1959,114 @@ export type Database = {
           },
         ]
       }
+      remittance_allocations: {
+        Row: {
+          allocated_amount: number
+          buy_id: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          frozen_at: string | null
+          frozen_by: string | null
+          frozen_commission_aed: number | null
+          frozen_cost_amount: number | null
+          frozen_cost_currency: string | null
+          frozen_snapshot: Json | null
+          frozen_spread_profit_aed: number | null
+          frozen_total_profit_aed: number | null
+          id: string
+          notes: string | null
+          posting_class: Database["public"]["Enums"]["posting_class"]
+          remittance_id: string
+          reversed_by_id: string | null
+          status: Database["public"]["Enums"]["allocation_status"]
+          updated_at: string
+          workflow_version: Database["public"]["Enums"]["workflow_version"]
+        }
+        Insert: {
+          allocated_amount: number
+          buy_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency: string
+          frozen_at?: string | null
+          frozen_by?: string | null
+          frozen_commission_aed?: number | null
+          frozen_cost_amount?: number | null
+          frozen_cost_currency?: string | null
+          frozen_snapshot?: Json | null
+          frozen_spread_profit_aed?: number | null
+          frozen_total_profit_aed?: number | null
+          id?: string
+          notes?: string | null
+          posting_class?: Database["public"]["Enums"]["posting_class"]
+          remittance_id: string
+          reversed_by_id?: string | null
+          status?: Database["public"]["Enums"]["allocation_status"]
+          updated_at?: string
+          workflow_version?: Database["public"]["Enums"]["workflow_version"]
+        }
+        Update: {
+          allocated_amount?: number
+          buy_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          frozen_at?: string | null
+          frozen_by?: string | null
+          frozen_commission_aed?: number | null
+          frozen_cost_amount?: number | null
+          frozen_cost_currency?: string | null
+          frozen_snapshot?: Json | null
+          frozen_spread_profit_aed?: number | null
+          frozen_total_profit_aed?: number | null
+          id?: string
+          notes?: string | null
+          posting_class?: Database["public"]["Enums"]["posting_class"]
+          remittance_id?: string
+          reversed_by_id?: string | null
+          status?: Database["public"]["Enums"]["allocation_status"]
+          updated_at?: string
+          workflow_version?: Database["public"]["Enums"]["workflow_version"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "remittance_allocations_buy_id_fkey"
+            columns: ["buy_id"]
+            isOneToOne: false
+            referencedRelation: "buy_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remittance_allocations_buy_id_fkey"
+            columns: ["buy_id"]
+            isOneToOne: false
+            referencedRelation: "v_remittance_settlement_path"
+            referencedColumns: ["linked_buy_id"]
+          },
+          {
+            foreignKeyName: "remittance_allocations_remittance_id_fkey"
+            columns: ["remittance_id"]
+            isOneToOne: false
+            referencedRelation: "remittances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remittance_allocations_remittance_id_fkey"
+            columns: ["remittance_id"]
+            isOneToOne: false
+            referencedRelation: "v_remittance_settlement_path"
+            referencedColumns: ["remittance_id"]
+          },
+          {
+            foreignKeyName: "remittance_allocations_reversed_by_id_fkey"
+            columns: ["reversed_by_id"]
+            isOneToOne: false
+            referencedRelation: "remittance_allocations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       remittance_expenses: {
         Row: {
           amount: number
@@ -1976,6 +2108,73 @@ export type Database = {
           },
           {
             foreignKeyName: "remittance_expenses_remittance_id_fkey"
+            columns: ["remittance_id"]
+            isOneToOne: false
+            referencedRelation: "v_remittance_settlement_path"
+            referencedColumns: ["remittance_id"]
+          },
+        ]
+      }
+      remittance_profit_components: {
+        Row: {
+          allocation_id: string | null
+          amount: number
+          amount_aed: number | null
+          component_type: string
+          created_at: string
+          currency: string
+          entry_kind: Database["public"]["Enums"]["entry_kind"]
+          id: string
+          posting_class: Database["public"]["Enums"]["posting_class"]
+          reference_note: string | null
+          remittance_id: string
+          workflow_version: Database["public"]["Enums"]["workflow_version"]
+        }
+        Insert: {
+          allocation_id?: string | null
+          amount: number
+          amount_aed?: number | null
+          component_type: string
+          created_at?: string
+          currency: string
+          entry_kind?: Database["public"]["Enums"]["entry_kind"]
+          id?: string
+          posting_class?: Database["public"]["Enums"]["posting_class"]
+          reference_note?: string | null
+          remittance_id: string
+          workflow_version?: Database["public"]["Enums"]["workflow_version"]
+        }
+        Update: {
+          allocation_id?: string | null
+          amount?: number
+          amount_aed?: number | null
+          component_type?: string
+          created_at?: string
+          currency?: string
+          entry_kind?: Database["public"]["Enums"]["entry_kind"]
+          id?: string
+          posting_class?: Database["public"]["Enums"]["posting_class"]
+          reference_note?: string | null
+          remittance_id?: string
+          workflow_version?: Database["public"]["Enums"]["workflow_version"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "remittance_profit_components_allocation_id_fkey"
+            columns: ["allocation_id"]
+            isOneToOne: false
+            referencedRelation: "remittance_allocations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remittance_profit_components_remittance_id_fkey"
+            columns: ["remittance_id"]
+            isOneToOne: false
+            referencedRelation: "remittances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remittance_profit_components_remittance_id_fkey"
             columns: ["remittance_id"]
             isOneToOne: false
             referencedRelation: "v_remittance_settlement_path"
@@ -2040,6 +2239,7 @@ export type Database = {
           transfer_method: Database["public"]["Enums"]["remittance_transfer_method"]
           transferred_amount: number
           updated_at: string
+          workflow_version: Database["public"]["Enums"]["workflow_version"]
         }
         Insert: {
           beneficiary_account_number?: string | null
@@ -2097,6 +2297,7 @@ export type Database = {
           transfer_method?: Database["public"]["Enums"]["remittance_transfer_method"]
           transferred_amount: number
           updated_at?: string
+          workflow_version?: Database["public"]["Enums"]["workflow_version"]
         }
         Update: {
           beneficiary_account_number?: string | null
@@ -2154,6 +2355,7 @@ export type Database = {
           transfer_method?: Database["public"]["Enums"]["remittance_transfer_method"]
           transferred_amount?: number
           updated_at?: string
+          workflow_version?: Database["public"]["Enums"]["workflow_version"]
         }
         Relationships: [
           {
@@ -2728,6 +2930,69 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      third_party_clearing_accounts: {
+        Row: {
+          account_id: string
+          created_at: string
+          currency: string
+          id: string
+          is_active: boolean
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          currency: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "third_party_clearing_accounts_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "third_party_clearing_accounts_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "third_party_clearing_accounts_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "third_party_clearing_accounts_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "third_party_clearing_accounts_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
+            referencedColumns: ["account_id"]
           },
         ]
       }
@@ -4241,6 +4506,10 @@ export type Database = {
       }
       admin_recalculate_balances: { Args: never; Returns: Json }
       admin_reconcile: { Args: { _reason: string }; Returns: Json }
+      assert_posting_active: {
+        Args: { _class: Database["public"]["Enums"]["posting_class"] }
+        Returns: undefined
+      }
       assign_lot_cost_basis: {
         Args: {
           _cost_currency: string
@@ -4369,7 +4638,15 @@ export type Database = {
         | "customer_wallet"
         | "pending_delivery"
         | "other"
-      app_role: "admin" | "milad" | "ali" | "viewer"
+      allocation_status: "draft" | "open" | "closed" | "reversed" | "void"
+      app_role:
+        | "admin"
+        | "milad"
+        | "ali"
+        | "viewer"
+        | "operator"
+        | "manager"
+        | "accountant"
       brought_in_by: "milad" | "ali" | "customer" | "other"
       brought_in_reason:
         | "capital"
@@ -4390,6 +4667,7 @@ export type Database = {
         | "other"
         | "deposit_receipt"
         | "payment_order_proof"
+      entry_kind: "normal" | "reversal" | "adjustment"
       expense_kind:
         | "petrol"
         | "parking"
@@ -4459,6 +4737,7 @@ export type Database = {
         | "internal"
         | "international"
         | "other"
+      posting_class: "shadow" | "historical_active" | "operational_active"
       profit_status: "pending" | "received" | "waived" | "kept_in_wallet"
       remittance_commission_method: "fixed" | "percentage" | "included" | "free"
       remittance_excess_allocation:
@@ -4526,6 +4805,7 @@ export type Database = {
         | "loss"
         | "missing_receipt"
       txn_owner: "milad" | "ali" | "shared"
+      workflow_version: "legacy" | "v2"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -4666,7 +4946,16 @@ export const Constants = {
         "pending_delivery",
         "other",
       ],
-      app_role: ["admin", "milad", "ali", "viewer"],
+      allocation_status: ["draft", "open", "closed", "reversed", "void"],
+      app_role: [
+        "admin",
+        "milad",
+        "ali",
+        "viewer",
+        "operator",
+        "manager",
+        "accountant",
+      ],
       brought_in_by: ["milad", "ali", "customer", "other"],
       brought_in_reason: [
         "capital",
@@ -4689,6 +4978,7 @@ export const Constants = {
         "deposit_receipt",
         "payment_order_proof",
       ],
+      entry_kind: ["normal", "reversal", "adjustment"],
       expense_kind: [
         "petrol",
         "parking",
@@ -4765,6 +5055,7 @@ export const Constants = {
         "international",
         "other",
       ],
+      posting_class: ["shadow", "historical_active", "operational_active"],
       profit_status: ["pending", "received", "waived", "kept_in_wallet"],
       remittance_commission_method: ["fixed", "percentage", "included", "free"],
       remittance_excess_allocation: [
@@ -4839,6 +5130,7 @@ export const Constants = {
         "missing_receipt",
       ],
       txn_owner: ["milad", "ali", "shared"],
+      workflow_version: ["legacy", "v2"],
     },
   },
 } as const
