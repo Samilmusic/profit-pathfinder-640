@@ -9,6 +9,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AccountSelect, useCustomers } from "@/components/account-select";
+import { Badge } from "@/components/ui/badge";
+import { useQuery } from "@tanstack/react-query";
 import { NumberInput } from "@/components/number-input";
 import { CURRENCIES, fmt, fmtProfit } from "@/lib/exchange";
 import { ArrowLeft, Send } from "lucide-react";
@@ -62,6 +64,59 @@ function NewRemittancePage() {
   const [payAmount, setPayAmount] = useState("");
   const [refRate, setRefRate] = useState("");
   const [paymentAccountId, setPaymentAccountId] = useState("");
+
+  // Settlement method (NEW — third-party / linked-buy)
+  const [paymentDestination, setPaymentDestination] = useState<
+    "into_account" | "cash_to_us" | "to_third_party" | "settles_linked_buy" | "pending"
+  >("into_account");
+  const [thirdPartyCustomerId, setThirdPartyCustomerId] = useState("");
+  const [thirdPartyName, setThirdPartyName] = useState("");
+  const [linkedBuyId, setLinkedBuyId] = useState("");
+  const [settlementAmount, setSettlementAmount] = useState("");
+  const [settlementCurrency, setSettlementCurrency] = useState("IRR");
+  const [settlementDate, setSettlementDate] = useState(today);
+  const [excessAllocation, setExcessAllocation] = useState<
+    "none" | "our_account" | "another_supplier" | "customer_balance" | "pending" | "commission"
+  >("none");
+  const [excessNote, setExcessNote] = useState("");
+
+  // Inline "Create new linked buy"
+  const [newBuy, setNewBuy] = useState({
+    supplierId: "",
+    boughtCurrency: "AED",
+    boughtAmount: "",
+    supplierRate: "",
+  });
+
+  const isThirdParty = paymentDestination === "to_third_party" || paymentDestination === "settles_linked_buy";
+
+  // Auto-mirror settlement currency/amount from customer payment inputs
+  useMemo(() => {
+    if (isThirdParty) {
+      if (!settlementCurrency && payCurrency) setSettlementCurrency(payCurrency);
+    }
+  }, [isThirdParty, payCurrency]); // eslint-disable-line
+
+  const openBuysQ = useQuery({
+    enabled: isThirdParty,
+    queryKey: ["open-buys-for-remittance", newBuy.supplierId, thirdPartyCustomerId],
+    queryFn: async () => {
+      let q = supabase.from("buy_transactions").select("id,doc_no,bought_amount,bought_currency,paid_amount,paid_currency,buy_rate,customer_id,counterparty")
+        .is("deleted_at", null).eq("settlement_source", "own_funds")
+        .order("entry_date", { ascending: false }).limit(20);
+      const cid = thirdPartyCustomerId || newBuy.supplierId;
+      if (cid) q = q.eq("customer_id", cid);
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data ?? []) as any[];
+    },
+  });
+
+  const settlementSummary = useMemo(() => {
+    const cust = Number(payAmount) || 0;
+    const set = Number(settlementAmount) || 0;
+    return { diff: cust - set, absDiff: Math.abs(cust - set) };
+  }, [payAmount, settlementAmount]);
 
   // Commission
   const [commMethod, setCommMethod] = useState<CommissionMethod>("included");
@@ -125,9 +180,40 @@ function NewRemittancePage() {
       if (!sourceAccountId) throw new Error("Select the source account (paid from)");
       if (opts.close) {
         if (!payAmount || Number(payAmount) <= 0) throw new Error("Enter the customer payment amount before closing");
-        if (!paymentAccountId) throw new Error("Select the payment received account before closing");
         if (!benName) throw new Error("Enter beneficiary name before closing");
+        if (paymentDestination === "into_account" && !paymentAccountId) throw new Error("Select the payment received account before closing");
       }
+      if (isThirdParty) {
+        if (!thirdPartyCustomerId && !thirdPartyName) throw new Error("Choose who the customer paid to");
+        if (!settlementAmount || Number(settlementAmount) <= 0) throw new Error("Enter the settlement amount");
+      }
+
+      // Optionally create linked buy first
+      let linkedBuyIdFinal: string | null = linkedBuyId || null;
+      if (isThirdParty && !linkedBuyIdFinal && newBuy.boughtAmount && newBuy.supplierRate) {
+        const bAmt = Number(newBuy.boughtAmount);
+        const rate = Number(newBuy.supplierRate);
+        if (!bAmt || !rate) throw new Error("Linked buy amount and rate are required");
+        const paidAmt = bAmt * rate;
+        const { data: u2 } = await supabase.auth.getUser();
+        const { data: newB, error: bErr } = await supabase.from("buy_transactions").insert({
+          entry_date: entryDate,
+          bought_currency: newBuy.boughtCurrency,
+          bought_amount: bAmt,
+          buy_rate: rate,
+          paid_currency: settlementCurrency || payCurrency,
+          paid_amount: paidAmt,
+          paid_from_account_id: null,
+          received_into_account_id: null,
+          customer_id: newBuy.supplierId || thirdPartyCustomerId || null,
+          counterparty: thirdPartyName || null,
+          settlement_source: "remittance_payment",
+          created_by: u2.user?.id,
+        } as any).select("id").single();
+        if (bErr) throw bErr;
+        linkedBuyIdFinal = newB.id as string;
+      }
+
       const { data: u } = await supabase.auth.getUser();
       const insert: any = {
         entry_date: entryDate,
@@ -150,7 +236,16 @@ function NewRemittancePage() {
         customer_payment_currency: payCurrency,
         customer_payment_amount: Number(payAmount) || 0,
         reference_rate: Number(refRate) || 0,
-        payment_received_account_id: paymentAccountId || null,
+        payment_received_account_id: isThirdParty ? null : (paymentAccountId || null),
+        payment_destination: paymentDestination,
+        third_party_customer_id: isThirdParty ? (thirdPartyCustomerId || null) : null,
+        third_party_name: isThirdParty ? (thirdPartyName || null) : null,
+        linked_buy_id: isThirdParty ? linkedBuyIdFinal : null,
+        settlement_amount: isThirdParty ? (Number(settlementAmount) || null) : null,
+        settlement_currency: isThirdParty ? (settlementCurrency || null) : null,
+        settlement_date: isThirdParty ? (settlementDate || null) : null,
+        excess_allocation: isThirdParty ? excessAllocation : "none",
+        excess_allocation_note: isThirdParty && excessAllocation !== "none" ? (excessNote || null) : null,
         commission_method: commMethod,
         commission_fixed_amount: commMethod === "fixed" ? Number(commFixedAmount) || 0 : null,
         commission_fixed_currency: commMethod === "fixed" ? commFixedCurrency : null,
