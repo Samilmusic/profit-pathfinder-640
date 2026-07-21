@@ -90,7 +90,13 @@ export async function fetchCustomerList(a: CustomerListArgs = {}): Promise<Custo
 }
 
 export type CustomerDetailResponse = ReportEnvelope<{
-  customer: { id: string; name: string | null; phone: string | null; notes: string | null; created_at: string } | null;
+  customer: {
+    id: string;
+    name: string | null;
+    phone: string | null;
+    notes: string | null;
+    created_at: string;
+  } | null;
   totals: {
     event_count: number;
     profit_total_aed: number;
@@ -216,7 +222,13 @@ export async function fetchSupplierList(a: SupplierListArgs = {}): Promise<Suppl
 }
 
 export type SupplierDetailResponse = ReportEnvelope<{
-  supplier: { id: string; name: string | null; phone: string | null; notes: string | null; created_at: string } | null;
+  supplier: {
+    id: string;
+    name: string | null;
+    phone: string | null;
+    notes: string | null;
+    created_at: string;
+  } | null;
   totals: {
     event_count: number;
     profit_total_aed: number;
