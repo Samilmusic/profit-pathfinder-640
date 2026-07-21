@@ -820,55 +820,8 @@ function CurrencyPositionCard({
         className={`grid transition-[grid-template-rows] duration-300 ease-out ${open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
       >
         <div className="overflow-hidden">
-          <div className="border-t bg-muted/20">
-            {/* Inventory Summary */}
-            <div className="px-6 py-4 border-b">
-              <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">Inventory Summary</div>
-              <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-4">
-                <SummaryTile label="Average Buy" value={hasCost ? nfInt.format(p.avgCost) : "—"} mono />
-                <SummaryTile label="Current Market" value={p.marketRate > 0 ? nfInt.format(p.marketRate) : "—"} mono />
-                <SummaryTile
-                  label="Floating Profit"
-                  value={hasCost ? `${positive ? "+" : ""}${nfSmart(p.floatingIRR)} IRR` : "—"}
-                  tone={hasCost ? (positive ? "ok" : "danger") : undefined}
-                  mono
-                />
-                <SummaryTile label="Oldest → Newest" value={`${daysSince(p.oldest)} → ${daysSince(p.newest)}`} />
-              </div>
-            </div>
-
-            {/* Lot list */}
-            <ul className="divide-y">
-              {p.lots.length === 0 && (
-                <li className="px-6 py-6 text-sm text-muted-foreground text-center">No lots yet.</li>
-              )}
-              {p.lots.map((l: any) => (
-                <LotRow key={l.id} lot={l} ccy={p.ccy} />
-              ))}
-            </ul>
-
-            {/* Account breakdown footer */}
-            {p.accounts.length > 0 && (
-              <div className="border-t px-6 py-3 bg-background/40">
-                <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-2">Accounts</div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
-                  {p.accounts.map((a: any) => (
-                    <div key={a.id} className="flex items-center gap-2 text-xs">
-                      <span className={`h-1.5 w-1.5 rounded-full ${
-                        a.type === "cash_box" ? "bg-emerald-500"
-                        : a.type === "bank" ? "bg-sky-500"
-                        : a.type === "person_holding" ? "bg-amber-500"
-                        : "bg-muted-foreground"
-                      }`} />
-                      <span className="flex-1 min-w-0 truncate text-muted-foreground">
-                        {a.type === "person_holding" && a.holder ? `Held by ${a.holder}` : a.name}
-                      </span>
-                      <span className="font-mono tabular-nums">{nfSmart(a.balance)}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+          <div className="border-t">
+            {open && <CurrencyLedger ccy={p.ccy} marketRate={p.marketRate} avgCost={p.avgCost} />}
           </div>
         </div>
       </div>
