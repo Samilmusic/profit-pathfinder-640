@@ -2784,6 +2784,30 @@ export type Database = {
           },
         ]
       }
+      rpc_idempotency: {
+        Row: {
+          actor: string | null
+          created_at: string
+          request_id: string
+          result: Json | null
+          rpc_name: string
+        }
+        Insert: {
+          actor?: string | null
+          created_at?: string
+          request_id: string
+          result?: Json | null
+          rpc_name: string
+        }
+        Update: {
+          actor?: string | null
+          created_at?: string
+          request_id?: string
+          result?: Json | null
+          rpc_name?: string
+        }
+        Relationships: []
+      }
       sell_payments: {
         Row: {
           amount: number
@@ -4857,6 +4881,16 @@ export type Database = {
       }
     }
     Functions: {
+      _assert_flag: { Args: { _key: string }; Returns: undefined }
+      _assert_role: {
+        Args: { _role: Database["public"]["Enums"]["app_role"] }
+        Returns: undefined
+      }
+      _idem_lookup: { Args: { _req: string }; Returns: Json }
+      _idem_store: {
+        Args: { _req: string; _result: Json; _rpc: string }
+        Returns: undefined
+      }
       admin_force_close: {
         Args: { _reason: string; _sell_id: string }
         Returns: undefined
@@ -4971,6 +5005,69 @@ export type Database = {
         Args: { _buy_id: string; _note?: string }
         Returns: undefined
       }
+      remittance_v2_allocate_buy: {
+        Args: {
+          _amount: number
+          _buy_id: string
+          _client_request_id?: string
+          _notes?: string
+          _remittance_id: string
+        }
+        Returns: string
+      }
+      remittance_v2_cancel: {
+        Args: { _client_request_id?: string; _id: string; _reason: string }
+        Returns: undefined
+      }
+      remittance_v2_close: {
+        Args: { _client_request_id?: string; _id: string; _note?: string }
+        Returns: undefined
+      }
+      remittance_v2_create: {
+        Args: { _client_request_id?: string; _payload: Json }
+        Returns: string
+      }
+      remittance_v2_mark_funds_received: {
+        Args: {
+          _account_id: string
+          _amount: number
+          _client_request_id?: string
+          _id: string
+          _note?: string
+        }
+        Returns: undefined
+      }
+      remittance_v2_record_supplier_delivery: {
+        Args: {
+          _buy_id: string
+          _client_request_id?: string
+          _delivery_date?: string
+          _note?: string
+          _received_amount: number
+          _received_into_account_id: string
+        }
+        Returns: string
+      }
+      remittance_v2_record_third_party_settlement: {
+        Args: {
+          _amount: number
+          _client_request_id?: string
+          _id: string
+          _note?: string
+          _third_party_customer_id: string
+        }
+        Returns: undefined
+      }
+      remittance_v2_reverse_allocation: {
+        Args: {
+          _allocation_id: string
+          _client_request_id?: string
+          _reason: string
+        }
+        Returns: string
+      }
+      remittance_v2_validate_close: { Args: { _id: string }; Returns: Json }
+      rpc_idempotency_gc: { Args: { _days?: number }; Returns: number }
       run_remittance_shadow_backfill: {
         Args: { _note?: string }
         Returns: Json
