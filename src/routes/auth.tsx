@@ -37,7 +37,7 @@ function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-dvh flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
         <div className="flex items-center gap-3 justify-center mb-8">
           <div className="h-12 w-12 rounded-xl grid place-items-center" style={{ background: "var(--gradient-primary)" }}>
