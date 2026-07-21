@@ -702,6 +702,13 @@ export type Database = {
             foreignKeyName: "buy_transactions_settled_by_remittance_id_fkey"
             columns: ["settled_by_remittance_id"]
             isOneToOne: false
+            referencedRelation: "v_remittance_lifecycle"
+            referencedColumns: ["remittance_id"]
+          },
+          {
+            foreignKeyName: "buy_transactions_settled_by_remittance_id_fkey"
+            columns: ["settled_by_remittance_id"]
+            isOneToOne: false
             referencedRelation: "v_remittance_migration_diff"
             referencedColumns: ["remittance_id"]
           },
@@ -2127,6 +2134,13 @@ export type Database = {
             foreignKeyName: "remittance_allocations_remittance_id_fkey"
             columns: ["remittance_id"]
             isOneToOne: false
+            referencedRelation: "v_remittance_lifecycle"
+            referencedColumns: ["remittance_id"]
+          },
+          {
+            foreignKeyName: "remittance_allocations_remittance_id_fkey"
+            columns: ["remittance_id"]
+            isOneToOne: false
             referencedRelation: "v_remittance_migration_diff"
             referencedColumns: ["remittance_id"]
           },
@@ -2191,6 +2205,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_remittance_data_quality"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remittance_expenses_remittance_id_fkey"
+            columns: ["remittance_id"]
+            isOneToOne: false
+            referencedRelation: "v_remittance_lifecycle"
+            referencedColumns: ["remittance_id"]
           },
           {
             foreignKeyName: "remittance_expenses_remittance_id_fkey"
@@ -2290,6 +2311,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_remittance_data_quality"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remittance_migration_audit_remittance_id_fkey"
+            columns: ["remittance_id"]
+            isOneToOne: false
+            referencedRelation: "v_remittance_lifecycle"
+            referencedColumns: ["remittance_id"]
           },
           {
             foreignKeyName: "remittance_migration_audit_remittance_id_fkey"
@@ -2415,6 +2443,13 @@ export type Database = {
             foreignKeyName: "remittance_profit_components_remittance_id_fkey"
             columns: ["remittance_id"]
             isOneToOne: false
+            referencedRelation: "v_remittance_lifecycle"
+            referencedColumns: ["remittance_id"]
+          },
+          {
+            foreignKeyName: "remittance_profit_components_remittance_id_fkey"
+            columns: ["remittance_id"]
+            isOneToOne: false
             referencedRelation: "v_remittance_migration_diff"
             referencedColumns: ["remittance_id"]
           },
@@ -2466,6 +2501,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_remittance_data_quality"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remittance_settlement_events_remittance_id_fkey"
+            columns: ["remittance_id"]
+            isOneToOne: false
+            referencedRelation: "v_remittance_lifecycle"
+            referencedColumns: ["remittance_id"]
           },
           {
             foreignKeyName: "remittance_settlement_events_remittance_id_fkey"
@@ -2531,6 +2573,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_remittance_data_quality"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remittance_workflow_transitions_remittance_id_fkey"
+            columns: ["remittance_id"]
+            isOneToOne: false
+            referencedRelation: "v_remittance_lifecycle"
+            referencedColumns: ["remittance_id"]
           },
           {
             foreignKeyName: "remittance_workflow_transitions_remittance_id_fkey"
@@ -4877,6 +4926,27 @@ export type Database = {
           },
         ]
       }
+      v_operator_labels: {
+        Row: {
+          actor_id: string | null
+          display_name: string | null
+          email: string | null
+          label: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          display_name?: string | null
+          email?: string | null
+          label?: never
+        }
+        Update: {
+          actor_id?: string | null
+          display_name?: string | null
+          email?: string | null
+          label?: never
+        }
+        Relationships: []
+      }
       v_profit_events: {
         Row: {
           actor_id: string | null
@@ -4907,6 +4977,28 @@ export type Database = {
           event_date: string | null
           gross_profit_aed: number | null
           primary_lot_id: string | null
+          ref_id: string | null
+          severity: string | null
+          source: string | null
+          spread_aed: number | null
+          supplier_id: string | null
+        }
+        Relationships: []
+      }
+      v_profit_events_multi: {
+        Row: {
+          actor_id: string | null
+          amount_aed: number | null
+          classification: string | null
+          commission_aed: number | null
+          currency: string | null
+          customer_id: string | null
+          destination_account_id: string | null
+          doc_no: string | null
+          event_at: string | null
+          event_date: string | null
+          lot_id: string | null
+          lot_weight: number | null
           ref_id: string | null
           severity: string | null
           source: string | null
@@ -4983,6 +5075,43 @@ export type Database = {
           {
             foreignKeyName: "remittances_customer_id_fkey"
             columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_remittance_lifecycle: {
+        Row: {
+          alloc_seconds: number | null
+          close_seconds: number | null
+          created_at: string | null
+          customer_id: string | null
+          is_late: boolean | null
+          remittance_id: string | null
+          settle_seconds: number | null
+          status: Database["public"]["Enums"]["remittance_status"] | null
+          supplier_id: string | null
+          t_alloc: string | null
+          t_cancelled: string | null
+          t_closed: string | null
+          t_settle: string | null
+          total_seconds: number | null
+          workflow_state:
+            | Database["public"]["Enums"]["remittance_workflow_state"]
+            | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "remittances_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remittances_fx_supplier_customer_id_fkey"
+            columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
@@ -5163,6 +5292,7 @@ export type Database = {
         Args: { _remittance_id: string }
         Returns: number
       }
+      _report_meta: { Args: { _key: string; _version: string }; Returns: Json }
       admin_force_close: {
         Args: { _reason: string; _sell_id: string }
         Returns: undefined
@@ -5355,6 +5485,27 @@ export type Database = {
         Returns: string
       }
       remittance_v2_validate_close: { Args: { _id: string }; Returns: Json }
+      report_customer_detail: {
+        Args: {
+          _customer_id: string
+          _from?: string
+          _quality_mode?: string
+          _to?: string
+        }
+        Returns: Json
+      }
+      report_customer_list: {
+        Args: {
+          _from?: string
+          _limit?: number
+          _offset?: number
+          _quality_mode?: string
+          _search?: string
+          _sort?: string
+          _to?: string
+        }
+        Returns: Json
+      }
       report_data_quality_summary: { Args: never; Returns: Json }
       report_executive_kpis: { Args: { _quality_mode?: string }; Returns: Json }
       report_meta:
@@ -5385,6 +5536,27 @@ export type Database = {
           _from?: string
           _limit?: number
           _quality_mode?: string
+          _to?: string
+        }
+        Returns: Json
+      }
+      report_supplier_detail: {
+        Args: {
+          _from?: string
+          _quality_mode?: string
+          _supplier_id: string
+          _to?: string
+        }
+        Returns: Json
+      }
+      report_supplier_list: {
+        Args: {
+          _from?: string
+          _limit?: number
+          _offset?: number
+          _quality_mode?: string
+          _search?: string
+          _sort?: string
           _to?: string
         }
         Returns: Json
