@@ -133,13 +133,18 @@ function RemittanceV2DetailPage() {
       <div className="mx-auto max-w-3xl p-4 space-y-4">
         <BackLink />
         <Card>
-          <CardHeader><CardTitle>Legacy remittance</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>Legacy remittance</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              This remittance uses the legacy workflow. The v2 read-only view is only available for records created under the v2 workflow.
+              This remittance uses the legacy workflow. The v2 read-only view is only available for
+              records created under the v2 workflow.
             </p>
             <Button asChild size="sm">
-              <Link to="/remittances/$id" params={{ id }}>Open legacy detail</Link>
+              <Link to="/remittances/$id" params={{ id }}>
+                Open legacy detail
+              </Link>
             </Button>
           </CardContent>
         </Card>
@@ -166,32 +171,80 @@ function RemittanceV2DetailPage() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
-          <CardHeader><CardTitle className="text-base">Parties & Routing</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base">Parties & Routing</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <Row k="Customer" v={r.customer?.name ?? "—"} />
             <Row k="Third-party" v={r.third_party?.name ?? r.third_party_name ?? "—"} />
             <Row k="Payment destination" v={r.payment_destination ?? "—"} />
-            <Row k="Source account" v={r.source ? `${r.source.name} (${r.source.currency})` : "—"} />
-            <Row k="Payment received account" v={r.payment ? `${r.payment.name} (${r.payment.currency})` : "—"} />
-            <Row k="Linked buy" v={r.linked_buy ? `${r.linked_buy.doc_no ?? String(r.linked_buy.id).slice(0, 8)} · ${fmt(r.linked_buy.bought_amount)} ${r.linked_buy.bought_currency ?? ""}` : "—"} />
+            <Row
+              k="Source account"
+              v={r.source ? `${r.source.name} (${r.source.currency})` : "—"}
+            />
+            <Row
+              k="Payment received account"
+              v={r.payment ? `${r.payment.name} (${r.payment.currency})` : "—"}
+            />
+            <Row
+              k="Linked buy"
+              v={
+                r.linked_buy
+                  ? `${r.linked_buy.doc_no ?? String(r.linked_buy.id).slice(0, 8)} · ${fmt(r.linked_buy.bought_amount)} ${r.linked_buy.bought_currency ?? ""}`
+                  : "—"
+              }
+            />
             <Row k="FX supplier" v={r.fx_supplier_name ?? "—"} />
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="text-base">Amounts</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base">Amounts</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <Row k="Transfer" v={`${fmt(r.transferred_amount)} ${r.transfer_currency ?? ""}`} />
-            <Row k="Customer payment" v={`${fmt(r.customer_payment_amount)} ${r.customer_payment_currency ?? ""}`} />
+            <Row
+              k="Customer payment"
+              v={`${fmt(r.customer_payment_amount)} ${r.customer_payment_currency ?? ""}`}
+            />
             <Row k="Reference rate" v={r.reference_rate != null ? fmt(r.reference_rate) : "—"} />
-            <Row k="Settlement" v={r.settlement_amount != null ? `${fmt(r.settlement_amount)} ${r.settlement_currency ?? ""}` : "—"} />
-            <Row k="FX purchase rate" v={r.fx_purchase_rate != null ? fmt(r.fx_purchase_rate) : "—"} />
-            <Row k="FX purchased amount" v={r.fx_purchased_amount != null ? fmt(r.fx_purchased_amount) : "—"} />
-            <Row k="Gross commission (AED)" v={r.gross_commission_aed != null ? fmt(r.gross_commission_aed) : "—"} />
-            <Row k="Linked expenses (AED)" v={r.linked_expenses_aed != null ? fmt(r.linked_expenses_aed) : "—"} />
-            <Row k="Net commission (AED)" v={r.net_commission_aed != null ? fmt(r.net_commission_aed) : "—"} />
-            <Row k="FX trading profit (AED)" v={r.fx_trading_profit_aed != null ? fmt(r.fx_trading_profit_aed) : "—"} />
-            <Row k="Total profit (AED)" v={r.total_profit_aed != null ? fmt(r.total_profit_aed) : "—"} />
+            <Row
+              k="Settlement"
+              v={
+                r.settlement_amount != null
+                  ? `${fmt(r.settlement_amount)} ${r.settlement_currency ?? ""}`
+                  : "—"
+              }
+            />
+            <Row
+              k="FX purchase rate"
+              v={r.fx_purchase_rate != null ? fmt(r.fx_purchase_rate) : "—"}
+            />
+            <Row
+              k="FX purchased amount"
+              v={r.fx_purchased_amount != null ? fmt(r.fx_purchased_amount) : "—"}
+            />
+            <Row
+              k="Gross commission (AED)"
+              v={r.gross_commission_aed != null ? fmt(r.gross_commission_aed) : "—"}
+            />
+            <Row
+              k="Linked expenses (AED)"
+              v={r.linked_expenses_aed != null ? fmt(r.linked_expenses_aed) : "—"}
+            />
+            <Row
+              k="Net commission (AED)"
+              v={r.net_commission_aed != null ? fmt(r.net_commission_aed) : "—"}
+            />
+            <Row
+              k="FX trading profit (AED)"
+              v={r.fx_trading_profit_aed != null ? fmt(r.fx_trading_profit_aed) : "—"}
+            />
+            <Row
+              k="Total profit (AED)"
+              v={r.total_profit_aed != null ? fmt(r.total_profit_aed) : "—"}
+            />
           </CardContent>
         </Card>
       </div>
@@ -202,20 +255,27 @@ function RemittanceV2DetailPage() {
       <SettlementEventsList remittanceId={id} />
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Linked Expenses</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle className="text-base">Linked Expenses</CardTitle>
+        </CardHeader>
         <CardContent>
           {expenses.isLoading ? (
             <div className="text-sm text-muted-foreground">Loading…</div>
           ) : expenses.isError ? (
             <div className="text-sm text-destructive">Unable to load expenses.</div>
           ) : (expenses.data?.length ?? 0) === 0 ? (
-            <div className="text-sm text-muted-foreground">No records are available or visible to your role.</div>
+            <div className="text-sm text-muted-foreground">
+              No records are available or visible to your role.
+            </div>
           ) : (
             <ul className="space-y-1 text-sm">
               {expenses.data!.map((e) => (
                 <li key={e.id} className="flex items-center justify-between border-b py-1">
                   <span>{e.label}</span>
-                  <span className="font-mono">{fmt(e.amount)} {e.currency} <span className="text-muted-foreground">({fmt(e.amount_aed)} AED)</span></span>
+                  <span className="font-mono">
+                    {fmt(e.amount)} {e.currency}{" "}
+                    <span className="text-muted-foreground">({fmt(e.amount_aed)} AED)</span>
+                  </span>
                 </li>
               ))}
             </ul>
@@ -227,7 +287,9 @@ function RemittanceV2DetailPage() {
 
       {r.notes ? (
         <Card>
-          <CardHeader><CardTitle className="text-base">Notes</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base">Notes</CardTitle>
+          </CardHeader>
           <CardContent className="text-sm whitespace-pre-wrap">{r.notes}</CardContent>
         </Card>
       ) : null}
@@ -269,7 +331,9 @@ function NotFoundView() {
     <div className="mx-auto max-w-3xl p-4 space-y-4">
       <BackLink />
       <Card>
-        <CardHeader><CardTitle>Remittance not found</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Remittance not found</CardTitle>
+        </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
           No records are available or visible to your role.
         </CardContent>
@@ -284,10 +348,14 @@ function ErrorView({ error }: { error: Error }) {
     <div className="mx-auto max-w-3xl p-4 space-y-4">
       <BackLink />
       <Card>
-        <CardHeader><CardTitle>Unable to load remittance</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Unable to load remittance</CardTitle>
+        </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-destructive">{error?.message ?? "Unknown error"}</p>
-          <Button size="sm" onClick={() => router.invalidate()}>Retry</Button>
+          <Button size="sm" onClick={() => router.invalidate()}>
+            Retry
+          </Button>
         </CardContent>
       </Card>
     </div>

@@ -12,5 +12,7 @@ const TONE: Record<string, string> = {
 
 export function WorkflowStateBadge({ state }: { state: string | null | undefined }) {
   const s = state ?? "draft";
-  return <Badge className={TONE[s] ?? "bg-muted text-muted-foreground"}>{s.replace(/_/g, " ")}</Badge>;
+  return (
+    <Badge className={TONE[s] ?? "bg-muted text-muted-foreground"}>{s.replace(/_/g, " ")}</Badge>
+  );
 }
