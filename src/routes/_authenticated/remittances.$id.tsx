@@ -348,7 +348,7 @@ function ReceiveCurrencyDialog({
         {buy?.id && (
           <div className="pt-2">
             <Label className="text-xs text-muted-foreground">Receipt / proof (optional)</Label>
-            <DocumentsPanel refType="buy" refId={buy.id} docType="delivery_proof" />
+            <DocumentsPanel refType="buy" refId={buy.id} docType="currency_handover_proof" />
           </div>
         )}
 
