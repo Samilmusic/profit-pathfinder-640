@@ -91,12 +91,12 @@ function NewRemittancePage() {
 
   const openBuysQ = useQuery({
     enabled: isThirdParty,
-    queryKey: ["open-buys-for-remittance", newBuy.supplierId, thirdPartyCustomerId],
+    queryKey: ["open-buys-for-remittance", thirdPartyCustomerId],
     queryFn: async () => {
       let q = supabase.from("buy_transactions").select("id,doc_no,bought_amount,bought_currency,paid_amount,paid_currency,buy_rate,customer_id,counterparty")
         .is("deleted_at", null).eq("settlement_source", "own_funds")
         .order("entry_date", { ascending: false }).limit(20);
-      const cid = thirdPartyCustomerId || newBuy.supplierId;
+      const cid = thirdPartyCustomerId;
       if (cid) q = q.eq("customer_id", cid);
       const { data, error } = await q;
       if (error) throw error;
