@@ -121,14 +121,20 @@ export async function fetchDataQualitySummary(): Promise<DataQualitySummary> {
   return data as unknown as DataQualitySummary;
 }
 
-export async function fetchDataQualityRows(opts: {
-  classification?: QualityClass | "any";
-  severity?: QualitySeverity | "any";
-  source?: "sell_transactions" | "remittances" | "any";
-  limit?: number;
-} = {}): Promise<DataQualityRow[]> {
-  let q = supabase.from("v_data_quality").select("*").order("closed_at", { ascending: false, nullsFirst: false });
-  if (opts.classification && opts.classification !== "any") q = q.eq("classification", opts.classification);
+export async function fetchDataQualityRows(
+  opts: {
+    classification?: QualityClass | "any";
+    severity?: QualitySeverity | "any";
+    source?: "sell_transactions" | "remittances" | "any";
+    limit?: number;
+  } = {},
+): Promise<DataQualityRow[]> {
+  let q = supabase
+    .from("v_data_quality")
+    .select("*")
+    .order("closed_at", { ascending: false, nullsFirst: false });
+  if (opts.classification && opts.classification !== "any")
+    q = q.eq("classification", opts.classification);
   if (opts.severity && opts.severity !== "any") q = q.eq("severity", opts.severity);
   if (opts.source && opts.source !== "any") q = q.eq("source_table", opts.source);
   q = q.limit(opts.limit ?? 500);
@@ -196,9 +202,25 @@ export type ProfitSummaryResponse = ReportEnvelope & {
   top_losers: ProfitLeader[];
 };
 
-type SeriesArgs = { quality_mode: QualityMode; granularity: Granularity; from?: string | null; to?: string | null };
-type BreakdownArgs = { quality_mode: QualityMode; dimension: BreakdownDim; from?: string | null; to?: string | null; limit?: number };
-type SummaryArgs = { quality_mode: QualityMode; from?: string | null; to?: string | null; limit?: number };
+type SeriesArgs = {
+  quality_mode: QualityMode;
+  granularity: Granularity;
+  from?: string | null;
+  to?: string | null;
+};
+type BreakdownArgs = {
+  quality_mode: QualityMode;
+  dimension: BreakdownDim;
+  from?: string | null;
+  to?: string | null;
+  limit?: number;
+};
+type SummaryArgs = {
+  quality_mode: QualityMode;
+  from?: string | null;
+  to?: string | null;
+  limit?: number;
+};
 
 export async function fetchProfitSeries(a: SeriesArgs): Promise<ProfitSeriesResponse> {
   const { data, error } = await supabase.rpc("report_profit_series", {
