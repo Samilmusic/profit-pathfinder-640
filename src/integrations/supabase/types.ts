@@ -1541,6 +1541,13 @@ export type Database = {
             foreignKeyName: "lot_consumptions_lot_id_fkey"
             columns: ["lot_id"]
             isOneToOne: false
+            referencedRelation: "v_inventory_lots_ext"
+            referencedColumns: ["lot_id"]
+          },
+          {
+            foreignKeyName: "lot_consumptions_lot_id_fkey"
+            columns: ["lot_id"]
+            isOneToOne: false
             referencedRelation: "v_lot_detailed"
             referencedColumns: ["id"]
           },
@@ -2103,6 +2110,13 @@ export type Database = {
             columns: ["lot_id"]
             isOneToOne: false
             referencedRelation: "profit_by_lot"
+            referencedColumns: ["lot_id"]
+          },
+          {
+            foreignKeyName: "remittance_allocations_lot_id_fkey"
+            columns: ["lot_id"]
+            isOneToOne: false
+            referencedRelation: "v_inventory_lots_ext"
             referencedColumns: ["lot_id"]
           },
           {
@@ -4677,6 +4691,73 @@ export type Database = {
         }
         Relationships: []
       }
+      v_inventory_lots_ext: {
+        Row: {
+          account_currency: string | null
+          account_id: string | null
+          account_name: string | null
+          account_owner: Database["public"]["Enums"]["account_owner"] | null
+          age_bucket: string | null
+          age_days: number | null
+          consumed_amount: number | null
+          consumed_cost: number | null
+          cost_basis_currency: string | null
+          cost_basis_rate: number | null
+          cost_basis_status: string | null
+          created_at: string | null
+          created_by: string | null
+          currency: string | null
+          entry_date: string | null
+          lot_code: string | null
+          lot_id: string | null
+          notes: string | null
+          original_amount: number | null
+          original_cost: number | null
+          remaining_amount: number | null
+          remaining_cost: number | null
+          source_description: string | null
+          source_ref_id: string | null
+          source_ref_type: string | null
+          status: Database["public"]["Enums"]["inventory_lot_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_lots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "account_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "inventory_lots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_lots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_wallet_balances"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "inventory_lots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "profit_by_account"
+            referencedColumns: ["account_id"]
+          },
+          {
+            foreignKeyName: "inventory_lots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "v_balance_reconciliation"
+            referencedColumns: ["account_id"]
+          },
+        ]
+      }
       v_lot_detailed: {
         Row: {
           account_id: string | null
@@ -5511,6 +5592,59 @@ export type Database = {
       }
       report_data_quality_summary: { Args: never; Returns: Json }
       report_executive_kpis: { Args: { _quality_mode?: string }; Returns: Json }
+      report_inventory_consumption: {
+        Args: {
+          _account_id?: string
+          _currency?: string
+          _from?: string
+          _limit?: number
+          _quality_mode?: string
+          _to?: string
+        }
+        Returns: Json
+      }
+      report_inventory_lot_detail: { Args: { _lot_id: string }; Returns: Json }
+      report_inventory_lots: {
+        Args: {
+          _account_id?: string
+          _age_bucket?: string
+          _currency?: string
+          _from?: string
+          _limit?: number
+          _offset?: number
+          _operator_id?: string
+          _quality_mode?: string
+          _search?: string
+          _sort?: string
+          _source_ref_type?: string
+          _status?: string
+          _to?: string
+        }
+        Returns: Json
+      }
+      report_inventory_overview: {
+        Args: {
+          _account_id?: string
+          _currency?: string
+          _from?: string
+          _operator_id?: string
+          _quality_mode?: string
+          _source_ref_type?: string
+          _status?: string
+          _to?: string
+        }
+        Returns: Json
+      }
+      report_inventory_timeline: {
+        Args: {
+          _account_id?: string
+          _currency?: string
+          _from?: string
+          _granularity?: string
+          _to?: string
+        }
+        Returns: Json
+      }
       report_meta:
         | { Args: { _report_key: string }; Returns: Json }
         | { Args: { _report_key: string; _version: string }; Returns: Json }

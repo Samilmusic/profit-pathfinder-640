@@ -53,6 +53,7 @@ import { Route as AuthenticatedTradesIdRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedSellsIdRouteImport } from './routes/_authenticated/sells.$id'
 import { Route as AuthenticatedReportsProfitsRouteImport } from './routes/_authenticated/reports.profits'
 import { Route as AuthenticatedReportsOperationsRouteImport } from './routes/_authenticated/reports.operations'
+import { Route as AuthenticatedReportsInventoryRouteImport } from './routes/_authenticated/reports.inventory'
 import { Route as AuthenticatedReportsExecutiveRouteImport } from './routes/_authenticated/reports.executive'
 import { Route as AuthenticatedReportsDataQualityRouteImport } from './routes/_authenticated/reports.data-quality'
 import { Route as AuthenticatedReportsCounterpartiesRouteImport } from './routes/_authenticated/reports.counterparties'
@@ -65,6 +66,7 @@ import { Route as AuthenticatedBroughtInNewRouteImport } from './routes/_authent
 import { Route as AuthenticatedAccountsNewRouteImport } from './routes/_authenticated/accounts.new'
 import { Route as ApiPublicHooksFetchMarketRatesRouteImport } from './routes/api/public/hooks/fetch-market-rates'
 import { Route as AuthenticatedReportsSuppliersIdRouteImport } from './routes/_authenticated/reports.suppliers.$id'
+import { Route as AuthenticatedReportsInventoryIdRouteImport } from './routes/_authenticated/reports.inventory.$id'
 import { Route as AuthenticatedReportsCustomersIdRouteImport } from './routes/_authenticated/reports.customers.$id'
 import { Route as AuthenticatedRemittancesIdV2RouteImport } from './routes/_authenticated/remittances.$id.v2'
 
@@ -305,6 +307,12 @@ const AuthenticatedReportsOperationsRoute =
     path: '/reports/operations',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedReportsInventoryRoute =
+  AuthenticatedReportsInventoryRouteImport.update({
+    id: '/reports/inventory',
+    path: '/reports/inventory',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedReportsExecutiveRoute =
   AuthenticatedReportsExecutiveRouteImport.update({
     id: '/reports/executive',
@@ -377,6 +385,12 @@ const AuthenticatedReportsSuppliersIdRoute =
     path: '/reports/suppliers/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedReportsInventoryIdRoute =
+  AuthenticatedReportsInventoryIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => AuthenticatedReportsInventoryRoute,
+  } as any)
 const AuthenticatedReportsCustomersIdRoute =
   AuthenticatedReportsCustomersIdRouteImport.update({
     id: '/reports/customers/$id',
@@ -432,6 +446,7 @@ export interface FileRoutesByFullPath {
   '/reports/counterparties': typeof AuthenticatedReportsCounterpartiesRoute
   '/reports/data-quality': typeof AuthenticatedReportsDataQualityRoute
   '/reports/executive': typeof AuthenticatedReportsExecutiveRoute
+  '/reports/inventory': typeof AuthenticatedReportsInventoryRouteWithChildren
   '/reports/operations': typeof AuthenticatedReportsOperationsRoute
   '/reports/profits': typeof AuthenticatedReportsProfitsRoute
   '/sells/$id': typeof AuthenticatedSellsIdRoute
@@ -446,6 +461,7 @@ export interface FileRoutesByFullPath {
   '/trades/': typeof AuthenticatedTradesIndexRoute
   '/remittances/$id/v2': typeof AuthenticatedRemittancesIdV2Route
   '/reports/customers/$id': typeof AuthenticatedReportsCustomersIdRoute
+  '/reports/inventory/$id': typeof AuthenticatedReportsInventoryIdRoute
   '/reports/suppliers/$id': typeof AuthenticatedReportsSuppliersIdRoute
   '/api/public/hooks/fetch-market-rates': typeof ApiPublicHooksFetchMarketRatesRoute
 }
@@ -487,6 +503,7 @@ export interface FileRoutesByTo {
   '/reports/counterparties': typeof AuthenticatedReportsCounterpartiesRoute
   '/reports/data-quality': typeof AuthenticatedReportsDataQualityRoute
   '/reports/executive': typeof AuthenticatedReportsExecutiveRoute
+  '/reports/inventory': typeof AuthenticatedReportsInventoryRouteWithChildren
   '/reports/operations': typeof AuthenticatedReportsOperationsRoute
   '/reports/profits': typeof AuthenticatedReportsProfitsRoute
   '/sells/$id': typeof AuthenticatedSellsIdRoute
@@ -501,6 +518,7 @@ export interface FileRoutesByTo {
   '/trades': typeof AuthenticatedTradesIndexRoute
   '/remittances/$id/v2': typeof AuthenticatedRemittancesIdV2Route
   '/reports/customers/$id': typeof AuthenticatedReportsCustomersIdRoute
+  '/reports/inventory/$id': typeof AuthenticatedReportsInventoryIdRoute
   '/reports/suppliers/$id': typeof AuthenticatedReportsSuppliersIdRoute
   '/api/public/hooks/fetch-market-rates': typeof ApiPublicHooksFetchMarketRatesRoute
 }
@@ -548,6 +566,7 @@ export interface FileRoutesById {
   '/_authenticated/reports/counterparties': typeof AuthenticatedReportsCounterpartiesRoute
   '/_authenticated/reports/data-quality': typeof AuthenticatedReportsDataQualityRoute
   '/_authenticated/reports/executive': typeof AuthenticatedReportsExecutiveRoute
+  '/_authenticated/reports/inventory': typeof AuthenticatedReportsInventoryRouteWithChildren
   '/_authenticated/reports/operations': typeof AuthenticatedReportsOperationsRoute
   '/_authenticated/reports/profits': typeof AuthenticatedReportsProfitsRoute
   '/_authenticated/sells/$id': typeof AuthenticatedSellsIdRoute
@@ -562,6 +581,7 @@ export interface FileRoutesById {
   '/_authenticated/trades/': typeof AuthenticatedTradesIndexRoute
   '/_authenticated/remittances/$id/v2': typeof AuthenticatedRemittancesIdV2Route
   '/_authenticated/reports/customers/$id': typeof AuthenticatedReportsCustomersIdRoute
+  '/_authenticated/reports/inventory/$id': typeof AuthenticatedReportsInventoryIdRoute
   '/_authenticated/reports/suppliers/$id': typeof AuthenticatedReportsSuppliersIdRoute
   '/api/public/hooks/fetch-market-rates': typeof ApiPublicHooksFetchMarketRatesRoute
 }
@@ -609,6 +629,7 @@ export interface FileRouteTypes {
     | '/reports/counterparties'
     | '/reports/data-quality'
     | '/reports/executive'
+    | '/reports/inventory'
     | '/reports/operations'
     | '/reports/profits'
     | '/sells/$id'
@@ -623,6 +644,7 @@ export interface FileRouteTypes {
     | '/trades/'
     | '/remittances/$id/v2'
     | '/reports/customers/$id'
+    | '/reports/inventory/$id'
     | '/reports/suppliers/$id'
     | '/api/public/hooks/fetch-market-rates'
   fileRoutesByTo: FileRoutesByTo
@@ -664,6 +686,7 @@ export interface FileRouteTypes {
     | '/reports/counterparties'
     | '/reports/data-quality'
     | '/reports/executive'
+    | '/reports/inventory'
     | '/reports/operations'
     | '/reports/profits'
     | '/sells/$id'
@@ -678,6 +701,7 @@ export interface FileRouteTypes {
     | '/trades'
     | '/remittances/$id/v2'
     | '/reports/customers/$id'
+    | '/reports/inventory/$id'
     | '/reports/suppliers/$id'
     | '/api/public/hooks/fetch-market-rates'
   id:
@@ -724,6 +748,7 @@ export interface FileRouteTypes {
     | '/_authenticated/reports/counterparties'
     | '/_authenticated/reports/data-quality'
     | '/_authenticated/reports/executive'
+    | '/_authenticated/reports/inventory'
     | '/_authenticated/reports/operations'
     | '/_authenticated/reports/profits'
     | '/_authenticated/sells/$id'
@@ -738,6 +763,7 @@ export interface FileRouteTypes {
     | '/_authenticated/trades/'
     | '/_authenticated/remittances/$id/v2'
     | '/_authenticated/reports/customers/$id'
+    | '/_authenticated/reports/inventory/$id'
     | '/_authenticated/reports/suppliers/$id'
     | '/api/public/hooks/fetch-market-rates'
   fileRoutesById: FileRoutesById
@@ -1059,6 +1085,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReportsOperationsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/reports/inventory': {
+      id: '/_authenticated/reports/inventory'
+      path: '/reports/inventory'
+      fullPath: '/reports/inventory'
+      preLoaderRoute: typeof AuthenticatedReportsInventoryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/reports/executive': {
       id: '/_authenticated/reports/executive'
       path: '/reports/executive'
@@ -1142,6 +1175,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/reports/suppliers/$id'
       preLoaderRoute: typeof AuthenticatedReportsSuppliersIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/reports/inventory/$id': {
+      id: '/_authenticated/reports/inventory/$id'
+      path: '/$id'
+      fullPath: '/reports/inventory/$id'
+      preLoaderRoute: typeof AuthenticatedReportsInventoryIdRouteImport
+      parentRoute: typeof AuthenticatedReportsInventoryRoute
     }
     '/_authenticated/reports/customers/$id': {
       id: '/_authenticated/reports/customers/$id'
@@ -1235,6 +1275,20 @@ const AuthenticatedRemittancesIdRouteWithChildren =
     AuthenticatedRemittancesIdRouteChildren,
   )
 
+interface AuthenticatedReportsInventoryRouteChildren {
+  AuthenticatedReportsInventoryIdRoute: typeof AuthenticatedReportsInventoryIdRoute
+}
+
+const AuthenticatedReportsInventoryRouteChildren: AuthenticatedReportsInventoryRouteChildren =
+  {
+    AuthenticatedReportsInventoryIdRoute: AuthenticatedReportsInventoryIdRoute,
+  }
+
+const AuthenticatedReportsInventoryRouteWithChildren =
+  AuthenticatedReportsInventoryRoute._addFileChildren(
+    AuthenticatedReportsInventoryRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccountsRoute: typeof AuthenticatedAccountsRouteWithChildren
   AuthenticatedAiBrainRoute: typeof AuthenticatedAiBrainRoute
@@ -1272,6 +1326,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedReportsCounterpartiesRoute: typeof AuthenticatedReportsCounterpartiesRoute
   AuthenticatedReportsDataQualityRoute: typeof AuthenticatedReportsDataQualityRoute
   AuthenticatedReportsExecutiveRoute: typeof AuthenticatedReportsExecutiveRoute
+  AuthenticatedReportsInventoryRoute: typeof AuthenticatedReportsInventoryRouteWithChildren
   AuthenticatedReportsOperationsRoute: typeof AuthenticatedReportsOperationsRoute
   AuthenticatedReportsProfitsRoute: typeof AuthenticatedReportsProfitsRoute
   AuthenticatedSellsIdRoute: typeof AuthenticatedSellsIdRoute
@@ -1320,6 +1375,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedReportsCounterpartiesRoute,
   AuthenticatedReportsDataQualityRoute: AuthenticatedReportsDataQualityRoute,
   AuthenticatedReportsExecutiveRoute: AuthenticatedReportsExecutiveRoute,
+  AuthenticatedReportsInventoryRoute:
+    AuthenticatedReportsInventoryRouteWithChildren,
   AuthenticatedReportsOperationsRoute: AuthenticatedReportsOperationsRoute,
   AuthenticatedReportsProfitsRoute: AuthenticatedReportsProfitsRoute,
   AuthenticatedSellsIdRoute: AuthenticatedSellsIdRoute,
