@@ -15,6 +15,7 @@ import {
   Download,
   ArrowRight,
   ShieldAlert,
+  Settings,
 } from "lucide-react";
 import type { ComponentType } from "react";
 
@@ -46,6 +47,7 @@ const cards: Card[] = [
   { to: "/reports/treasury",        label: "Treasury & Cash",     desc: "Position, flow, forecast, exposure, bank analytics.",  icon: Wallet,      status: "ready" },
   { to: "/reports/counterparties",  label: "Customers & Suppliers",desc: "Profiles, lifetime volume, profit, rankings.",         icon: Users,       status: "ready" },
   { to: "/reports/audit-explorer",  label: "Audit Explorer",      desc: "Searchable timeline of transitions and events.",       icon: History,     status: "ready" },
+  { to: "/reports/admin",           label: "Administration",      desc: "System health, alerts, and BI registry.",              icon: Settings,    status: "ready" },
   { to: "/reports/reconciliation",  label: "Reconciliation",      desc: "Visual results history from the financial contract.",  icon: ShieldCheck, status: "coming" },
   { to: "/reports/exports",         label: "Exports",             desc: "PDF / Excel / CSV of any report.",                     icon: Download,    status: "coming" },
 ];
