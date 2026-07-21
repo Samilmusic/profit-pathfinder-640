@@ -1,11 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RefreshCw, ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
-import { fetchExecutiveKpis, type ExecutiveKpis } from "@/lib/reports/executive.functions";
+import { fetchExecutiveKpis, type ExecutiveKpis, type QualityMode } from "@/lib/reports/executive.functions";
 
 export const Route = createFileRoute("/_authenticated/reports/executive")({
   head: () => ({
@@ -63,11 +65,12 @@ function KpiCard({ label, value, sub }: { label: string; value: React.ReactNode;
 }
 
 function ExecutiveDashboardPage() {
+  const [mode, setMode] = useState<QualityMode>("exclude_invalid");
   const q = useQuery<ExecutiveKpis>({
-    queryKey: ["report_executive_kpis"],
-    queryFn: fetchExecutiveKpis,
-    staleTime: 60_000,          // executive cache 60s
-    refetchInterval: 300_000,   // background refresh 5m
+    queryKey: ["report_executive_kpis", mode],
+    queryFn: () => fetchExecutiveKpis(mode),
+    staleTime: 60_000,
+    refetchInterval: 300_000,
   });
 
   const data = q.data;
@@ -79,10 +82,22 @@ function ExecutiveDashboardPage() {
         title="Executive Dashboard"
         description="Server-authoritative profit, workflow, and inventory value. Cached 60 seconds."
         actions={
-          <Button variant="outline" size="sm" onClick={() => q.refetch()} disabled={q.isFetching}>
-            <RefreshCw className={`h-4 w-4 mr-1.5 ${q.isFetching ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <Select value={mode} onValueChange={(v) => setMode(v as QualityMode)}>
+              <SelectTrigger className="w-[220px] h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Include all historical data</SelectItem>
+                <SelectItem value="exclude_invalid">Exclude invalid rows</SelectItem>
+                <SelectItem value="exclude_suspicious">Exclude suspicious rows</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="sm" onClick={() => q.refetch()} disabled={q.isFetching}>
+              <RefreshCw className={`h-4 w-4 mr-1.5 ${q.isFetching ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
+          </div>
         }
       />
 

@@ -52,6 +52,7 @@ import { Route as AuthenticatedTradesIdRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedSellsIdRouteImport } from './routes/_authenticated/sells.$id'
 import { Route as AuthenticatedReportsOperationsRouteImport } from './routes/_authenticated/reports.operations'
 import { Route as AuthenticatedReportsExecutiveRouteImport } from './routes/_authenticated/reports.executive'
+import { Route as AuthenticatedReportsDataQualityRouteImport } from './routes/_authenticated/reports.data-quality'
 import { Route as AuthenticatedRemittancesNewV2RouteImport } from './routes/_authenticated/remittances.new-v2'
 import { Route as AuthenticatedRemittancesNewRouteImport } from './routes/_authenticated/remittances.new'
 import { Route as AuthenticatedRemittancesIdRouteImport } from './routes/_authenticated/remittances.$id'
@@ -293,6 +294,12 @@ const AuthenticatedReportsExecutiveRoute =
     path: '/reports/executive',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedReportsDataQualityRoute =
+  AuthenticatedReportsDataQualityRouteImport.update({
+    id: '/reports/data-quality',
+    path: '/reports/data-quality',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedRemittancesNewV2Route =
   AuthenticatedRemittancesNewV2RouteImport.update({
     id: '/remittances/new-v2',
@@ -386,6 +393,7 @@ export interface FileRoutesByFullPath {
   '/remittances/$id': typeof AuthenticatedRemittancesIdRouteWithChildren
   '/remittances/new': typeof AuthenticatedRemittancesNewRoute
   '/remittances/new-v2': typeof AuthenticatedRemittancesNewV2Route
+  '/reports/data-quality': typeof AuthenticatedReportsDataQualityRoute
   '/reports/executive': typeof AuthenticatedReportsExecutiveRoute
   '/reports/operations': typeof AuthenticatedReportsOperationsRoute
   '/sells/$id': typeof AuthenticatedSellsIdRoute
@@ -435,6 +443,7 @@ export interface FileRoutesByTo {
   '/remittances/$id': typeof AuthenticatedRemittancesIdRouteWithChildren
   '/remittances/new': typeof AuthenticatedRemittancesNewRoute
   '/remittances/new-v2': typeof AuthenticatedRemittancesNewV2Route
+  '/reports/data-quality': typeof AuthenticatedReportsDataQualityRoute
   '/reports/executive': typeof AuthenticatedReportsExecutiveRoute
   '/reports/operations': typeof AuthenticatedReportsOperationsRoute
   '/sells/$id': typeof AuthenticatedSellsIdRoute
@@ -490,6 +499,7 @@ export interface FileRoutesById {
   '/_authenticated/remittances/$id': typeof AuthenticatedRemittancesIdRouteWithChildren
   '/_authenticated/remittances/new': typeof AuthenticatedRemittancesNewRoute
   '/_authenticated/remittances/new-v2': typeof AuthenticatedRemittancesNewV2Route
+  '/_authenticated/reports/data-quality': typeof AuthenticatedReportsDataQualityRoute
   '/_authenticated/reports/executive': typeof AuthenticatedReportsExecutiveRoute
   '/_authenticated/reports/operations': typeof AuthenticatedReportsOperationsRoute
   '/_authenticated/sells/$id': typeof AuthenticatedSellsIdRoute
@@ -545,6 +555,7 @@ export interface FileRouteTypes {
     | '/remittances/$id'
     | '/remittances/new'
     | '/remittances/new-v2'
+    | '/reports/data-quality'
     | '/reports/executive'
     | '/reports/operations'
     | '/sells/$id'
@@ -594,6 +605,7 @@ export interface FileRouteTypes {
     | '/remittances/$id'
     | '/remittances/new'
     | '/remittances/new-v2'
+    | '/reports/data-quality'
     | '/reports/executive'
     | '/reports/operations'
     | '/sells/$id'
@@ -648,6 +660,7 @@ export interface FileRouteTypes {
     | '/_authenticated/remittances/$id'
     | '/_authenticated/remittances/new'
     | '/_authenticated/remittances/new-v2'
+    | '/_authenticated/reports/data-quality'
     | '/_authenticated/reports/executive'
     | '/_authenticated/reports/operations'
     | '/_authenticated/sells/$id'
@@ -974,6 +987,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReportsExecutiveRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/reports/data-quality': {
+      id: '/_authenticated/reports/data-quality'
+      path: '/reports/data-quality'
+      fullPath: '/reports/data-quality'
+      preLoaderRoute: typeof AuthenticatedReportsDataQualityRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/remittances/new-v2': {
       id: '/_authenticated/remittances/new-v2'
       path: '/remittances/new-v2'
@@ -1148,6 +1168,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRemittancesIdRoute: typeof AuthenticatedRemittancesIdRouteWithChildren
   AuthenticatedRemittancesNewRoute: typeof AuthenticatedRemittancesNewRoute
   AuthenticatedRemittancesNewV2Route: typeof AuthenticatedRemittancesNewV2Route
+  AuthenticatedReportsDataQualityRoute: typeof AuthenticatedReportsDataQualityRoute
   AuthenticatedReportsExecutiveRoute: typeof AuthenticatedReportsExecutiveRoute
   AuthenticatedReportsOperationsRoute: typeof AuthenticatedReportsOperationsRoute
   AuthenticatedSellsIdRoute: typeof AuthenticatedSellsIdRoute
@@ -1189,6 +1210,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRemittancesIdRoute: AuthenticatedRemittancesIdRouteWithChildren,
   AuthenticatedRemittancesNewRoute: AuthenticatedRemittancesNewRoute,
   AuthenticatedRemittancesNewV2Route: AuthenticatedRemittancesNewV2Route,
+  AuthenticatedReportsDataQualityRoute: AuthenticatedReportsDataQualityRoute,
   AuthenticatedReportsExecutiveRoute: AuthenticatedReportsExecutiveRoute,
   AuthenticatedReportsOperationsRoute: AuthenticatedReportsOperationsRoute,
   AuthenticatedSellsIdRoute: AuthenticatedSellsIdRoute,

@@ -19,6 +19,10 @@ export type ReportMeta = {
   generated_by_version: string;
 };
 
+export type QualityMode = "all" | "exclude_invalid" | "exclude_suspicious";
+export type QualityClass = "valid" | "suspicious" | "invalid";
+export type QualitySeverity = "info" | "warning" | "critical";
+
 export type InventoryRow = {
   currency: string;
   remaining_amount: number;
@@ -34,6 +38,7 @@ export type InventoryRow = {
 
 export type ExecutiveKpis = {
   meta: ReportMeta;
+  quality_mode: QualityMode;
   profit: {
     today: number;
     yesterday: number;
@@ -70,8 +75,8 @@ export type OperationalKpis = {
   avg_processing_seconds: number | null;
 };
 
-export async function fetchExecutiveKpis(): Promise<ExecutiveKpis> {
-  const { data, error } = await supabase.rpc("report_executive_kpis");
+export async function fetchExecutiveKpis(mode: QualityMode = "all"): Promise<ExecutiveKpis> {
+  const { data, error } = await supabase.rpc("report_executive_kpis", { _quality_mode: mode });
   if (error) throw error;
   return data as unknown as ExecutiveKpis;
 }
@@ -80,4 +85,54 @@ export async function fetchOperationalKpis(): Promise<OperationalKpis> {
   const { data, error } = await supabase.rpc("report_operational_kpis");
   if (error) throw error;
   return data as unknown as OperationalKpis;
+}
+
+// -------------------- Data Quality --------------------
+
+export type DataQualityRow = {
+  id: string;
+  source_table: "sell_transactions" | "remittances";
+  entry_date: string | null;
+  closed_at: string | null;
+  classification: QualityClass;
+  severity: QualitySeverity;
+  reason: string | null;
+  suggested_remediation: string | null;
+  details: Record<string, unknown>;
+  customer_id: string | null;
+  created_by: string | null;
+};
+
+export type DataQualitySummary = {
+  meta: ReportMeta;
+  by_source: Array<{ source_table: string; classification: QualityClass; n: number }>;
+  by_class: Partial<Record<QualityClass, number>>;
+  by_severity: Partial<Record<QualitySeverity, number>>;
+  executive_impact: {
+    total_amount_aed_all: number;
+    total_amount_aed_exclude_invalid: number;
+    total_amount_aed_exclude_suspicious: number;
+  };
+};
+
+export async function fetchDataQualitySummary(): Promise<DataQualitySummary> {
+  const { data, error } = await supabase.rpc("report_data_quality_summary");
+  if (error) throw error;
+  return data as unknown as DataQualitySummary;
+}
+
+export async function fetchDataQualityRows(opts: {
+  classification?: QualityClass | "any";
+  severity?: QualitySeverity | "any";
+  source?: "sell_transactions" | "remittances" | "any";
+  limit?: number;
+} = {}): Promise<DataQualityRow[]> {
+  let q = supabase.from("v_data_quality").select("*").order("closed_at", { ascending: false, nullsFirst: false });
+  if (opts.classification && opts.classification !== "any") q = q.eq("classification", opts.classification);
+  if (opts.severity && opts.severity !== "any") q = q.eq("severity", opts.severity);
+  if (opts.source && opts.source !== "any") q = q.eq("source_table", opts.source);
+  q = q.limit(opts.limit ?? 500);
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data ?? []) as unknown as DataQualityRow[];
 }
