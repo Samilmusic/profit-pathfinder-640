@@ -134,10 +134,7 @@ function MigrationStatusPage() {
   const blocked =
     (audit?.byCategory["over_allocated"] ?? 0) + (audit?.byCategory["missing_buy"] ?? 0);
   const batchesData = (batchesQ.data ?? []) as unknown as BatchRow[];
-  const batchErrors = batchesData.reduce(
-    (sum, b) => sum + (b.total_errors ?? 0),
-    0,
-  );
+  const batchErrors = batchesData.reduce((sum, b) => sum + (b.total_errors ?? 0), 0);
 
   return (
     <div className="space-y-6 p-4 md:p-6">
@@ -358,7 +355,7 @@ function LegacyAuditAndBatches({
         <CardContent className="overflow-x-auto p-0">
           {batchesLoading ? (
             <div className="p-4 text-sm text-muted-foreground">Loading…</div>
-          ) : (batches.length) === 0 ? (
+          ) : batches.length === 0 ? (
             <div className="p-4 text-sm text-muted-foreground">No batches yet.</div>
           ) : (
             <Table>
