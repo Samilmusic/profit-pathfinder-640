@@ -44,7 +44,7 @@ const cards: Card[] = [
   { to: "/reports/remittances",     label: "Remittance Analytics",desc: "Lifecycle durations, completion rates, trends.",       icon: Send,        status: "coming" },
   { to: "/reports/inventory",       label: "Inventory Dashboard", desc: "FIFO lots, remaining, age, turnover.",                 icon: Package,     status: "coming" },
   { to: "/reports/cash-position",   label: "Cash Position",       desc: "Balances by account/currency, net exposure.",          icon: Wallet,      status: "coming" },
-  { to: "/reports/counterparties",  label: "Customers & Suppliers",desc: "Profiles, lifetime volume, profit, rankings.",         icon: Users,       status: "coming" },
+  { to: "/reports/counterparties",  label: "Customers & Suppliers",desc: "Profiles, lifetime volume, profit, rankings.",         icon: Users,       status: "ready" },
   { to: "/reports/audit-explorer",  label: "Audit Explorer",      desc: "Searchable timeline of transitions and events.",       icon: History,     status: "coming" },
   { to: "/reports/reconciliation",  label: "Reconciliation",      desc: "Visual results history from the financial contract.",  icon: ShieldCheck, status: "coming" },
   { to: "/reports/exports",         label: "Exports",             desc: "PDF / Excel / CSV of any report.",                     icon: Download,    status: "coming" },
