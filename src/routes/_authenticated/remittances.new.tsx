@@ -124,6 +124,12 @@ function NewRemittancePage() {
   const [commFixedCurrency, setCommFixedCurrency] = useState("AED");
   const [commPercent, setCommPercent] = useState("");
 
+  // FX Purchase (rate spread trading profit)
+  const [fxPurchaseRate, setFxPurchaseRate] = useState("");
+  const [fxSupplierId, setFxSupplierId] = useState("");
+  const [fxSupplierName, setFxSupplierName] = useState("");
+  const [fxPurchasedAmount, setFxPurchasedAmount] = useState("");
+
   const [entryDate, setEntryDate] = useState(today);
   const [notes, setNotes] = useState("");
 
@@ -172,6 +178,23 @@ function NewRemittancePage() {
       grossAed,
     };
   }, [transferredAmount, payAmount, refRate, commMethod, commFixedAmount, commFixedCurrency, commPercent, transferCurrency, payCurrency]);
+
+  // FX Trading profit calculation — customer rate vs supplier rate spread
+  const fxCalc = useMemo(() => {
+    const customerRate = Number(refRate) || 0;
+    const supplierRate = Number(fxPurchaseRate) || 0;
+    const purchasedAmt = Number(fxPurchasedAmount) || Number(transferredAmount) || 0;
+    const spread = customerRate - supplierRate;
+    const tradingPayCcy = spread * purchasedAmt;
+    // Convert to AED: pay_ccy per transfer_ccy = customerRate. If transfer_ccy is AED, dividing
+    // by customerRate converts pay_ccy → AED. Otherwise best-effort keeps same conversion path.
+    const tradingAed = customerRate > 0 && transferCurrency === "AED" ? tradingPayCcy / customerRate : 0;
+    const hasFx = supplierRate > 0 && purchasedAmt > 0;
+    return { customerRate, supplierRate, purchasedAmt, spread, tradingPayCcy, tradingAed, hasFx };
+  }, [refRate, fxPurchaseRate, fxPurchasedAmount, transferredAmount, transferCurrency]);
+
+  const totalProfitPayCcy = calc.grossPayCcy + (fxCalc.hasFx ? fxCalc.tradingPayCcy : 0);
+  const totalProfitAed = calc.grossAed + (fxCalc.hasFx ? fxCalc.tradingAed : 0);
 
   const save = useMutation({
     mutationFn: async (opts: { close: boolean }) => {
@@ -254,6 +277,12 @@ function NewRemittancePage() {
         gross_commission_aed: calc.grossAed,
         linked_expenses_aed: 0,
         net_commission_aed: calc.grossAed,
+        fx_purchase_rate: fxCalc.hasFx ? fxCalc.supplierRate : null,
+        fx_supplier_customer_id: fxCalc.hasFx ? (fxSupplierId || null) : null,
+        fx_supplier_name: fxCalc.hasFx ? (fxSupplierName || null) : null,
+        fx_purchased_amount: fxCalc.hasFx ? fxCalc.purchasedAmt : null,
+        fx_trading_profit_pay_ccy: fxCalc.hasFx ? fxCalc.tradingPayCcy : 0,
+        fx_trading_profit_aed: fxCalc.hasFx ? fxCalc.tradingAed : 0,
         notes: notes || null,
         created_by: u.user?.id,
       };
