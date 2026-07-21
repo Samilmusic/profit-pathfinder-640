@@ -4535,6 +4535,17 @@ export type Database = {
         }
         Relationships: []
       }
+      v_inventory_by_currency: {
+        Row: {
+          cost_basis_currency: string | null
+          cost_value_in_cost_ccy: number | null
+          currency: string | null
+          original_amount: number | null
+          remaining_amount: number | null
+          wap_cost_rate: number | null
+        }
+        Relationships: []
+      }
       v_lot_detailed: {
         Row: {
           account_id: string | null
@@ -4597,6 +4608,17 @@ export type Database = {
             referencedColumns: ["account_id"]
           },
         ]
+      }
+      v_market_rate_latest: {
+        Row: {
+          currency: string | null
+          market_buy: number | null
+          market_mid: number | null
+          market_sell: number | null
+          snapshot_at: string | null
+          snapshot_source: string | null
+        }
+        Relationships: []
       }
       v_money_in_circulation: {
         Row: {
@@ -4776,6 +4798,20 @@ export type Database = {
           },
         ]
       }
+      v_profit_events: {
+        Row: {
+          actor_id: string | null
+          amount_aed: number | null
+          currency: string | null
+          customer_id: string | null
+          doc_no: string | null
+          event_at: string | null
+          event_date: string | null
+          ref_id: string | null
+          source: string | null
+        }
+        Relationships: []
+      }
       v_remittance_migration_diff: {
         Row: {
           actual_buy_amount: number | null
@@ -4862,6 +4898,14 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      v_remittance_state_counts: {
+        Row: {
+          n: number | null
+          state: string | null
+          version: string | null
+        }
+        Relationships: []
       }
       v_today_profit: {
         Row: {
@@ -5104,6 +5148,9 @@ export type Database = {
         Returns: string
       }
       remittance_v2_validate_close: { Args: { _id: string }; Returns: Json }
+      report_executive_kpis: { Args: never; Returns: Json }
+      report_meta: { Args: { _report_key: string }; Returns: Json }
+      report_operational_kpis: { Args: never; Returns: Json }
       rpc_idempotency_gc: { Args: { _days?: number }; Returns: number }
       run_remittance_shadow_backfill: {
         Args: { _note?: string }
