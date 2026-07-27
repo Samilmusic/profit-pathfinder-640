@@ -143,7 +143,7 @@ function DashboardPage() {
     queryKey: ["dash_recent_deals_v2"],
     queryFn: async () => {
       const [se, bu] = await Promise.all([
-        supabase.from("sell_transactions").select("id,doc_no,created_at,sold_amount,sold_currency,received_amount,received_currency,customer_name,gross_profit,deal_status").is("deleted_at", null).order("created_at", { ascending: false }).limit(8),
+        supabase.from("sell_transactions").select("id,doc_no,created_at,sold_amount,sold_currency,received_amount,received_currency,customer_name,customer_id,gross_profit,deal_status").is("deleted_at", null).order("created_at", { ascending: false }).limit(8),
         supabase.from("buy_transactions").select("id,doc_no,created_at,bought_amount,bought_currency,paid_amount,paid_currency,counterparty,buy_rate").is("deleted_at", null).order("created_at", { ascending: false }).limit(8),
       ]);
       const rows: any[] = [
@@ -456,7 +456,13 @@ function DashboardPage() {
                 <div className="flex-1 min-w-0">
                   <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">{a.label}</div>
                   <div className="mt-1 flex items-baseline gap-2 flex-wrap">
-                    <div className="font-semibold truncate">{a.s.customer_name || "Unknown customer"}</div>
+                    <div className="font-semibold truncate">
+                      {a.s.customer_id ? (
+                        <Link to="/customers/$id" params={{ id: a.s.customer_id }} onClick={(e) => e.stopPropagation()} className="hover:underline">
+                          {a.s.customer_name || "Unknown customer"}
+                        </Link>
+                      ) : (a.s.customer_name || "Unknown customer")}
+                    </div>
                     {a.s.doc_no && <div className="text-[11px] text-muted-foreground font-mono">{a.s.doc_no}</div>}
                   </div>
                   <div className="mt-1 text-lg font-mono tabular-nums">
@@ -525,7 +531,11 @@ function DashboardPage() {
                   </div>
                   <div className="min-w-0">
                     <div className="text-base sm:text-lg font-semibold leading-tight truncate">
-                      {r.kind === "sell"
+                      {r.kind === "sell" && r.customer_id ? (
+                        <Link to="/customers/$id" params={{ id: r.customer_id }} className="hover:underline">
+                          {r.customer_name || "Unnamed customer"}
+                        </Link>
+                      ) : r.kind === "sell"
                         ? (r.customer_name || "Unnamed customer")
                         : (r.counterparty || "Unnamed supplier")}
                     </div>
