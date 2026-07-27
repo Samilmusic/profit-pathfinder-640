@@ -83,7 +83,7 @@ function DashboardPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("sell_transactions")
-        .select("id,doc_no,entry_date,deal_status,sold_currency,sold_amount,sell_rate,received_currency,received_amount,currency_delivered,customer_name,customer_id,expected_payment_date,amount_received")
+        .select("id,doc_no,entry_date,deal_status,sold_currency,sold_amount,sell_rate,received_currency,received_amount,currency_delivered,customer_name,customer_id,customer_phone,received_into_account_id,expected_payment_date,amount_received,customers(name)")
         .is("deleted_at", null)
         .not("deal_status", "in", "(closed,cancelled)")
         .order("entry_date", { ascending: false });
@@ -476,9 +476,9 @@ function DashboardPage() {
                     <div className="font-semibold truncate">
                       {a.s.customer_id ? (
                         <Link to="/customers/$id" params={{ id: a.s.customer_id }} onClick={(e) => e.stopPropagation()} className="hover:underline">
-                          {a.s.customer_name || "Unknown customer"}
+                          {partyLabel(a.s.customers?.name, a.s.customer_name, a.s.customer_phone)}
                         </Link>
-                      ) : (a.s.customer_name || "Unknown customer")}
+                      ) : partyLabel(a.s.customers?.name, a.s.customer_name, a.s.customer_phone)}
                     </div>
                     {a.s.doc_no && <div className="text-[11px] text-muted-foreground font-mono">{a.s.doc_no}</div>}
                   </div>
@@ -486,6 +486,7 @@ function DashboardPage() {
                     {fmt(a.s.received_amount, a.s.received_currency)}
                   </div>
                   <div className="mt-0.5 text-[11px] text-muted-foreground">
+                    {accountName(acctMap, a.s.received_into_account_id) ? `${accountName(acctMap, a.s.received_into_account_id)} · ` : ""}
                     {a.age > 0 ? `${a.age} day${a.age > 1 ? "s" : ""} ago` : "Today"}
                     {a.s.expected_payment_date ? ` · Due ${a.s.expected_payment_date}` : ""}
                   </div>
