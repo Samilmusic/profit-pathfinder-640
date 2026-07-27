@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { CurrencyLedger } from "@/components/currency-ledger";
+import { partyLabel, accountName } from "@/lib/party-label";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
@@ -138,17 +139,33 @@ function DashboardPage() {
     },
   });
 
-  // Recent deals — last 8 sells and buys with rich details
-  const recentDealsQ = useQuery({
-    queryKey: ["dash_recent_deals_v2"],
+  // Account id → name (all accounts, incl. inactive) for secondary identity lines
+  const accountNamesQ = useQuery({
+    queryKey: ["dash_account_names"],
     queryFn: async () => {
-      const [se, bu] = await Promise.all([
-        supabase.from("sell_transactions").select("id,doc_no,created_at,sold_amount,sold_currency,received_amount,received_currency,customer_name,customer_id,gross_profit,deal_status").is("deleted_at", null).order("created_at", { ascending: false }).limit(8),
-        supabase.from("buy_transactions").select("id,doc_no,created_at,bought_amount,bought_currency,paid_amount,paid_currency,counterparty,buy_rate").is("deleted_at", null).order("created_at", { ascending: false }).limit(8),
+      const { data, error } = await supabase.from("accounts").select("id,name");
+      if (error) throw error;
+      return new Map<string, string>((data ?? []).map((a: any) => [a.id, a.name]));
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+  const acctMap = accountNamesQ.data;
+
+  // Recent deals — last activity across sell / buy / trade / remittance
+  const recentDealsQ = useQuery({
+    queryKey: ["dash_recent_deals_v3"],
+    queryFn: async () => {
+      const [se, bu, tr, rem] = await Promise.all([
+        supabase.from("sell_transactions").select("id,doc_no,created_at,sold_amount,sold_currency,received_amount,received_currency,customer_name,customer_id,customer_phone,sold_from_account_id,received_into_account_id,gross_profit,deal_status,customers(name)").is("deleted_at", null).order("created_at", { ascending: false }).limit(8),
+        supabase.from("buy_transactions").select("id,doc_no,created_at,bought_amount,bought_currency,paid_amount,paid_currency,counterparty,customer_id,paid_from_account_id,received_into_account_id,buy_rate,settlement_status,customers(name)").is("deleted_at", null).order("created_at", { ascending: false }).limit(8),
+        supabase.from("trade_cycles").select("id,deal_code,code,title,created_at,customer_id,initial_currency,initial_amount,final_currency,final_returned_amount,final_account_id,initial_account_id,status,customers!trade_cycles_customer_id_fkey(name)").is("deleted_at", null).order("created_at", { ascending: false }).limit(8),
+        supabase.from("remittances").select("id,doc_no,created_at,customer_id,beneficiary_name,third_party_name,transfer_currency,transferred_amount,customer_payment_currency,customer_payment_amount,source_account_id,payment_received_account_id,status,customers!remittances_customer_id_fkey(name)").order("created_at", { ascending: false }).limit(8),
       ]);
       const rows: any[] = [
         ...(se.data ?? []).map((r: any) => ({ kind: "sell", when: r.created_at, ...r })),
         ...(bu.data ?? []).map((r: any) => ({ kind: "buy", when: r.created_at, ...r })),
+        ...(tr.data ?? []).map((r: any) => ({ kind: "trade", when: r.created_at, ...r })),
+        ...(rem.data ?? []).map((r: any) => ({ kind: "remittance", when: r.created_at, ...r })),
       ];
       return rows.sort((a, b) => (a.when < b.when ? 1 : -1)).slice(0, 10);
     },
