@@ -90,7 +90,7 @@ function DealCenterPage() {
           .select("id,doc_no,entry_date,created_at,customer_name,customer_id,sold_currency,sold_amount,received_currency,received_amount,sell_rate,deal_status,settlement_status,currency_delivered,cancel_reason")
           .is("deleted_at", null).order("entry_date", { ascending: false }).limit(500),
         supabase.from("buy_transactions")
-          .select("id,doc_no,entry_date,created_at,bought_currency,bought_amount,paid_currency,paid_amount,buy_rate,settlement_status,cancel_reason,txn_owner")
+          .select("id,doc_no,entry_date,created_at,bought_currency,bought_amount,paid_currency,paid_amount,buy_rate,settlement_status,cancel_reason,txn_owner,counterparty,customer_id,customers(name)")
           .is("deleted_at", null).order("entry_date", { ascending: false }).limit(500),
         supabase.from("brought_in_money")
           .select("id,doc_no,entry_date,created_at,brought_by,source_name,currency,amount,converted_currency,converted_amount,conversion_rate,convert_enabled,cancel_reason")
@@ -180,7 +180,8 @@ function DealCenterPage() {
         const completed = r.settlement_status === "completed";
         out.push({
           id: r.id, kind: "buy", code: dealCode("buy", r), date: r.entry_date,
-          customer: r.txn_owner,
+          customer: (r as any).customers?.name || r.counterparty || r.txn_owner,
+          customerId: r.customer_id ?? null,
           currencyOut: r.paid_currency, amountOut: Number(r.paid_amount ?? 0),
           currencyIn: r.bought_currency, amountIn: Number(r.bought_amount ?? 0),
           rate: r.buy_rate ? Number(r.buy_rate) : null,
