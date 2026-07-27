@@ -39,6 +39,7 @@ type NormDeal = {
   code: string;
   date: string;
   customer?: string | null;
+  customerId?: string | null;
   currencyOut?: string | null;
   amountOut?: number | null;
   currencyIn?: string | null;
@@ -86,7 +87,7 @@ function DealCenterPage() {
     queryFn: async () => {
       const [sells, buys, brought, transfers, expenses, deposits, pos, rems] = await Promise.all([
         supabase.from("sell_transactions")
-          .select("id,doc_no,entry_date,created_at,customer_name,sold_currency,sold_amount,received_currency,received_amount,sell_rate,deal_status,settlement_status,currency_delivered,cancel_reason")
+          .select("id,doc_no,entry_date,created_at,customer_name,customer_id,sold_currency,sold_amount,received_currency,received_amount,sell_rate,deal_status,settlement_status,currency_delivered,cancel_reason")
           .is("deleted_at", null).order("entry_date", { ascending: false }).limit(500),
         supabase.from("buy_transactions")
           .select("id,doc_no,entry_date,created_at,bought_currency,bought_amount,paid_currency,paid_amount,buy_rate,settlement_status,cancel_reason,txn_owner")
@@ -166,7 +167,7 @@ function DealCenterPage() {
         out.push({
           id: r.id, kind: "sell",
           code: dealCode("sell", r),
-          date: r.entry_date, customer: r.customer_name,
+          date: r.entry_date, customer: r.customer_name, customerId: r.customer_id,
           currencyOut: r.sold_currency, amountOut: Number(r.sold_amount ?? 0),
           currencyIn: r.received_currency, amountIn: Number(r.received_amount ?? 0),
           rate: r.sell_rate ? Number(r.sell_rate) : null,
@@ -269,7 +270,7 @@ function DealCenterPage() {
           : "open";
         out.push({
           id: r.id, kind: "remittance" as any, code: dealCode("remittance" as any, r), date: r.entry_date,
-          customer: r.customers?.name || r.beneficiary_name,
+          customer: r.customers?.name || r.beneficiary_name, customerId: r.customer_id ?? null,
           currencyOut: r.transfer_currency, amountOut: Number(r.transferred_amount ?? 0),
           currencyIn: r.customer_payment_currency, amountIn: Number(r.customer_payment_amount ?? 0),
           rate: r.reference_rate ? Number(r.reference_rate) : null,
@@ -454,9 +455,15 @@ function DealCard({ d }: { d: NormDeal }) {
               <Badge variant="outline" className="text-[10px] uppercase tracking-wide">{kindLabel(d.kind)}</Badge>
               <Badge variant="outline" className={`text-[10px] font-normal ${statusTone(d.status)}`}>{d.statusLabel}</Badge>
             </div>
-            <Link to={href} className="mt-1.5 block text-base sm:text-lg font-semibold leading-tight truncate hover:underline">
-              {customerLabel}
-            </Link>
+            {d.customerId ? (
+              <Link to="/customers/$id" params={{ id: d.customerId }} className="mt-1.5 block text-base sm:text-lg font-semibold leading-tight truncate hover:underline" title="Open customer profile">
+                {customerLabel}
+              </Link>
+            ) : (
+              <Link to={href} className="mt-1.5 block text-base sm:text-lg font-semibold leading-tight truncate hover:underline">
+                {customerLabel}
+              </Link>
+            )}
             {flowLine && (
               <div className="mt-0.5 text-sm text-muted-foreground tabular-nums truncate">
                 {flowLine}

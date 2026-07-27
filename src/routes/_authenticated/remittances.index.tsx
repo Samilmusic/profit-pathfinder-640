@@ -96,7 +96,13 @@ function RemittanceListPage() {
                 <div className="font-mono text-xs">{r.doc_no || r.id.slice(0, 8)}</div>
                 <div className="text-muted-foreground">{r.entry_date}</div>
                 <div className="min-w-0">
-                  <div className="truncate text-base font-semibold leading-tight">{r.customers?.name || r.beneficiary_name || "Unnamed"}</div>
+                  <div className="truncate text-base font-semibold leading-tight">
+                    {r.customer_id ? (
+                      <Link to="/customers/$id" params={{ id: r.customer_id }} onClick={(e) => e.stopPropagation()} className="hover:underline">
+                        {r.customers?.name || r.beneficiary_name || "Unnamed"}
+                      </Link>
+                    ) : (r.customers?.name || r.beneficiary_name || "Unnamed")}
+                  </div>
                   <div className="truncate text-xs text-muted-foreground">
                     {r.customers?.name && r.beneficiary_name ? <>→ {r.beneficiary_name}</> : r.customers?.name ? "" : "Beneficiary"}
                   </div>
