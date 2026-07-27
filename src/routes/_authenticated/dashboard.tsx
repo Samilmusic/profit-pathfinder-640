@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { CurrencyLedger } from "@/components/currency-ledger";
+import { partyLabel, accountName } from "@/lib/party-label";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
@@ -82,7 +83,7 @@ function DashboardPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("sell_transactions")
-        .select("id,doc_no,entry_date,deal_status,sold_currency,sold_amount,sell_rate,received_currency,received_amount,currency_delivered,customer_name,customer_id,expected_payment_date,amount_received")
+        .select("id,doc_no,entry_date,deal_status,sold_currency,sold_amount,sell_rate,received_currency,received_amount,currency_delivered,customer_name,customer_id,customer_phone,received_into_account_id,expected_payment_date,amount_received,customers(name)")
         .is("deleted_at", null)
         .not("deal_status", "in", "(closed,cancelled)")
         .order("entry_date", { ascending: false });
@@ -138,17 +139,33 @@ function DashboardPage() {
     },
   });
 
-  // Recent deals — last 8 sells and buys with rich details
-  const recentDealsQ = useQuery({
-    queryKey: ["dash_recent_deals_v2"],
+  // Account id → name (all accounts, incl. inactive) for secondary identity lines
+  const accountNamesQ = useQuery({
+    queryKey: ["dash_account_names"],
     queryFn: async () => {
-      const [se, bu] = await Promise.all([
-        supabase.from("sell_transactions").select("id,doc_no,created_at,sold_amount,sold_currency,received_amount,received_currency,customer_name,customer_id,gross_profit,deal_status").is("deleted_at", null).order("created_at", { ascending: false }).limit(8),
-        supabase.from("buy_transactions").select("id,doc_no,created_at,bought_amount,bought_currency,paid_amount,paid_currency,counterparty,buy_rate").is("deleted_at", null).order("created_at", { ascending: false }).limit(8),
+      const { data, error } = await supabase.from("accounts").select("id,name");
+      if (error) throw error;
+      return new Map<string, string>((data ?? []).map((a: any) => [a.id, a.name]));
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+  const acctMap = accountNamesQ.data;
+
+  // Recent deals — last activity across sell / buy / trade / remittance
+  const recentDealsQ = useQuery({
+    queryKey: ["dash_recent_deals_v3"],
+    queryFn: async () => {
+      const [se, bu, tr, rem] = await Promise.all([
+        supabase.from("sell_transactions").select("id,doc_no,created_at,sold_amount,sold_currency,received_amount,received_currency,customer_name,customer_id,customer_phone,sold_from_account_id,received_into_account_id,gross_profit,deal_status,customers(name)").is("deleted_at", null).order("created_at", { ascending: false }).limit(8),
+        supabase.from("buy_transactions").select("id,doc_no,created_at,bought_amount,bought_currency,paid_amount,paid_currency,counterparty,customer_id,paid_from_account_id,received_into_account_id,buy_rate,settlement_status,customers(name)").is("deleted_at", null).order("created_at", { ascending: false }).limit(8),
+        supabase.from("trade_cycles").select("id,deal_code,code,title,created_at,customer_id,initial_currency,initial_amount,final_currency,final_returned_amount,final_account_id,initial_account_id,status,customers!trade_cycles_customer_id_fkey(name)").is("deleted_at", null).order("created_at", { ascending: false }).limit(8),
+        supabase.from("remittances").select("id,doc_no,created_at,customer_id,beneficiary_name,third_party_name,transfer_currency,transferred_amount,customer_payment_currency,customer_payment_amount,source_account_id,payment_received_account_id,status,customers!remittances_customer_id_fkey(name)").order("created_at", { ascending: false }).limit(8),
       ]);
       const rows: any[] = [
         ...(se.data ?? []).map((r: any) => ({ kind: "sell", when: r.created_at, ...r })),
         ...(bu.data ?? []).map((r: any) => ({ kind: "buy", when: r.created_at, ...r })),
+        ...(tr.data ?? []).map((r: any) => ({ kind: "trade", when: r.created_at, ...r })),
+        ...(rem.data ?? []).map((r: any) => ({ kind: "remittance", when: r.created_at, ...r })),
       ];
       return rows.sort((a, b) => (a.when < b.when ? 1 : -1)).slice(0, 10);
     },
@@ -459,9 +476,9 @@ function DashboardPage() {
                     <div className="font-semibold truncate">
                       {a.s.customer_id ? (
                         <Link to="/customers/$id" params={{ id: a.s.customer_id }} onClick={(e) => e.stopPropagation()} className="hover:underline">
-                          {a.s.customer_name || "Unknown customer"}
+                          {partyLabel(a.s.customers?.name, a.s.customer_name, a.s.customer_phone)}
                         </Link>
-                      ) : (a.s.customer_name || "Unknown customer")}
+                      ) : partyLabel(a.s.customers?.name, a.s.customer_name, a.s.customer_phone)}
                     </div>
                     {a.s.doc_no && <div className="text-[11px] text-muted-foreground font-mono">{a.s.doc_no}</div>}
                   </div>
@@ -469,6 +486,7 @@ function DashboardPage() {
                     {fmt(a.s.received_amount, a.s.received_currency)}
                   </div>
                   <div className="mt-0.5 text-[11px] text-muted-foreground">
+                    {accountName(acctMap, a.s.received_into_account_id) ? `${accountName(acctMap, a.s.received_into_account_id)} · ` : ""}
                     {a.age > 0 ? `${a.age} day${a.age > 1 ? "s" : ""} ago` : "Today"}
                     {a.s.expected_payment_date ? ` · Due ${a.s.expected_payment_date}` : ""}
                   </div>
@@ -517,48 +535,50 @@ function DashboardPage() {
 
       {/* SECTION 6 — Recent Deals */}
       <section>
-        <SectionHead title="Recent Deals" hint="Latest activity across buy and sell." />
+        <SectionHead title="Recent Deals" hint="Latest activity across buy, sell, trade and remittance." />
         <div className="rounded-2xl border bg-card overflow-hidden">
           {(recentDealsQ.data ?? []).length === 0 && (
             <div className="px-5 py-8 text-sm text-muted-foreground text-center">No deals yet.</div>
           )}
           <ul className="divide-y">
-            {(recentDealsQ.data ?? []).map((r: any) => (
+            {(recentDealsQ.data ?? []).map((r: any) => {
+              const identity = dealIdentity(r, acctMap);
+              return (
               <li key={`${r.kind}-${r.id}`} className="px-4 sm:px-5 py-4">
                 <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 sm:gap-4">
-                  <div className={`shrink-0 text-[10px] uppercase tracking-[0.14em] font-semibold rounded-md px-2 py-1 border ${r.kind === "sell" ? "border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5" : "border-sky-500/30 text-sky-600 dark:text-sky-400 bg-sky-500/5"}`}>
-                    {r.kind === "sell" ? "SELL" : "BUY"}
+                  <div className={`shrink-0 text-[10px] uppercase tracking-[0.14em] font-semibold rounded-md px-2 py-1 border ${KIND_TONE[r.kind] ?? KIND_TONE.buy}`}>
+                    {identity.kindLabel}
                   </div>
                   <div className="min-w-0">
-                    <div className="text-base sm:text-lg font-semibold leading-tight truncate">
-                      {r.kind === "sell" && r.customer_id ? (
+                    <div className="text-base sm:text-lg font-semibold leading-tight truncate" title={identity.primary}>
+                      {r.customer_id ? (
                         <Link to="/customers/$id" params={{ id: r.customer_id }} className="hover:underline">
-                          {r.customer_name || "Unnamed customer"}
+                          {identity.primary}
                         </Link>
-                      ) : r.kind === "sell"
-                        ? (r.customer_name || "Unnamed customer")
-                        : (r.counterparty || "Unnamed supplier")}
+                      ) : identity.primary}
                     </div>
-                    <div className="mt-0.5 text-sm text-muted-foreground tabular-nums">
-                      {r.kind === "sell"
-                        ? <>Sold <span className="font-mono text-foreground/80">{fmt(r.sold_amount, r.sold_currency)}</span>{r.received_currency ? <> → <span className="font-mono text-foreground/80">{fmt(r.received_amount, r.received_currency)}</span></> : null}</>
-                        : <>Bought <span className="font-mono text-foreground/80">{fmt(r.bought_amount, r.bought_currency)}</span>{r.paid_currency ? <> · Paid <span className="font-mono text-foreground/80">{fmt(r.paid_amount, r.paid_currency)}</span></> : null}</>}
-                    </div>
+                    <div className="mt-0.5 text-sm text-muted-foreground tabular-nums">{identity.flow}</div>
+                    {identity.secondary && (
+                      <div className="mt-0.5 text-xs text-muted-foreground truncate" title={identity.secondary}>
+                        {identity.secondary}
+                      </div>
+                    )}
                     <div className="mt-1 flex items-center gap-2 flex-wrap text-[11px] text-muted-foreground font-mono">
-                      <span>{r.doc_no}</span>
+                      {identity.code ? <span>{identity.code}</span> : null}
                       {r.kind === "sell" && r.gross_profit ? <span>· Profit {fmt(r.gross_profit, r.received_currency)}</span> : null}
                       {r.kind === "buy" && r.buy_rate ? <span>· Rate {nfInt.format(Number(r.buy_rate))}</span> : null}
                     </div>
                   </div>
                   <div className="text-[11px] text-muted-foreground text-right tabular-nums shrink-0">
                     {relTime(r.when)}
-                    {r.kind === "sell" && r.deal_status && (
-                      <div className={`mt-0.5 text-[10px] uppercase tracking-wider ${r.deal_status === "closed" ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}`}>{r.deal_status?.replace(/_/g, " ")}</div>
+                    {identity.status && (
+                      <div className={`mt-0.5 text-[10px] uppercase tracking-wider ${identity.status === "closed" || identity.status === "completed" ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}`}>{identity.status.replace(/_/g, " ")}</div>
                     )}
                   </div>
                 </div>
               </li>
-            ))}
+              );
+            })}
           </ul>
         </div>
       </section>
@@ -567,6 +587,71 @@ function DashboardPage() {
 }
 
 // ── Reusable pieces ────────────────────────────────────────────────
+
+const KIND_TONE: Record<string, string> = {
+  sell: "border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5",
+  buy: "border-sky-500/30 text-sky-600 dark:text-sky-400 bg-sky-500/5",
+  trade: "border-violet-500/30 text-violet-600 dark:text-violet-400 bg-violet-500/5",
+  remittance: "border-amber-500/30 text-amber-600 dark:text-amber-400 bg-amber-500/5",
+};
+
+/**
+ * Presentation-only: derives the identity/flow lines for a feed row.
+ * Primary is always the customer / supplier / counterparty / beneficiary.
+ */
+function dealIdentity(r: any, acctMap?: Map<string, string>) {
+  const acct = (id?: string | null) => accountName(acctMap, id);
+  if (r.kind === "sell") {
+    return {
+      kindLabel: "SELL",
+      primary: partyLabel(r.customers?.name, r.customer_name, r.customer_phone),
+      flow: (
+        <>Sold <span className="font-mono text-foreground/80">{fmt(r.sold_amount, r.sold_currency)}</span>
+          {r.received_currency ? <> → <span className="font-mono text-foreground/80">{fmt(r.received_amount, r.received_currency)}</span></> : null}</>
+      ),
+      secondary: acct(r.received_into_account_id) ?? acct(r.sold_from_account_id),
+      code: r.doc_no,
+      status: r.deal_status as string | null,
+    };
+  }
+  if (r.kind === "buy") {
+    return {
+      kindLabel: "BUY",
+      primary: partyLabel(r.customers?.name, r.counterparty),
+      flow: (
+        <>Bought <span className="font-mono text-foreground/80">{fmt(r.bought_amount, r.bought_currency)}</span>
+          {r.paid_currency ? <> · Paid <span className="font-mono text-foreground/80">{fmt(r.paid_amount, r.paid_currency)}</span></> : null}</>
+      ),
+      secondary: acct(r.received_into_account_id) ?? acct(r.paid_from_account_id),
+      code: r.doc_no,
+      status: r.settlement_status as string | null,
+    };
+  }
+  if (r.kind === "trade") {
+    return {
+      kindLabel: "TRADE",
+      primary: partyLabel(r.customers?.name, r.title),
+      flow: (
+        <>In <span className="font-mono text-foreground/80">{fmt(r.initial_amount, r.initial_currency)}</span>
+          {r.final_currency ? <> · Out <span className="font-mono text-foreground/80">{fmt(r.final_returned_amount, r.final_currency)}</span></> : null}</>
+      ),
+      secondary: acct(r.final_account_id) ?? acct(r.initial_account_id),
+      code: r.deal_code ?? r.code,
+      status: r.status as string | null,
+    };
+  }
+  return {
+    kindLabel: "REMITTANCE",
+    primary: partyLabel(r.customers?.name, r.beneficiary_name, r.third_party_name),
+    flow: (
+      <>Sent <span className="font-mono text-foreground/80">{fmt(r.transferred_amount, r.transfer_currency)}</span>
+        {r.customer_payment_currency ? <> · Paid <span className="font-mono text-foreground/80">{fmt(r.customer_payment_amount, r.customer_payment_currency)}</span></> : null}</>
+    ),
+    secondary: acct(r.payment_received_account_id) ?? acct(r.source_account_id),
+    code: r.doc_no,
+    status: r.status as string | null,
+  };
+}
 
 function SectionHead({ title, hint, action }: { title: string; hint?: string; action?: React.ReactNode }) {
   return (

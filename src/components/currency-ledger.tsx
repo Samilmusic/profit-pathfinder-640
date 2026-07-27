@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { cleanName } from "@/lib/party-label";
 import { ArrowDown, ArrowUp, Search, X, FileText, Package, ArrowRightLeft, CreditCard, Receipt, Landmark, RefreshCw } from "lucide-react";
 // Detail links open as anchors to avoid strict typed-route issues
 
@@ -22,15 +23,15 @@ type Row = {
 type Preset = "today" | "yesterday" | "7d" | "30d" | "all";
 
 const ACTION_META: Record<string, { label: string; icon: any; codePrefix: string; table: string | null; codeCol: string | null; partyCols: string[] }> = {
-  buy:              { label: "Buy",       icon: Package,        codePrefix: "BUY",   table: "buy_transactions",   codeCol: "doc_no", partyCols: ["counterparty", "txn_owner"] },
-  sell:             { label: "Sell",      icon: Package,        codePrefix: "SELL",  table: "sell_transactions",  codeCol: "doc_no", partyCols: ["customer_name"] },
+  buy:              { label: "Buy",       icon: Package,        codePrefix: "BUY",   table: "buy_transactions",   codeCol: "doc_no", partyCols: ["customers(name)", "counterparty"] },
+  sell:             { label: "Sell",      icon: Package,        codePrefix: "SELL",  table: "sell_transactions",  codeCol: "doc_no", partyCols: ["customers(name)", "customer_name", "customer_phone"] },
   brought_in:       { label: "Brought In",icon: Landmark,       codePrefix: "BI",    table: "brought_in_money",   codeCol: "doc_no", partyCols: ["source_name", "brought_by"] },
   expense:          { label: "Expense",   icon: Receipt,        codePrefix: "EXP",   table: "expenses",           codeCol: "doc_no", partyCols: ["category"] },
   transfer:         { label: "Transfer",  icon: ArrowRightLeft, codePrefix: "TRF",   table: "transfers",          codeCol: null,     partyCols: ["reason"] },
-  deposit:          { label: "Deposit",   icon: CreditCard,     codePrefix: "DEP",   table: "customer_deposits",  codeCol: null,     partyCols: [] },
+  deposit:          { label: "Deposit",   icon: CreditCard,     codePrefix: "DEP",   table: "customer_deposits",  codeCol: null,     partyCols: ["customers(name)"] },
   sell_payment:     { label: "Payment",   icon: CreditCard,     codePrefix: "PAY",   table: "sell_payments",      codeCol: null,     partyCols: [] },
-  payment_order:    { label: "Payment Order", icon: CreditCard, codePrefix: "PO",    table: "payment_orders",     codeCol: null,     partyCols: [] },
-  service_charge:   { label: "Service Charge", icon: Receipt,   codePrefix: "SVC",   table: "service_charges",    codeCol: null,     partyCols: [] },
+  payment_order:    { label: "Payment Order", icon: CreditCard, codePrefix: "PO",    table: "payment_orders",     codeCol: null,     partyCols: ["customers(name)", "receiver_name"] },
+  service_charge:   { label: "Service Charge", icon: Receipt,   codePrefix: "SVC",   table: "service_charges",    codeCol: null,     partyCols: ["customers(name)"] },
   opening_balance:  { label: "Opening",   icon: Landmark,       codePrefix: "OPEN",  table: null,                 codeCol: null,     partyCols: [] },
   adjustment:       { label: "Adjustment",icon: RefreshCw,      codePrefix: "ADJ",   table: null,                 codeCol: null,     partyCols: [] },
 };
@@ -142,8 +143,10 @@ export function CurrencyLedger({ ccy, marketRate = 0, avgCost = 0 }: { ccy: stri
         for (const r of (data as any[]) ?? []) {
           if (meta.codeCol && r[meta.codeCol]) codeMap.set(r.id, r[meta.codeCol]);
           for (const col of meta.partyCols) {
-            const v = r[col];
-            if (v && String(v).trim() !== "") { partyMap.set(r.id, String(v)); break; }
+            // Embedded relations (e.g. "customers(name)") resolve to an object.
+            const v = col.includes("(") ? r[col.split("(")[0]]?.name : r[col];
+            const name = cleanName(v);
+            if (name) { partyMap.set(r.id, name); break; }
           }
         }
       }
