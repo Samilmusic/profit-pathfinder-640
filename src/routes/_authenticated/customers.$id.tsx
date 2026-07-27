@@ -45,7 +45,7 @@ function CustomerProfile() {
     if (d.sells.length) t.push("Buyer");
     if (d.buys.length) t.push("Supplier");
     if (d.accounts.length) t.push("Wallet holder");
-    if (stats.openDeals > 0) t.push("Active");
+    if (stats.openDeals > 0) t.push("Open deals");
     if ((accountsQ.data ?? []).length > 3) t.push("Multi-bank");
     return t;
   }, [core.data, stats.openDeals, accountsQ.data]);
@@ -232,8 +232,8 @@ function CustomerProfile() {
                     <div className="text-xs text-muted-foreground w-24">{t.date}</div>
                     <Badge variant="outline" className="text-[10px]">{t.kindLabel}</Badge>
                     <Badge variant="secondary" className="text-[10px]">{t.status ?? "—"}</Badge>
-                    <div className="font-mono text-xs text-emerald-600 dark:text-emerald-400">In {t.amountIn != null ? fmt(t.amountIn) : "—"}</div>
-                    <div className="font-mono text-xs text-muted-foreground">Out {t.amountOut != null ? fmt(t.amountOut) : "—"}</div>
+                    <div className="font-mono text-xs text-emerald-600 dark:text-emerald-400 break-all">In {t.amountIn != null ? fmt(t.amountIn, t.currencyIn ?? t.currency ?? undefined) : "—"}</div>
+                    <div className="font-mono text-xs text-muted-foreground break-all">Out {t.amountOut != null ? fmt(t.amountOut, t.currencyOut ?? t.currency ?? undefined) : "—"}</div>
                     <div className="font-mono text-xs">Rate {t.rate != null ? fmt(t.rate) : "—"}</div>
                     <div className="font-mono text-xs">P/L {t.profit != null ? fmt(t.profit) : "—"}</div>
                     <div className="ml-auto">
@@ -323,12 +323,15 @@ function TransactionsTab({ transactions, onExport }: { transactions: Txn[]; onEx
   const [min, setMin] = useState("");
   const [max, setMax] = useState("");
 
-  const currencies = useMemo(() => [...new Set(transactions.map((t) => t.currency).filter(Boolean))] as string[], [transactions]);
+  const currencies = useMemo(
+    () => [...new Set(transactions.flatMap((t) => [t.currency, t.currencyIn, t.currencyOut]).filter(Boolean))] as string[],
+    [transactions],
+  );
   const statuses = useMemo(() => [...new Set(transactions.map((t) => t.status).filter(Boolean))] as string[], [transactions]);
 
   const rows = useMemo(() => transactions.filter((t) => {
     if (kind !== "all" && t.kind !== kind) return false;
-    if (ccy !== "all" && t.currency !== ccy) return false;
+    if (ccy !== "all" && ![t.currency, t.currencyIn, t.currencyOut].includes(ccy)) return false;
     if (status !== "all" && t.status !== status) return false;
     if (from && (t.date ?? "") < from) return false;
     if (to && (t.date ?? "") > to) return false;
@@ -337,7 +340,7 @@ function TransactionsTab({ transactions, onExport }: { transactions: Txn[]; onEx
     if (max && amt > Number(max)) return false;
     if (q) {
       const s = q.toLowerCase();
-      if (![t.code, t.description, t.kindLabel, t.status, t.currency].some((v) => v && String(v).toLowerCase().includes(s))) return false;
+      if (![t.code, t.description, t.kindLabel, t.status, t.currency, t.currencyIn, t.currencyOut].some((v) => v && String(v).toLowerCase().includes(s))) return false;
     }
     return true;
   }), [transactions, kind, ccy, status, from, to, min, max, q]);
@@ -400,8 +403,8 @@ function TxnRow({ t }: { t: Txn }) {
       <Badge variant="outline" className="text-[10px]">{t.kindLabel}</Badge>
       <span className="font-mono text-xs">{t.code}</span>
       <span className="min-w-0 flex-1 truncate text-muted-foreground">{t.description}</span>
-      {t.amountIn != null && <span className="font-mono text-xs text-emerald-600 dark:text-emerald-400">+{fmt(t.amountIn, t.currency ?? undefined)}</span>}
-      {t.amountOut != null && <span className="font-mono text-xs text-destructive">-{fmt(t.amountOut, t.currency ?? undefined)}</span>}
+      {t.amountIn != null && <span className="font-mono text-xs text-emerald-600 dark:text-emerald-400 break-all">+{fmt(t.amountIn, (t.currencyIn ?? t.currency) ?? undefined)}</span>}
+      {t.amountOut != null && <span className="font-mono text-xs text-destructive break-all">-{fmt(t.amountOut, (t.currencyOut ?? t.currency) ?? undefined)}</span>}
       {t.status && <Badge variant="secondary" className="text-[10px]">{t.status}</Badge>}
       <span className="flex gap-1">
         {t.href && <Button asChild size="sm" variant="ghost" className="h-7 px-2 text-xs"><a href={t.href}>Deal</a></Button>}
@@ -417,7 +420,7 @@ function TxnLine({ t }: { t: Txn }) {
   return (
     <div className="flex justify-between items-center border-b py-1 last:border-0 gap-2">
       <span className="truncate"><Badge variant="outline" className="text-[10px] mr-2">{t.kindLabel}</Badge>{t.date}</span>
-      <span className="font-mono shrink-0">{fmt(t.amountIn ?? t.amountOut ?? 0, t.currency ?? undefined)}</span>
+      <span className="font-mono shrink-0">{fmt(t.amountIn ?? t.amountOut ?? 0, (t.amountIn != null ? t.currencyIn : t.currencyOut) ?? t.currency ?? undefined)}</span>
     </div>
   );
 }
@@ -456,7 +459,9 @@ function Kpi({ label, lines }: { label: string; lines: string[] }) {
     <div className="rounded-lg border p-3">
       <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
       <div className="mt-1 space-y-0.5">
-        {lines.slice(0, 3).map((l, i) => <div key={i} className="font-mono text-sm font-semibold truncate">{l}</div>)}
+        {lines.slice(0, 3).map((l, i) => (
+          <div key={i} title={l} className="font-mono text-xs sm:text-sm font-semibold leading-tight break-all">{l}</div>
+        ))}
       </div>
     </div>
   );
