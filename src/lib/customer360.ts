@@ -14,6 +14,8 @@ export type Txn = {
   code: string;
   description: string;
   currency: string | null;
+  currencyIn?: string | null;
+  currencyOut?: string | null;
   amountIn: number | null;
   amountOut: number | null;
   rate: number | null;
@@ -143,6 +145,7 @@ export function useCustomer360(customerId: string) {
         code: code("SELL", r),
         description: `Sold ${r.sold_amount} ${r.sold_currency} → ${r.received_amount} ${r.received_currency}`,
         currency: r.sold_currency, amountOut: num(r.sold_amount), amountIn: num(r.received_amount),
+        currencyOut: r.sold_currency, currencyIn: r.received_currency,
         rate: num(r.sell_rate), profit: num(r.net_profit_aed ?? r.gross_profit),
         status: r.deal_status ?? r.settlement_status, href: `/sells/${r.id}`,
         accountId: r.received_into_account_id ?? r.sold_from_account_id,
@@ -154,6 +157,7 @@ export function useCustomer360(customerId: string) {
         code: code("BUY", r),
         description: `Bought ${r.bought_amount} ${r.bought_currency} for ${r.paid_amount} ${r.paid_currency}`,
         currency: r.bought_currency, amountIn: num(r.bought_amount), amountOut: num(r.paid_amount),
+        currencyIn: r.bought_currency, currencyOut: r.paid_currency,
         rate: num(r.buy_rate), profit: null, status: r.settlement_status, href: `/buy`,
         accountId: r.received_into_account_id ?? r.paid_from_account_id,
       });
@@ -164,6 +168,7 @@ export function useCustomer360(customerId: string) {
         code: code("REM", r),
         description: `Transfer ${r.transferred_amount} ${r.transfer_currency} to ${r.beneficiary_name ?? "beneficiary"}`,
         currency: r.transfer_currency, amountOut: num(r.transferred_amount), amountIn: num(r.customer_payment_amount),
+        currencyOut: r.transfer_currency, currencyIn: r.customer_payment_currency,
         rate: num(r.reference_rate), profit: num(r.total_profit_aed ?? r.net_commission_aed),
         status: r.workflow_state ?? r.status, href: `/remittances/${r.id}`,
         accountId: r.source_account_id,
@@ -251,9 +256,11 @@ export function useCustomer360(customerId: string) {
 
     const volume = new Map<string, number>();
     for (const t of transactions) {
-      if (!t.currency || t.kind === "ledger") continue;
-      const v = (t.amountIn ?? 0) + (t.amountOut ?? 0);
-      volume.set(t.currency, (volume.get(t.currency) ?? 0) + v);
+      if (t.kind === "ledger") continue;
+      const ccyIn = t.currencyIn ?? t.currency;
+      const ccyOut = t.currencyOut ?? t.currency;
+      if (t.amountIn != null && ccyIn) volume.set(ccyIn, (volume.get(ccyIn) ?? 0) + t.amountIn);
+      if (t.amountOut != null && ccyOut) volume.set(ccyOut, (volume.get(ccyOut) ?? 0) + t.amountOut);
     }
 
     const balances = new Map<string, number>();
