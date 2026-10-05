@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { IMAGES, SOURCING_STEPS, seo } from "@/lib/site";
 import { ButtonLink, PageHero, SectionHeading, SiteImage } from "@/components/site/primitives";
 import { CtaBand, MeetingSection } from "@/components/site/sections";
+import { SupplyChainSection } from "@/components/site/market";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_site/international-sourcing")({
@@ -10,7 +11,7 @@ export const Route = createFileRoute("/_site/international-sourcing")({
       path: "/international-sourcing",
       title: "International Sourcing UAE | European Suppliers — AL NOKHBA TRADING",
       description:
-        "How AL NOKHBA TRADING sources products from manufacturers, exporters and stockists in established international markets: from supplier identification and sample evaluation to supplier visits, purchase orders and UAE import.",
+        "How AL NOKHBA TRADING sources products from manufacturers, exporters and stockists in established international markets: from supplier identification and supplier visits to UAE import and distribution in the UAE and selected GCC markets.",
       ogTitle: "International Sourcing — Sourcing Products. Building Supply Relationships.",
       ogDescription:
         "A structured nine-step sourcing process connecting international and European suppliers with wholesale trade in the UAE.",
@@ -130,6 +131,8 @@ function SourcingPage() {
           </ol>
         </div>
       </section>
+
+      <SupplyChainSection />
 
       <section className="bg-white py-24 lg:py-32" aria-labelledby="what-we-request">
         <div className="site-container grid gap-14 lg:grid-cols-12 lg:gap-16">

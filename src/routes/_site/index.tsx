@@ -9,7 +9,12 @@ import {
   SiteImage,
   TextLink,
 } from "@/components/site/primitives";
-import { CtaBand, MeetingSection, SectorGrid, UaeMarketSection } from "@/components/site/sections";
+import { CtaBand, MeetingSection, SectorGrid } from "@/components/site/sections";
+import {
+  CoreMarketSection,
+  RouteToMarketSection,
+  SourceToMarketSection,
+} from "@/components/site/market";
 
 export const Route = createFileRoute("/_site/")({
   head: () =>
@@ -17,7 +22,7 @@ export const Route = createFileRoute("/_site/")({
       path: "/",
       title: "AL NOKHBA TRADING | Goods Wholesaler & International Sourcing, Dubai UAE",
       description:
-        "AL NOKHBA TRADING is a licensed Dubai goods wholesaler sourcing, purchasing and importing products from international and European suppliers for wholesale distribution in the UAE.",
+        "AL NOKHBA TRADING is a licensed Dubai goods wholesaler importing products from international and European suppliers for wholesale, B2B and marketplace distribution in the UAE and selected GCC markets.",
       ogTitle: "AL NOKHBA TRADING — Global Sourcing. UAE Wholesale.",
       ogDescription:
         "Licensed UAE goods wholesaler and importer connecting international manufacturers, exporters and wholesalers with wholesale opportunities in the United Arab Emirates.",
@@ -239,9 +244,13 @@ function HomePage() {
         </div>
       </section>
 
-      <MeetingSection />
+      <SourceToMarketSection />
 
-      <UaeMarketSection />
+      <RouteToMarketSection withLink />
+
+      <CoreMarketSection />
+
+      <MeetingSection />
 
       {/* SUPPLIER INVITATION */}
       <section className="relative isolate overflow-hidden bg-navy py-24 text-white lg:py-32">

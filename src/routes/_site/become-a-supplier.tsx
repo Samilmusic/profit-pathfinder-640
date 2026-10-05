@@ -3,6 +3,7 @@ import { Mail, MessageCircle, Phone } from "lucide-react";
 import { COMPANY, CONTACT_LINKS, IMAGES, SUPPLIER_TYPES, WHAT_WE_LOOK_FOR, seo } from "@/lib/site";
 import { ButtonLink, PageHero, SectionHeading } from "@/components/site/primitives";
 import { MeetingSection } from "@/components/site/sections";
+import { YourProductsOurMarketSection } from "@/components/site/market";
 import { SupplierForm } from "@/components/site/supplier-form";
 
 export const Route = createFileRoute("/_site/become-a-supplier")({
@@ -69,6 +70,8 @@ function SupplierPage() {
           </ul>
         </div>
       </section>
+
+      <YourProductsOurMarketSection />
 
       <section className="bg-navy py-24 text-white lg:py-32" aria-labelledby="what-we-look-for">
         <div className="site-container">

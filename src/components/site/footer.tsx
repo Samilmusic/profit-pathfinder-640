@@ -25,8 +25,8 @@ export function SiteFooter() {
             <p className="eyebrow mt-8 text-gold-soft">{COMPANY.tagline}</p>
             <p className="mt-5 max-w-sm text-sm leading-relaxed">
               Dubai-based goods wholesaler sourcing, purchasing and importing commercially viable
-              products from international suppliers for wholesale distribution in the United Arab
-              Emirates.
+              products from international suppliers for wholesale and B2B distribution in the United
+              Arab Emirates and selected GCC markets.
             </p>
           </div>
 

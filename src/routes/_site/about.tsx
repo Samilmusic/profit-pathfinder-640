@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { COMPANY, IMAGES, seo } from "@/lib/site";
+import { COMPANY, IMAGES, PRIMARY_MARKET, REGIONAL_FOCUS, seo } from "@/lib/site";
 import { PageHero, SectionHeading, SiteImage, TextLink } from "@/components/site/primitives";
 import { CtaBand } from "@/components/site/sections";
+import { CoreMarketSection } from "@/components/site/market";
 
 export const Route = createFileRoute("/_site/about")({
   head: () =>
@@ -43,7 +44,12 @@ function AboutPage() {
         eyebrow="Company"
         title="Built for International Trade"
         image={IMAGES.containerShip}
-        lead={<p>A Dubai-based goods wholesaler sourcing internationally for the UAE market.</p>}
+        lead={
+          <p>
+            A Dubai-based goods wholesaler sourcing internationally for the UAE, with selected
+            opportunities in GCC markets.
+          </p>
+        }
       />
 
       <section className="bg-ivory py-24 lg:py-32">
@@ -87,6 +93,8 @@ function AboutPage() {
                   "Registered Address",
                   `${COMPANY.addressLine1}, ${COMPANY.city}, ${COMPANY.country}`,
                 ],
+                ["Primary Market", PRIMARY_MARKET],
+                ["Regional Commercial Focus", REGIONAL_FOCUS],
                 ["Website", COMPANY.domain],
               ].map(([k, v]) => (
                 <div key={k} className="grid gap-1 px-7 py-4 sm:grid-cols-[11rem_1fr] sm:gap-4">
@@ -157,6 +165,8 @@ function AboutPage() {
           </div>
         </div>
       </section>
+
+      <CoreMarketSection />
 
       <CtaBand />
     </>

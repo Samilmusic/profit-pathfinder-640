@@ -28,7 +28,7 @@ function SectorsPage() {
           <p>
             As a licensed goods wholesaler, AL NOKHBA sources across a broad range of non-food
             product categories. Our focus is on commercially viable products that can be purchased
-            in wholesale quantities and supplied efficiently to the UAE market.
+            in wholesale quantities and supplied efficiently to the UAE and selected GCC markets.
           </p>
         }
       />

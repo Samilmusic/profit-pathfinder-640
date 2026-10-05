@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { IMAGES, PROCUREMENT_CAPABILITIES, seo } from "@/lib/site";
 import { ButtonLink, PageHero, SectionHeading, SiteImage } from "@/components/site/primitives";
 import { CtaBand, StockAvailabilitySection, UaeMarketSection } from "@/components/site/sections";
+import { MultiChannelSection, RouteToMarketSection } from "@/components/site/market";
 
 export const Route = createFileRoute("/_site/wholesale-procurement")({
   head: () =>
@@ -109,6 +110,8 @@ function ProcurementPage() {
         </div>
       </section>
 
+      <RouteToMarketSection />
+      <MultiChannelSection />
       <UaeMarketSection />
       <CtaBand />
     </>

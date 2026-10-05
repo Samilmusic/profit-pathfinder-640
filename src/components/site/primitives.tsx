@@ -90,16 +90,19 @@ export function ButtonAnchor({
 
 export function TextLink({
   to,
+  hash,
   children,
   light,
 }: {
   to: SitePath;
+  hash?: string;
   children: ReactNode;
   light?: boolean;
 }) {
   return (
     <Link
       to={to}
+      hash={hash}
       className={cn(
         "group inline-flex items-center gap-3 border-b pb-1.5 text-[0.78rem] font-semibold uppercase tracking-[0.16em] transition-colors",
         light

@@ -57,7 +57,10 @@ export function SectorGrid() {
 export function UaeMarketSection() {
   const areas = [
     { title: "Import", body: "International goods sourced and imported into the UAE." },
-    { title: "Wholesale", body: "Products supplied through commercial wholesale channels." },
+    {
+      title: "Wholesale",
+      body: "Products supplied through commercial wholesale, B2B and selected marketplace channels.",
+    },
     {
       title: "Partnerships",
       body: "Long-term supplier relationships developed with international businesses.",
@@ -74,11 +77,11 @@ export function UaeMarketSection() {
               <>
                 <p>
                   The United Arab Emirates is an established international trading and logistics
-                  market, connecting businesses across the Middle East with international markets.
+                  market, connecting businesses across the GCC region.
                 </p>
                 <p className="mt-4">
                   AL NOKHBA evaluates international products for potential wholesale opportunities
-                  within the UAE.
+                  within the UAE — our primary market — with selected opportunities in GCC markets.
                 </p>
               </>
             }

@@ -287,9 +287,84 @@ export const SOURCING_STEPS = [
   },
   {
     no: "09",
-    title: "Wholesale Distribution",
-    body: "Products enter AL NOKHBA's UAE wholesale trading activities.",
+    title: "Wholesale, B2B & Marketplace Distribution",
+    body: "Following product entry and commercial evaluation, products are distributed through AL NOKHBA's wholesale, B2B and selected online marketplace channels — primarily within the UAE, with selected opportunities in GCC markets.",
   },
+] as const;
+
+/* ------------------------------------------------------------------ */
+/* Territory & route to market                                         */
+/* ------------------------------------------------------------------ */
+// Conservative positioning: Dubai-based operations, UAE as the primary
+// market, selected GCC opportunities. No offices, partners or rights are
+// claimed outside the UAE.
+
+export const PRIMARY_MARKET = "United Arab Emirates";
+export const REGIONAL_FOCUS = "Selected GCC Markets";
+
+export const GCC_MARKETS = [
+  { name: "United Arab Emirates", role: "Primary market · Dubai base" },
+  { name: "Saudi Arabia", role: "Selected opportunities" },
+  { name: "Qatar", role: "Selected opportunities" },
+  { name: "Kuwait", role: "Selected opportunities" },
+  { name: "Bahrain", role: "Selected opportunities" },
+  { name: "Oman", role: "Selected opportunities" },
+] as const;
+
+export const DISTRIBUTION_CHANNELS = [
+  {
+    no: "01",
+    title: "Wholesale Distribution",
+    body: "Supply of products in commercial quantities to businesses, traders and professional buyers within the UAE.",
+  },
+  {
+    no: "02",
+    title: "B2B Commercial Sales",
+    body: "Direct sales to business customers through our commercial network and established market connections.",
+  },
+  {
+    no: "03",
+    title: "Online Marketplaces",
+    body: "Selected consumer-facing products may also be distributed through established online marketplaces such as Amazon UAE and other appropriate UAE/GCC e-commerce channels, complementing our core wholesale and B2B activities.",
+  },
+  {
+    no: "04",
+    title: "GCC Opportunities",
+    body: "Where commercially appropriate, selected products may be supplied to business customers and trading partners in GCC markets.",
+  },
+] as const;
+
+export const SALES_CHANNEL_FLOWS = [
+  { from: "Wholesale", to: "B2B Customers" },
+  { from: "Commercial Network", to: "Professional Buyers" },
+  { from: "Online Marketplaces", to: "UAE Consumers & Businesses" },
+  { from: "Regional Trading Relationships", to: "Selected GCC Markets" },
+] as const;
+
+export const SUPPLY_CHAIN = [
+  { title: "International Supplier", note: "Manufacturer, exporter, wholesaler or stockist" },
+  { title: "AL NOKHBA Procurement", note: "Evaluation, negotiation & purchase order" },
+  { title: "Export to UAE", note: "Export documentation & international logistics" },
+  { title: "UAE Import", note: "Import into the United Arab Emirates" },
+  {
+    title: "Product Entry & Commercial Evaluation",
+    note: "Requirements review & market positioning",
+  },
+  { title: "Wholesale / B2B / Marketplace Distribution", note: "Multi-channel route to market" },
+  { title: "UAE & Selected GCC Markets", note: "Primary market: UAE", final: true },
+] as const;
+
+export const SUPPLIER_MARKET_CHANNELS = [
+  "UAE Wholesale",
+  "B2B Distribution",
+  "Commercial Network",
+  "Online Marketplaces",
+  "Selected GCC Opportunities",
+] as const;
+
+export const COMPLIANCE_STATEMENTS = [
+  "Products are sourced and distributed in accordance with applicable UAE trade, import and commercial requirements.",
+  "Product-specific regulatory, labeling, conformity and import requirements are reviewed where applicable before commercial distribution.",
 ] as const;
 
 /* ------------------------------------------------------------------ */
@@ -469,7 +544,7 @@ export const ORGANIZATION_JSON_LD = {
       name: COMPANY.brand,
       legalName: COMPANY.legalName,
       description:
-        "Dubai-based goods wholesaler sourcing, purchasing and importing products from international suppliers for wholesale distribution in the UAE.",
+        "Dubai-based goods wholesaler sourcing, purchasing and importing products from international suppliers for wholesale, B2B and selected marketplace distribution in the UAE, with selected opportunities in GCC markets.",
       url: SITE_URL,
       image: OG_IMAGE,
       email: COMPANY.email,
@@ -481,7 +556,10 @@ export const ORGANIZATION_JSON_LD = {
         addressLocality: COMPANY.city,
         addressCountry: COMPANY.countryCode,
       },
-      areaServed: { "@type": "Country", name: "United Arab Emirates" },
+      areaServed: [
+        { "@type": "Country", name: "United Arab Emirates" },
+        { "@type": "Place", name: "Gulf Cooperation Council (GCC) markets" },
+      ],
     },
     {
       "@type": "WebSite",
