@@ -1,0 +1,47 @@
+# Builds the static AL NOKHBA TRADING website and publishes it to the
+# `hostinger` branch. Hostinger (hPanel → Advanced → Git) deploys that branch
+# into public_html.
+name: Build website for Hostinger
+
+on:
+  push:
+    branches: [main, claude/al-nokhba-trading-website-8avq6c]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hostinger-deploy
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # bun.lock resolves packages from a private registry; install from npm.
+      - name: Install dependencies
+        run: |
+          rm -f bun.lock
+          bun install --registry https://registry.npmjs.org
+
+      - name: Build static site
+        run: npm run build:static
+
+      - name: Publish to hostinger branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: hostinger
+          publish_dir: ./dist/client
+          force_orphan: true
+          enable_jekyll: true
+          commit_message: "Deploy website"

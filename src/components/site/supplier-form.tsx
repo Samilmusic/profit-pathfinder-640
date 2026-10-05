@@ -21,6 +21,11 @@ import { buttonClass } from "./primitives";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
+// Static (Hostinger) builds post to the PHP handler in public/api/; the
+// server build uses the TanStack server route.
+const ENQUIRY_ENDPOINT =
+  (import.meta.env.VITE_ENQUIRY_ENDPOINT as string | undefined) || "/api/public/supplier-enquiry";
+
 const inputClass =
   "block w-full rounded-none border border-rule bg-white px-4 py-3 text-charcoal placeholder:text-slate-ink/50 transition-colors focus:border-navy focus:outline-none aria-[invalid=true]:border-red-700";
 
@@ -187,7 +192,7 @@ export function SupplierForm() {
     if (productList) body.append("productList", productList);
 
     try {
-      const res = await fetch("/api/public/supplier-enquiry", { method: "POST", body });
+      const res = await fetch(ENQUIRY_ENDPOINT, { method: "POST", body });
       const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
       if (!res.ok || !data.ok) {
         setErrorMessage(
