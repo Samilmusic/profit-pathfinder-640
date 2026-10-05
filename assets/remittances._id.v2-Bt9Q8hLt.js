@@ -1,0 +1,1 @@
+import{r as e}from"./remittances._id.v2-CyxCMKo-.js";export{e as notFoundComponent};

@@ -1,0 +1,1 @@
+import{n as e}from"./remittances._id.v2-CyxCMKo-.js";export{e as errorComponent};
