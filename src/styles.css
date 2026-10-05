@@ -288,3 +288,117 @@ button, a, [role="button"] {
 }
 
 /* Responsive table breakpoint helpers are handled with Tailwind's md: prefix. */
+
+/* =====================================================================
+ * Public corporate website (AL NOKHBA TRADING)
+ *
+ * Everything below is scoped to the `.site` wrapper rendered by
+ * src/routes/_site/route.tsx so the private portal styling is untouched.
+ * ===================================================================== */
+
+@theme inline {
+  --color-navy: var(--site-navy);
+  --color-navy-deep: var(--site-navy-deep);
+  --color-navy-soft: var(--site-navy-soft);
+  --color-ivory: var(--site-ivory);
+  --color-stone: var(--site-stone);
+  --color-charcoal: var(--site-charcoal);
+  --color-slate-ink: var(--site-slate);
+  --color-gold: var(--site-gold);
+  --color-gold-soft: var(--site-gold-soft);
+  --color-rule: var(--site-rule);
+  --font-display: "Inter Tight", "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-body: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+:root {
+  --site-navy: oklch(0.255 0.045 255);
+  --site-navy-deep: oklch(0.19 0.035 257);
+  --site-navy-soft: oklch(0.33 0.045 252);
+  --site-ivory: oklch(0.975 0.007 85);
+  --site-stone: oklch(0.94 0.01 80);
+  --site-charcoal: oklch(0.25 0.008 260);
+  --site-slate: oklch(0.47 0.015 255);
+  --site-gold: oklch(0.70 0.075 78);
+  --site-gold-soft: oklch(0.82 0.05 80);
+  --site-rule: oklch(0.88 0.012 80);
+}
+
+.site {
+  font-family: var(--font-body);
+  background: var(--site-ivory);
+  color: var(--site-charcoal);
+  font-feature-settings: "cv11", "ss01";
+  text-rendering: optimizeLegibility;
+}
+.site :where(h1, h2, h3, h4) {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.site p { text-wrap: pretty; }
+.site ::selection { background: oklch(0.70 0.075 78 / 0.35); }
+.site :where(a, button, input, textarea, select, summary):focus-visible {
+  outline: 2px solid var(--site-gold);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+html:has(.site) { scroll-behavior: smooth; scroll-padding-top: 6rem; }
+
+@utility eyebrow {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+@utility site-container {
+  width: 100%;
+  max-width: 82rem;
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+  @media (width >= 40rem) { padding-inline: 2rem; }
+  @media (width >= 64rem) { padding-inline: 3rem; }
+}
+
+/* Scroll reveal — content is visible by default; JS opts elements in. */
+.reveal-ready [data-reveal] {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 800ms cubic-bezier(0.2, 0.7, 0.2, 1), transform 800ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+.reveal-ready [data-reveal].is-visible { opacity: 1; transform: none; }
+
+@keyframes site-page-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.site-page-in { animation: site-page-in 520ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+
+@keyframes site-line-in {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.site-line-in { transform-origin: left; animation: site-line-in 1100ms cubic-bezier(0.2, 0.7, 0.2, 1) 300ms both; }
+
+/* Sourcing process connector that draws as the step scrolls into view. */
+.process-line { transform: scaleY(0); transform-origin: top; transition: transform 1200ms cubic-bezier(0.2, 0.7, 0.2, 1); }
+.is-visible .process-line, .process-line.is-visible { transform: scaleY(1); }
+
+.site-grain {
+  background-image:
+    linear-gradient(135deg, oklch(0.30 0.05 252) 0%, oklch(0.19 0.035 257) 100%);
+}
+
+.site-form :where(input, select, textarea) {
+  font-size: 16px; /* prevents iOS zoom on focus */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-ready [data-reveal] { opacity: 1; transform: none; }
+  .process-line { transform: none; }
+  html:has(.site) { scroll-behavior: auto; }
+}
